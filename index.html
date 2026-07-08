@@ -1188,28 +1188,6 @@
         </div>
         <div class="month-picker" id="monthPickerRoot2"></div>
       </div>
-      <!-- Date filter bar -->
-      <div class="trans-filter-bar">
-        <span class="trans-filter-label">Período:</span>
-        <div class="trans-presets">
-          <button class="trans-preset-btn active" data-preset="month" id="presetMes">Este mês</button>
-          <button class="trans-preset-btn" data-preset="week" id="presetSemana">Esta semana</button>
-          <button class="trans-preset-btn" data-preset="today" id="presetHoje">Hoje</button>
-          <button class="trans-preset-btn" data-preset="all" id="presetTodos">Todos</button>
-        </div>
-        <div class="trans-period-sel">
-          <select class="trans-sel" id="transMesSel">
-            <option value="1">Janeiro</option><option value="2">Fevereiro</option>
-            <option value="3">Março</option><option value="4">Abril</option>
-            <option value="5">Maio</option><option value="6">Junho</option>
-            <option value="7">Julho</option><option value="8">Agosto</option>
-            <option value="9">Setembro</option><option value="10">Outubro</option>
-            <option value="11">Novembro</option><option value="12">Dezembro</option>
-          </select>
-          <select class="trans-sel" id="transAnoSel"></select>
-        </div>
-      </div>
-
       <div class="subtab-bar">
         <button class="subtab active" data-subtab="todas">Todas</button>
         <button class="subtab pendentes" data-subtab="pendentes">⏱ Pendentes</button>
@@ -2091,11 +2069,15 @@ async function loadAllData() {
     monthSet.clear();
     DATA.transacoes.forEach(t => monthSet.add(monthKey(parseDate(t.data))));
     DATA.cartaoCompras.forEach(t => monthSet.add(getCartaoFaturaMonth(t)));
-    // Always include current month so dashboard renders even with no data
-    monthSet.add(monthKey(new Date()));
+    // Seed with current year months
+    const _now = new Date(); const _base = _now.getFullYear();
+    for(let _y=_base-1;_y<=_base+1;_y++) for(let _m=1;_m<=12;_m++) monthSet.add(_y+'-'+String(_m).padStart(2,'0'));
+    DATA.transacoes.forEach(t => monthSet.add(monthKey(parseDate(t.data))));
+    DATA.cartaoCompras.forEach(t => monthSet.add(getCartaoFaturaMonth(t)));
     months.length = 0;
     months.push(...Array.from(monthSet).sort());
-    currentMonth = months[months.length-1];
+    // Keep currentMonth if valid, otherwise use current month
+    if(!months.includes(currentMonth)) currentMonth = monthKey(new Date());
 
     renderAll();
   } catch(e) {
@@ -2222,10 +2204,20 @@ function shiftMonth(key, delta){
 function fmtDateBR(s){ return s ? s.split('-').reverse().join('/') : '—'; }
 
 const monthSet = new Set();
+// Always include all months for current year and neighbors so picker always works
+(function seedMonths(){
+  const now = new Date();
+  const base = now.getFullYear();
+  for(let y = base-1; y <= base+1; y++){
+    for(let m = 1; m <= 12; m++){
+      monthSet.add(y+'-'+String(m).padStart(2,'0'));
+    }
+  }
+})();
 DATA.transacoes.forEach(t => monthSet.add(monthKey(parseDate(t.data))));
-DATA.cartaoCompras.forEach(t => monthSet.add(monthKey(parseDate(t.data))));
+DATA.cartaoCompras.forEach(t => monthSet.add(getCartaoFaturaMonth(t)));
 const months = Array.from(monthSet).sort();
-let currentMonth = months[months.length-1] || monthKey(new Date());
+let currentMonth = monthKey(new Date());
 let currentView = 'overview';
 
 // ===================== Navigation =====================
@@ -2566,8 +2558,14 @@ function getCombinedAll(){
 }
 function renderAllTable(){
   let rows = getCombinedAll();
-  // Apply date filter
-  rows = rows.filter(r => rowInTransFilter(r));
+  // Filter by currentMonth (same global selector as all other views)
+  rows = rows.filter(r => {
+    if(r._source === 'cartaoCompras'){
+      const orig = DATA.cartaoCompras.find(t => t._id === r._id);
+      return orig ? getCartaoFaturaMonth(orig) === currentMonth : inMonth(r.data, currentMonth);
+    }
+    return inMonth(r.data, currentMonth);
+  });
   if(typeFilter !== 'Todos') rows = rows.filter(r => r.tipo === typeFilter);
   const q = document.getElementById('searchInput').value.trim().toLowerCase();
   if(q) rows = rows.filter(r => (r.descricao||'').toLowerCase().includes(q) || (r.categoria||'').toLowerCase().includes(q));
@@ -2610,37 +2608,7 @@ function renderAllTable(){
 }
 document.getElementById('searchInput').addEventListener('input', renderAllTable);
 
-// Wire date filter presets (deferred since elements are before script)
-setTimeout(()=>{
-  // Set initial month/year
-  const now = new Date();
-  const transMesSel = document.getElementById('transMesSel');
-  const transAnoSel = document.getElementById('transAnoSel');
-  if(transMesSel) transMesSel.value = now.getMonth()+1;
-  if(transAnoSel){
-    const thisYear = now.getFullYear();
-    for(let y=thisYear-3; y<=thisYear+1; y++){
-      const opt = document.createElement('option');
-      opt.value = y; opt.textContent = y;
-      if(y===thisYear) opt.selected = true;
-      transAnoSel.appendChild(opt);
-    }
-  }
-  // Preset buttons
-  document.querySelectorAll('.trans-preset-btn').forEach(btn=>{
-    btn.addEventListener('click', ()=> setTransPreset(btn.dataset.preset));
-  });
-  // Month/Year selects
-  if(transMesSel) transMesSel.addEventListener('change', ()=>{
-    transFilterMonth = parseInt(transMesSel.value);
-    setTransPreset('custom');
-  });
-  if(transAnoSel) transAnoSel.addEventListener('change', ()=>{
-    transFilterYear = parseInt(transAnoSel.value);
-    setTransPreset('custom');
-  });
-  updateTransFilterLabel();
-}, 0);
+// Filter is handled by global month picker
 document.querySelectorAll('#typeChips .chip').forEach(chip => {
   chip.onclick = () => {
     document.querySelectorAll('#typeChips .chip').forEach(c=>c.classList.remove('active'));
@@ -2987,6 +2955,7 @@ function renderView(view){
     chartDespInst = renderDonut('chartDespesas','legendDespesas','donutCenterDesp', categorySums(currentMonth,'Despesa'), chartDespInst);
     renderRecent(currentMonth);
   } else if(view === 'transacoes'){
+    buildMonthPicker('monthPickerRoot2');
     renderAllTable();
   } else if(view === 'cartao'){
     renderFaturaTotal(currentMonth);
@@ -3431,6 +3400,7 @@ function showSubtab(name){
   document.querySelectorAll('.subtab').forEach(t => {
     t.classList.toggle('active', t.dataset.subtab === name);
   });
+  // All subtabs respect currentMonth filter
   if(name === 'pendentes') renderPending();
   else if(name === 'atrasadas') renderAtrasadas();
   else renderAllTable();
