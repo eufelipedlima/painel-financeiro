@@ -1170,6 +1170,7 @@
   <div class="loading-spinner"></div>
   <div class="loading-text" id="loadingText">Carregando seus dados...</div>
   <div style="font-size:12px;color:var(--text-3);margin-top:6px" id="loadingSubText">Conectando ao banco de dados...</div>
+  <button id="reloadDataBtn" onclick="loadAllData()" style="display:none;margin-top:16px;padding:10px 22px;border-radius:10px;background:var(--accent);color:#fff;border:none;font-size:13.5px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif">🔄 Tentar novamente</button>
 </div>
 
 <div class="app" id="appRoot" style="display:none">
@@ -2138,11 +2139,18 @@ async function ensureDefaults(uid) {
 // ── Load all data from Supabase ──────────────────────
 async function loadAllData() {
   showLoadingOverlay(true);
-  // Warn after 5s that it's taking long (Supabase waking up)
+  // Warn after 5s
   const warnTimeout = setTimeout(() => {
     const sub = document.getElementById('loadingSubText');
-    if(sub) sub.textContent = 'O banco está acordando... pode levar até 20 segundos na primeira vez.';
+    if(sub) sub.textContent = 'O banco está acordando... pode levar até 20 segundos.';
   }, 5000);
+  // Show reload button after 12s
+  const reloadBtnTimeout = setTimeout(() => {
+    const btn = document.getElementById('reloadDataBtn');
+    const sub = document.getElementById('loadingSubText');
+    if(btn) btn.style.display = 'block';
+    if(sub) sub.textContent = 'Demorando mais que o esperado.';
+  }, 12000);
   // Safety timeout — if loading takes more than 25s, render anyway
   const loadingTimeout = setTimeout(() => {
     console.warn('Loading timeout — rendering with available data');
@@ -2224,6 +2232,7 @@ async function loadAllData() {
   } finally {
     clearTimeout(loadingTimeout);
     clearTimeout(warnTimeout);
+    clearTimeout(reloadBtnTimeout);
     showLoadingOverlay(false);
   }
 }
@@ -2402,13 +2411,21 @@ function buildMonthPicker(mountId){
   prevBtn.onclick = (e) => {
     e.stopPropagation();
     const prev = shiftMonth(currentMonth, -1);
-    if(prev >= '2026-01'){ currentMonth = prev; renderAll(); }
+    if(prev >= '2026-01'){
+      currentMonth = prev;
+      refreshMonthPickers(); // update labels immediately
+      renderAll();
+    }
   };
   nextBtn.onclick = (e) => {
     e.stopPropagation();
     const next = shiftMonth(currentMonth, 1);
     const maxM = (new Date().getFullYear()+1) + '-12';
-    if(next <= maxM){ currentMonth = next; renderAll(); }
+    if(next <= maxM){
+      currentMonth = next;
+      refreshMonthPickers(); // update labels immediately
+      renderAll();
+    }
   };
 }
 monthMounts.forEach(buildMonthPicker);
@@ -2433,6 +2450,7 @@ function refreshMonthPickers(){
         e.stopPropagation();
         currentMonth = opt.dataset.m;
         panel.classList.remove('open');
+        refreshMonthPickers();
         renderAll();
       };
     });
@@ -2482,7 +2500,8 @@ function categorySums(key, tipo){
 
 // ===================== Sidebar =====================
 function renderSidebar(){
-  document.getElementById('sidebarSaldo').textContent = fmtBRL(DATA.saldoTotal);
+  const _saldo = document.getElementById('sidebarSaldo');
+  if(_saldo) _saldo.textContent = fmtBRL(DATA.saldoTotal);
   // Update user display
   if(currentUser){
     const email = currentUser.email || '';
@@ -2506,7 +2525,6 @@ function renderSidebar(){
       <div class="acct-item-val" style="color:${c.saldoAtual<0?'var(--negative)':'var(--text-2)'}">${fmtBRL(c.saldoAtual)}</div>
     </div>
   `).join('') || '<div style="font-size:12px;color:var(--text-3);padding:6px 10px">Nenhuma conta ativa</div>';
-  document.getElementById('sidebarSaldo').textContent = fmtBRL(DATA.saldoTotal);
 }
 
 // ===================== KPI animation =====================
@@ -2634,6 +2652,7 @@ function renderFluxoChart(key){
 // ===================== Donuts =====================
 let chartRecInst = null, chartDespInst = null;
 function renderDonut(canvasId, legendId, centerElId, entries, existingChart){
+  try {
   const ctx = document.getElementById(canvasId).getContext('2d');
   if(existingChart) existingChart.destroy();
   const centerEl = document.getElementById(centerElId);
@@ -2678,6 +2697,7 @@ function renderDonut(canvasId, legendId, centerElId, entries, existingChart){
     };
   });
   return chart;
+  } catch(e){ console.warn('Donut chart error:', e.message); return null; }
 }
 
 // ===================== Recent transactions (overview) =====================
@@ -3000,7 +3020,7 @@ function renderBudget(key){
     }).join('');
   }
 
-  const ctx = document.getElementById('chartBudget').getContext('2d');
+  try { const ctx = document.getElementById('chartBudget').getContext('2d');
   if(chartBudgetInst) chartBudgetInst.destroy();
   if(computed.length === 0) return;
   chartBudgetInst = new Chart(ctx, {
@@ -3021,7 +3041,7 @@ function renderBudget(key){
         y:{ grid:{display:false}, ticks:{color:chartColors().tickColor, font:{size:11.5}} }
       }
     }
-  });
+  }); } catch(e){ console.warn('Budget chart error:', e.message); }
 }
 
 // ===================== Pendencias view =====================
@@ -3172,9 +3192,9 @@ function renderView(view){
 }
 
 function renderAll(){
-  renderSidebar();
-  renderView(currentView);
-  refreshMonthPickers(); // refresh AFTER renderView (so nothing overwrites pickers)
+  try { renderSidebar(); } catch(e){ console.error('renderSidebar error:', e); }
+  try { renderView(currentView); } catch(e){ console.error('renderView error:', e); }
+  try { refreshMonthPickers(); } catch(e){ console.error('refreshMonthPickers error:', e); }
 }
 
 
