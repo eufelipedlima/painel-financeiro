@@ -3002,7 +3002,8 @@ function renderConfiguracoes(){
       const subHTML = !arq ? `<div style="margin:4px 0 6px 20px">
         ${subs.map(s=>`<div style="display:flex;align-items:center;gap:6px;padding:3px 6px;font-size:12px;color:var(--text-2)">
           <span style="color:var(--text-3)">└</span>${s.nome}
-          <button class="config-icon-btn danger cfg-arch" data-type="subcategoria" data-id="${s._dbId}" data-archived="false" data-nome="${s.nome}" style="width:20px;height:20px;margin-left:auto">${ARCH_SVG}</button>
+          <button class="config-icon-btn cfg-edit-sub" data-id="${s._dbId}" style="width:20px;height:20px;margin-left:auto">${EDIT_SVG}</button>
+          <button class="config-icon-btn danger cfg-arch" data-type="subcategoria" data-id="${s._dbId}" data-archived="false" data-nome="${s.nome}" style="width:20px;height:20px">${ARCH_SVG}</button>
         </div>`).join('')}
         ${subArq.length?`<div style="font-size:11px;color:var(--text-3);padding:3px 6px 3px 20px;cursor:pointer" class="cfg-subarch-toggle" data-cat="${c.categoria}">▸ Arquivadas (${subArq.length})</div>
         <div class="cfg-subarch-list" data-cat="${c.categoria}" style="display:none">${subArq.map(s=>`<div style="display:flex;align-items:center;gap:6px;padding:3px 6px 3px 20px;font-size:12px;color:var(--text-3)">
@@ -3034,6 +3035,7 @@ function renderConfiguracoes(){
     if(!catsEl.innerHTML) catsEl.innerHTML='<div class="empty-note">Nenhuma categoria.</div>';
     // Wire all clicks via event delegation
     catsEl.querySelectorAll('.cfg-edit-cat').forEach(btn=>btn.addEventListener('click',()=>editConfigCategoria(btn.dataset.id)));
+    catsEl.querySelectorAll('.cfg-edit-sub').forEach(btn=>btn.addEventListener('click',()=>editConfigSubcategoria(btn.dataset.id)));
     catsEl.querySelectorAll('.cfg-arch').forEach(btn=>btn.addEventListener('click',()=>archiveConfigItem(btn.dataset.type,btn.dataset.id,btn.dataset.archived==='true',btn.dataset.nome)));
     catsEl.querySelectorAll('.cfg-add-sub').forEach(btn=>btn.addEventListener('click',()=>openAddSubcategoria(btn.dataset.cat)));
     catsEl.querySelectorAll('.cfg-subarch-toggle').forEach(btn=>btn.addEventListener('click',()=>{
@@ -3048,11 +3050,50 @@ function openAddSubcategoria(categoriaNome){
   document.getElementById('configModalTitle').textContent = `Nova subcategoria — ${categoriaNome}`;
   document.getElementById('configModalLabel').textContent = 'Nome da subcategoria';
   document.getElementById('configModalName').value = '';
-  document.getElementById('configModalTipoGroup').style.display = 'none';
-  document.getElementById('configModalSaldoGroup').style.display = 'none';
-  document.getElementById('configModalLimiteGroup').style.display = 'none';
+  document.getElementById('configModalContaFields').style.display = 'none';
+  document.getElementById('configModalCartaoFields').style.display = 'none';
+  document.getElementById('configModalCatFields').style.display = 'none';
   document.getElementById('configModalOverlay').classList.add('open');
   setTimeout(()=>document.getElementById('configModalName').focus(), 100);
+}
+function editConfigSubcategoria(dbId){
+  const s = DATA.subcategorias.find(x=>x._dbId===dbId);
+  if(!s) return;
+  configMode='subcategoria'; configTipo=s.categoriaNome; configEditTarget=s;
+  document.getElementById('configModalTitle').textContent = `Editar subcategoria`;
+  document.getElementById('configModalLabel').textContent = 'Nome da subcategoria';
+  document.getElementById('configModalName').value = s.nome;
+  document.getElementById('configModalContaFields').style.display = 'none';
+  document.getElementById('configModalCartaoFields').style.display = 'none';
+  document.getElementById('configModalCatFields').style.display = 'none';
+  document.getElementById('configModalOverlay').classList.add('open');
+  setTimeout(()=>document.getElementById('configModalName').focus(), 100);
+}
+function editConfigConta(dbId){
+  const c = DATA.contas.find(x=>x._dbId===dbId);
+  if(!c) return;
+  configMode='conta'; configEditTarget=c;
+  document.getElementById('configModalTitle').textContent = 'Editar conta';
+  document.getElementById('configModalLabel').textContent = 'Nome da conta';
+  document.getElementById('configModalName').value = c.conta;
+  document.getElementById('configModalContaFields').style.display = '';
+  document.getElementById('configModalCartaoFields').style.display = 'none';
+  document.getElementById('configModalCatFields').style.display = 'none';
+  document.getElementById('configModalTipo').value = c.tipo;
+  document.getElementById('configModalOverlay').classList.add('open');
+}
+function editConfigCategoria(dbId){
+  const c = DATA.categorias.find(x=>x._dbId===dbId);
+  if(!c) return;
+  configMode='categoria'; configTipo=c.tipo; configEditTarget=c;
+  document.getElementById('configModalTitle').textContent = 'Editar categoria';
+  document.getElementById('configModalLabel').textContent = 'Nome da categoria';
+  document.getElementById('configModalName').value = c.categoria;
+  document.getElementById('configModalContaFields').style.display = 'none';
+  document.getElementById('configModalCartaoFields').style.display = 'none';
+  document.getElementById('configModalCatFields').style.display = '';
+  document.getElementById('configModalLimite').value = c.limite||0;
+  document.getElementById('configModalOverlay').classList.add('open');
 }
 function openAddConfig(mode, tipo=null){
   configMode = mode; configTipo = tipo; configEditTarget = null;
@@ -3070,30 +3111,6 @@ function openAddConfig(mode, tipo=null){
   if(mode==='categoria'){ document.getElementById('configModalLimite').value='0'; }
   document.getElementById('configModalOverlay').classList.add('open');
   setTimeout(()=>document.getElementById('configModalName').focus(), 100);
-}
-function editConfigConta(dbId){
-  const c = DATA.contas.find(x=>x._dbId===dbId);
-  if(!c) return;
-  configMode='conta'; configEditTarget=c;
-  document.getElementById('configModalTitle').textContent = 'Renomear conta';
-  document.getElementById('configModalName').value = c.conta;
-  document.getElementById('configModalTipoGroup').style.display = '';
-  document.getElementById('configModalSaldoGroup').style.display = 'none';
-  document.getElementById('configModalLimiteGroup').style.display = 'none';
-  document.getElementById('configModalTipo').value = c.tipo;
-  document.getElementById('configModalOverlay').classList.add('open');
-}
-function editConfigCategoria(dbId){
-  const c = DATA.categorias.find(x=>x._dbId===dbId);
-  if(!c) return;
-  configMode='categoria'; configTipo=c.tipo; configEditTarget=c;
-  document.getElementById('configModalTitle').textContent = 'Editar categoria';
-  document.getElementById('configModalName').value = c.categoria;
-  document.getElementById('configModalTipoGroup').style.display = 'none';
-  document.getElementById('configModalSaldoGroup').style.display = 'none';
-  document.getElementById('configModalLimiteGroup').style.display = '';
-  document.getElementById('configModalLimite').value = c.limite||0;
-  document.getElementById('configModalOverlay').classList.add('open');
 }
 function closeConfigModal(){
   document.getElementById('configModalOverlay').classList.remove('open');
@@ -3140,6 +3157,14 @@ async function saveConfigItem(){
   }
   if(configMode==='subcategoria'){
     const catNome = configTipo;
+    if(configEditTarget){
+      await db.from('subcategorias').update({nome}).eq('id', configEditTarget._dbId);
+      configEditTarget.nome = nome;
+      showToast(`Subcategoria renomeada para "${nome}".`);
+      closeConfigModal();
+      renderConfiguracoes();
+      return;
+    }
     const {data} = await db.from('subcategorias').insert({user_id:uid, categoria_nome:catNome, nome}).select().single();
     if(data) DATA.subcategorias.push({_dbId:data.id, categoriaNome:catNome, nome, arquivado:false});
     showToast(`Subcategoria "${nome}" adicionada.`);
