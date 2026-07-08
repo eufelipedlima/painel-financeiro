@@ -1188,6 +1188,28 @@
         </div>
         <div class="month-picker" id="monthPickerRoot2"></div>
       </div>
+      <!-- Date filter bar -->
+      <div class="trans-filter-bar">
+        <span class="trans-filter-label">Período:</span>
+        <div class="trans-presets">
+          <button class="trans-preset-btn active" data-preset="month" id="presetMes">Este mês</button>
+          <button class="trans-preset-btn" data-preset="week" id="presetSemana">Esta semana</button>
+          <button class="trans-preset-btn" data-preset="today" id="presetHoje">Hoje</button>
+          <button class="trans-preset-btn" data-preset="all" id="presetTodos">Todos</button>
+        </div>
+        <div class="trans-period-sel">
+          <select class="trans-sel" id="transMesSel">
+            <option value="1">Janeiro</option><option value="2">Fevereiro</option>
+            <option value="3">Março</option><option value="4">Abril</option>
+            <option value="5">Maio</option><option value="6">Junho</option>
+            <option value="7">Julho</option><option value="8">Agosto</option>
+            <option value="9">Setembro</option><option value="10">Outubro</option>
+            <option value="11">Novembro</option><option value="12">Dezembro</option>
+          </select>
+          <select class="trans-sel" id="transAnoSel"></select>
+        </div>
+      </div>
+
       <div class="subtab-bar">
         <button class="subtab active" data-subtab="todas">Todas</button>
         <button class="subtab pendentes" data-subtab="pendentes">⏱ Pendentes</button>
@@ -2068,7 +2090,7 @@ async function loadAllData() {
     // Rebuild months
     monthSet.clear();
     DATA.transacoes.forEach(t => monthSet.add(monthKey(parseDate(t.data))));
-    DATA.cartaoCompras.forEach(t => monthSet.add(monthKey(parseDate(t.data))));
+    DATA.cartaoCompras.forEach(t => monthSet.add(getCartaoFaturaMonth(t)));
     // Always include current month so dashboard renders even with no data
     monthSet.add(monthKey(new Date()));
     months.length = 0;
@@ -2289,7 +2311,22 @@ function refreshMonthPickers(){
 // ===================== Data helpers =====================
 function inMonth(dateStr, key){ return monthKey(parseDate(dateStr)) === key; }
 function getMonthTransacoes(key){ return DATA.transacoes.filter(t => inMonth(t.data, key)); }
-function getMonthCartao(key){ return DATA.cartaoCompras.filter(t => inMonth(t.data, key)); }
+function getCartaoFaturaMonth(compra){
+  const cartaoObj = DATA.cartoes.find(c => c.cartao === compra.cartao);
+  const d = parseDate(compra.data);
+  if(!cartaoObj || !cartaoObj.fechamento){
+    return monthKey(d);
+  }
+  const dia = d.getDate();
+  if(dia <= cartaoObj.fechamento){
+    return monthKey(d);
+  } else {
+    const next = new Date(d.getTime());
+    next.setMonth(next.getMonth() + 1);
+    return monthKey(next);
+  }
+}
+function getMonthCartao(key){ return DATA.cartaoCompras.filter(t => getCartaoFaturaMonth(t) === key); }
 
 function computeKPIs(key){
   const trans = getMonthTransacoes(key);
@@ -2529,6 +2566,8 @@ function getCombinedAll(){
 }
 function renderAllTable(){
   let rows = getCombinedAll();
+  // Apply date filter
+  rows = rows.filter(r => rowInTransFilter(r));
   if(typeFilter !== 'Todos') rows = rows.filter(r => r.tipo === typeFilter);
   const q = document.getElementById('searchInput').value.trim().toLowerCase();
   if(q) rows = rows.filter(r => (r.descricao||'').toLowerCase().includes(q) || (r.categoria||'').toLowerCase().includes(q));
@@ -2570,6 +2609,38 @@ function renderAllTable(){
   if(sumEl) sumEl.innerHTML = `${rows.length} lançamento${rows.length===1?'':'s'} · <strong style="color:var(--positive)">${fmtBRL(receitas)}</strong> entradas · <strong style="color:var(--negative)">${fmtBRL(despesas)}</strong> saídas`;
 }
 document.getElementById('searchInput').addEventListener('input', renderAllTable);
+
+// Wire date filter presets (deferred since elements are before script)
+setTimeout(()=>{
+  // Set initial month/year
+  const now = new Date();
+  const transMesSel = document.getElementById('transMesSel');
+  const transAnoSel = document.getElementById('transAnoSel');
+  if(transMesSel) transMesSel.value = now.getMonth()+1;
+  if(transAnoSel){
+    const thisYear = now.getFullYear();
+    for(let y=thisYear-3; y<=thisYear+1; y++){
+      const opt = document.createElement('option');
+      opt.value = y; opt.textContent = y;
+      if(y===thisYear) opt.selected = true;
+      transAnoSel.appendChild(opt);
+    }
+  }
+  // Preset buttons
+  document.querySelectorAll('.trans-preset-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=> setTransPreset(btn.dataset.preset));
+  });
+  // Month/Year selects
+  if(transMesSel) transMesSel.addEventListener('change', ()=>{
+    transFilterMonth = parseInt(transMesSel.value);
+    setTransPreset('custom');
+  });
+  if(transAnoSel) transAnoSel.addEventListener('change', ()=>{
+    transFilterYear = parseInt(transAnoSel.value);
+    setTransPreset('custom');
+  });
+  updateTransFilterLabel();
+}, 0);
 document.querySelectorAll('#typeChips .chip').forEach(chip => {
   chip.onclick = () => {
     document.querySelectorAll('#typeChips .chip').forEach(c=>c.classList.remove('active'));
@@ -2949,6 +3020,7 @@ function renderConfiguracoes(){
   const EDIT_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>`;
   const ARCH_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>`;
   const UNARCH_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><polyline points="10 14 12 12 14 14"/><line x1="12" y1="12" x2="12" y2="17"/></svg>`;
+  const TRASH_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>`;
 
   // ── Contas ──────────────────────────────────────────
   const contasEl = document.getElementById('configContas');
@@ -2956,20 +3028,19 @@ function renderConfiguracoes(){
     const ativas = DATA.contas.filter(c=>!c.arquivado);
     const arquivadas = DATA.contas.filter(c=>c.arquivado);
     const renderConta = (c, arq) => `
-      <div class="config-item" style="${arq?'opacity:.55':''}">
-        <div style="flex:1">
-          <div class="config-item-name">${c.conta} ${arq?'<span style="font-size:10px;color:var(--text-3)">(arquivada)</span>':''}</div>
-          <div class="config-item-sub">${c.tipo}${!arq?' · Saldo: '+fmtBRL(c.saldoAtual):''}</div>
+      <div class="cc-item${arq?' cat-row archived':''}">
+        <div class="cc-item-info">
+          <div class="cc-item-name">${c.conta}${arq?' <span style="font-size:10px;color:var(--text-3)">(arquivada)</span>':''}</div>
+          <div class="cc-item-sub">${c.tipo}${!arq?' · Saldo: '+fmtBRL(c.saldoAtual):''}</div>
         </div>
-        <div class="config-item-actions">
-          ${!arq?`<button class="config-icon-btn cfg-edit-conta" data-id="${c._dbId}" title="Renomear">${EDIT_SVG}</button>`:''}
-          <button class="config-icon-btn ${arq?'':'danger'} cfg-arch" data-type="conta" data-id="${c._dbId}" data-archived="${arq}" data-nome="${c.conta}" title="${arq?'Desarquivar':'Arquivar'}">${arq?UNARCH_SVG:ARCH_SVG}</button>
+        <div class="cc-item-actions">
+          ${!arq?`<button class="cat-action-btn cfg-edit-conta" data-id="${c._dbId}" title="Editar">${EDIT_SVG}</button>`:''}
+          <button class="cat-action-btn ${arq?'':'danger'} cfg-arch" data-type="conta" data-id="${c._dbId}" data-archived="${arq}" data-nome="${c.conta}" title="${arq?'Reativar':'Arquivar'}">${arq?UNARCH_SVG:ARCH_SVG}</button>
         </div>
       </div>`;
     contasEl.innerHTML = ativas.map(c=>renderConta(c,false)).join('')
-      + (arquivadas.length ? `<div style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:.8px;margin:14px 0 8px;font-weight:700">Arquivadas</div>`+arquivadas.map(c=>renderConta(c,true)).join('') : '')
-      || '<div class="empty-note">Nenhuma conta. Clique em + Adicionar.</div>';
-    // Wire clicks
+      + (arquivadas.length ? `<details style="margin-top:10px"><summary style="cursor:pointer;font-size:12px;color:var(--text-3);padding:4px 0">Arquivadas (${arquivadas.length})</summary><div style="margin-top:6px">${arquivadas.map(c=>renderConta(c,true)).join('')}</div></details>` : '')
+      || '<div class="empty-note">Nenhuma conta. Clique em + Adicionar conta.</div>';
     contasEl.querySelectorAll('.cfg-edit-conta').forEach(btn=>btn.addEventListener('click',()=>editConfigConta(btn.dataset.id)));
     contasEl.querySelectorAll('.cfg-arch').forEach(btn=>btn.addEventListener('click',()=>archiveConfigItem(btn.dataset.type,btn.dataset.id,btn.dataset.archived==='true',btn.dataset.nome)));
   }
@@ -2978,13 +3049,13 @@ function renderConfiguracoes(){
   const cartoesEl = document.getElementById('configCartoes');
   if(cartoesEl){
     cartoesEl.innerHTML = DATA.cartoes.length ? DATA.cartoes.map(c => `
-      <div class="config-item">
-        <div style="flex:1">
-          <div class="config-item-name">${c.cartao}</div>
-          <div class="config-item-sub">${c.banco||'Sem banco'} · Fechamento: dia ${c.fechamento||'?'} · Vence: dia ${c.vencimento||'?'} · Limite: ${fmtBRL(c.limite)}</div>
+      <div class="cc-item">
+        <div class="cc-item-info">
+          <div class="cc-item-name">${c.cartao}</div>
+          <div class="cc-item-sub">${c.banco||'Sem banco'} · Fecha dia ${c.fechamento||'?'} · Vence dia ${c.vencimento||'?'} · Limite ${fmtBRL(c.limite)}</div>
         </div>
-        <div class="config-item-actions">
-          <button class="config-icon-btn danger cfg-arch" data-type="cartao" data-id="${c._dbId}" data-archived="false" data-nome="${c.cartao}" title="Remover">${ARCH_SVG}</button>
+        <div class="cc-item-actions">
+          <button class="cat-action-btn danger cfg-arch" data-type="cartao" data-id="${c._dbId}" data-archived="false" data-nome="${c.cartao}" title="Remover">${TRASH_SVG}</button>
         </div>
       </div>`).join('') : '<div class="empty-note">Nenhum cartão. Clique em + Adicionar cartão.</div>';
     cartoesEl.querySelectorAll('.cfg-arch').forEach(btn=>btn.addEventListener('click',()=>archiveConfigItem(btn.dataset.type,btn.dataset.id,false,btn.dataset.nome)));
@@ -2999,48 +3070,52 @@ function renderConfiguracoes(){
       const tipo = c.tipo;
       const subs = DATA.subcategorias.filter(s=>s.categoriaNome===c.categoria&&!s.arquivado);
       const subArq = DATA.subcategorias.filter(s=>s.categoriaNome===c.categoria&&s.arquivado);
-      const subHTML = !arq ? `<div style="margin:4px 0 6px 20px">
-        ${subs.map(s=>`<div style="display:flex;align-items:center;gap:6px;padding:3px 6px;font-size:12px;color:var(--text-2)">
-          <span style="color:var(--text-3)">└</span>${s.nome}
-          <button class="config-icon-btn cfg-edit-sub" data-id="${s._dbId}" style="width:20px;height:20px;margin-left:auto">${EDIT_SVG}</button>
-          <button class="config-icon-btn danger cfg-arch" data-type="subcategoria" data-id="${s._dbId}" data-archived="false" data-nome="${s.nome}" style="width:20px;height:20px">${ARCH_SVG}</button>
-        </div>`).join('')}
-        ${subArq.length?`<div style="font-size:11px;color:var(--text-3);padding:3px 6px 3px 20px;cursor:pointer" class="cfg-subarch-toggle" data-cat="${c.categoria}">▸ Arquivadas (${subArq.length})</div>
-        <div class="cfg-subarch-list" data-cat="${c.categoria}" style="display:none">${subArq.map(s=>`<div style="display:flex;align-items:center;gap:6px;padding:3px 6px 3px 20px;font-size:12px;color:var(--text-3)">
-          ${s.nome}<button class="config-icon-btn cfg-arch" data-type="subcategoria" data-id="${s._dbId}" data-archived="true" data-nome="${s.nome}" style="width:20px;height:20px;margin-left:auto">${UNARCH_SVG}</button>
-        </div>`).join('')}</div>`:''}
-        <button class="cfg-add-sub" data-cat="${c.categoria}" style="font-size:11.5px;color:var(--accent-2);background:none;border:none;cursor:pointer;padding:3px 0 3px 20px;font-family:Inter,sans-serif;font-weight:600">+ subcategoria</button>
+      const subsHTML = !arq ? `
+        ${subs.map(s=>`<span class="sub-tag">
+          ${s.nome}
+          <button class="sub-tag-btn cfg-edit-sub" data-id="${s._dbId}" title="Editar">${EDIT_SVG}</button>
+          <button class="sub-tag-btn danger cfg-arch" data-type="subcategoria" data-id="${s._dbId}" data-archived="false" data-nome="${s.nome}" title="Arquivar">${ARCH_SVG}</button>
+        </span>`).join('')}
+        <button class="sub-add-btn cfg-add-sub" data-cat="${c.categoria}">+ sub</button>
+        ${subArq.length?`<button class="sub-add-btn cfg-subarch-toggle" data-cat="${c.categoria}" style="color:var(--text-3);border-color:var(--border-soft)">▸ ${subArq.length} arquivadas</button>`:``}` : '';
+      const subArqHTML = !arq && subArq.length ? `<div class="cfg-subarch-list" data-cat="${c.categoria}" style="display:none;flex-wrap:wrap;gap:5px;margin-top:6px;padding-top:6px;border-top:1px solid var(--border-soft)">
+        ${subArq.map(s=>`<span class="sub-tag" style="opacity:.6">${s.nome}<button class="sub-tag-btn cfg-arch" data-type="subcategoria" data-id="${s._dbId}" data-archived="true" data-nome="${s.nome}" title="Reativar">${UNARCH_SVG}</button></span>`).join('')}
       </div>` : '';
-      return `<div class="config-item" style="flex-direction:column;align-items:stretch;margin-bottom:4px${arq?';opacity:.55':''}">
-        <div style="display:flex;align-items:center;gap:8px;padding:2px 0">
-          <span class="config-tipo-badge ${tipo}">${tipo==='Transferência'?'Tra':tipo.slice(0,3)}</span>
-          <div style="flex:1;font-weight:500;font-size:13.5px">${c.categoria}${arq?' <span style="font-size:10px;color:var(--text-3)">(arquivada)</span>':''}</div>
-          ${c.limite>0&&!arq?`<div style="font-size:11.5px;color:var(--text-3)">R$ ${c.limite.toFixed(0)}/mês</div>`:''}
-          <div class="config-item-actions">
-            ${!arq?`<button class="config-icon-btn cfg-edit-cat" data-id="${c._dbId}" title="Editar">${EDIT_SVG}</button>`:''}
-            <button class="config-icon-btn ${arq?'':'danger'} cfg-arch" data-type="categoria" data-id="${c._dbId}" data-archived="${arq}" data-nome="${c.categoria}" title="${arq?'Reativar':'Arquivar'}">${arq?UNARCH_SVG:ARCH_SVG}</button>
+      return `<div class="cat-row${arq?' archived':''}">
+        <div class="cat-row-left">
+          <span class="config-tipo-badge ${tipo}" style="flex-shrink:0">${tipo==='Transferência'?'TRA':tipo==='Receita'?'REC':'DES'}</span>
+          <div>
+            <div class="cat-row-name">${c.categoria}</div>
+            ${c.limite>0&&!arq?`<div class="cat-row-limit">Limite: ${fmtBRL(c.limite)}/mês</div>`:''}
           </div>
         </div>
-        ${subHTML}
+        <div class="cat-row-subs">${subsHTML}${subArqHTML}</div>
+        <div class="cat-row-actions">
+          ${!arq?`<button class="cat-action-btn cfg-edit-cat" data-id="${c._dbId}" title="Editar">${EDIT_SVG}</button>`:''}
+          <button class="cat-action-btn ${arq?'':'danger'} cfg-arch" data-type="categoria" data-id="${c._dbId}" data-archived="${arq}" data-nome="${c.categoria}" title="${arq?'Reativar':'Arquivar'}">${arq?UNARCH_SVG:ARCH_SVG}</button>
+        </div>
       </div>`;
     };
     const grouped = {};
     ativas.forEach(c=>{ if(!grouped[c.tipo]) grouped[c.tipo]=[]; grouped[c.tipo].push(c); });
     catsEl.innerHTML = ['Receita','Despesa','Transferência'].filter(t=>grouped[t]?.length).map(tipo=>`
-      <div style="margin-bottom:18px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-3);margin-bottom:8px">${tipo}</div>
+      <div style="margin-bottom:20px">
+        <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-3);margin-bottom:8px">${tipo}</div>
         ${grouped[tipo].map(c=>renderCat(c,false)).join('')}
       </div>`).join('')
-      + (arquivadas.length?`<details style="margin-top:10px"><summary style="cursor:pointer;font-size:12px;color:var(--text-3);padding:6px 0">Arquivadas (${arquivadas.length})</summary><div style="margin-top:8px">${arquivadas.map(c=>renderCat(c,true)).join('')}</div></details>`:'');
+      + (arquivadas.length?`<details style="margin-top:12px"><summary style="cursor:pointer;font-size:12px;color:var(--text-3);padding:4px 0">Arquivadas (${arquivadas.length})</summary><div style="margin-top:8px">${arquivadas.map(c=>renderCat(c,true)).join('')}</div></details>`:'');
     if(!catsEl.innerHTML) catsEl.innerHTML='<div class="empty-note">Nenhuma categoria.</div>';
-    // Wire all clicks via event delegation
     catsEl.querySelectorAll('.cfg-edit-cat').forEach(btn=>btn.addEventListener('click',()=>editConfigCategoria(btn.dataset.id)));
     catsEl.querySelectorAll('.cfg-edit-sub').forEach(btn=>btn.addEventListener('click',()=>editConfigSubcategoria(btn.dataset.id)));
     catsEl.querySelectorAll('.cfg-arch').forEach(btn=>btn.addEventListener('click',()=>archiveConfigItem(btn.dataset.type,btn.dataset.id,btn.dataset.archived==='true',btn.dataset.nome)));
     catsEl.querySelectorAll('.cfg-add-sub').forEach(btn=>btn.addEventListener('click',()=>openAddSubcategoria(btn.dataset.cat)));
     catsEl.querySelectorAll('.cfg-subarch-toggle').forEach(btn=>btn.addEventListener('click',()=>{
       const list=catsEl.querySelector(`.cfg-subarch-list[data-cat="${btn.dataset.cat}"]`);
-      if(list){ list.style.display=list.style.display==='none'?'':'none'; btn.textContent=list.style.display===''?`▾ Arquivadas`:`▸ Arquivadas`; }
+      if(list){
+        const open=list.style.display==='none';
+        list.style.display=open?'flex':'none';
+        btn.textContent=open?`▾ ${btn.textContent.replace(/[▸▾]\s*/,'')} arquivadas`:`▸ ${btn.textContent.replace(/[▸▾]\s*/,'')} arquivadas`;
+      }
     }));
   }
 }
@@ -3292,6 +3367,60 @@ DATA.dividas = [];
 
 // ===================== Transações sub-tabs =====================
 let transSubtab = 'todas';
+
+// ── Transações date filter ──────────────────────────────────
+let transPreset = 'month'; // 'today','week','month','all','custom'
+let transFilterYear = new Date().getFullYear();
+let transFilterMonth = new Date().getMonth() + 1;
+
+function getTransDateRange(){
+  const now = new Date(); now.setHours(0,0,0,0);
+  if(transPreset === 'today'){
+    return { from: now, to: now };
+  }
+  if(transPreset === 'week'){
+    const from = new Date(now);
+    from.setDate(now.getDate() - now.getDay());
+    return { from, to: now };
+  }
+  if(transPreset === 'month' || transPreset === 'custom'){
+    const from = new Date(transFilterYear, transFilterMonth - 1, 1);
+    const to   = new Date(transFilterYear, transFilterMonth, 0);
+    return { from, to };
+  }
+  return null; // 'all'
+}
+
+function rowInTransFilter(row){
+  const range = getTransDateRange();
+  if(!range) return true;
+  const d = parseDate(row.data);
+  d.setHours(0,0,0,0);
+  return d >= range.from && d <= range.to;
+}
+
+function setTransPreset(preset, year, month){
+  transPreset = preset;
+  if(year) transFilterYear = year;
+  if(month) transFilterMonth = month;
+  // Update UI
+  document.querySelectorAll('.trans-preset-btn').forEach(b => b.classList.toggle('active', b.dataset.preset === preset));
+  const yearSel = document.getElementById('transAnoSel');
+  const monSel  = document.getElementById('transMesSel');
+  if(yearSel) yearSel.value = transFilterYear;
+  if(monSel)  monSel.value  = transFilterMonth;
+  renderAllTable();
+  updateTransFilterLabel();
+}
+
+function updateTransFilterLabel(){
+  const lbl = document.getElementById('transFilterLabel');
+  if(!lbl) return;
+  const labels = {today:'Hoje', week:'Esta semana', all:'Todos os lançamentos'};
+  if(labels[transPreset]){ lbl.textContent = labels[transPreset]; return; }
+  const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  lbl.textContent = `${meses[transFilterMonth-1]} de ${transFilterYear}`;
+}
 
 function showSubtab(name){
   transSubtab = name;
