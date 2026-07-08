@@ -863,6 +863,48 @@
   .mob-nav-item:hover{ color:var(--text-1); }
 
   /* ---------- Mobile overrides ---------- */
+
+  /* ── Configurações ── */
+  .config-section{ margin-bottom:28px; }
+  .config-section-title{ font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:15px; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between; }
+  .config-item{
+    display:flex; align-items:center; gap:10px; padding:11px 14px;
+    background:var(--surface-2); border:1px solid var(--border-soft); border-radius:10px;
+    margin-bottom:8px; transition:border-color .15s;
+  }
+  .config-item:hover{ border-color:#3A3F52; }
+  .config-item-name{ flex:1; font-size:13.5px; font-weight:500; }
+  .config-item-sub{ font-size:11.5px; color:var(--text-3); margin-top:2px; }
+  .config-item-actions{ display:flex; gap:6px; }
+  .config-icon-btn{
+    width:30px; height:30px; border-radius:7px; border:1px solid var(--border);
+    background:var(--surface-3); color:var(--text-3); cursor:pointer;
+    display:flex; align-items:center; justify-content:center; transition:.12s ease;
+  }
+  .config-icon-btn:hover{ background:var(--accent-soft); color:var(--accent-2); border-color:var(--accent); }
+  .config-icon-btn.danger:hover{ background:var(--negative-soft); color:var(--negative); border-color:var(--negative); }
+  .config-icon-btn svg{ width:13px; height:13px; }
+  .config-add-btn{
+    width:100%; padding:10px; border-radius:9px; border:1.5px dashed var(--border);
+    background:none; color:var(--text-2); font-size:13px; font-weight:500; cursor:pointer;
+    font-family:'Inter',sans-serif; transition:.15s ease; display:flex; align-items:center; justify-content:center; gap:7px;
+  }
+  .config-add-btn:hover{ border-color:var(--accent); color:var(--accent-2); background:var(--accent-soft); }
+
+  /* Config inline edit */
+  .config-edit-input{
+    flex:1; background:var(--surface-3); border:1.5px solid var(--accent);
+    color:var(--text-1); border-radius:7px; padding:5px 10px; font-size:13px;
+    font-family:'Inter',sans-serif; outline:none;
+  }
+  .config-tipo-badge{
+    font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px;
+    text-transform:uppercase; letter-spacing:.3px; flex-shrink:0;
+  }
+  .config-tipo-badge.Receita{ background:var(--positive-soft); color:var(--positive); }
+  .config-tipo-badge.Despesa{ background:var(--negative-soft); color:var(--negative); }
+  .config-tipo-badge.Transferência{ background:var(--accent-soft); color:var(--accent-2); }
+
   @media (max-width: 1000px){
     .sidebar{ display:none; }
     .mobile-nav{ display:grid; }
@@ -1046,6 +1088,10 @@
       <div class="nav-item" data-view="dividas">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/><path d="M14 15l1.5 1.5L18 13"/></svg>
         Dívidas
+      </div>
+      <div class="nav-item" data-view="configuracoes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        Configurações
       </div>
     </nav>
 
@@ -2747,6 +2793,8 @@ function renderView(view){
     renderMetas();
   } else if(view === 'dividas'){
     renderDividas();
+  } else if(view === 'configuracoes'){
+    renderConfiguracoes();
   }
 }
 
@@ -2754,6 +2802,174 @@ function renderAll(){
   refreshMonthPickers();
   renderSidebar();
   renderView(currentView);
+}
+
+
+// ===================== Configurações =====================
+let configMode = null; // 'conta' | 'cartao' | 'categoria'
+let configTipo = null;
+let configEditTarget = null;
+
+function renderConfiguracoes(){
+  // Contas
+  const contasEl = document.getElementById('configContas');
+  if(contasEl){
+    contasEl.innerHTML = DATA.contas.map(c => `
+      <div class="config-item" data-cid="${c._dbId}">
+        <div style="flex:1">
+          <div class="config-item-name">${c.conta}</div>
+          <div class="config-item-sub">${c.tipo} · Saldo: ${fmtBRL(c.saldoAtual)}</div>
+        </div>
+        <div class="config-item-actions">
+          <button class="config-icon-btn" onclick="editConfigConta('${c._dbId}')" title="Renomear">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>
+          </button>
+          <button class="config-icon-btn danger" onclick="deleteConfigItem('conta','${c._dbId}','${c.conta}')" title="Excluir">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+          </button>
+        </div>
+      </div>`).join('') || '<div class="empty-note">Nenhuma conta cadastrada.</div>';
+  }
+
+  // Cartões
+  const cartoesEl = document.getElementById('configCartoes');
+  if(cartoesEl){
+    cartoesEl.innerHTML = DATA.cartoes.map(c => `
+      <div class="config-item">
+        <div style="flex:1">
+          <div class="config-item-name">${c.cartao}</div>
+          <div class="config-item-sub">${c.banco||'Sem banco'} · Limite: ${fmtBRL(c.limite)}</div>
+        </div>
+        <div class="config-item-actions">
+          <button class="config-icon-btn danger" onclick="deleteConfigItem('cartao','${c._dbId}','${c.cartao}')" title="Excluir">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+          </button>
+        </div>
+      </div>`).join('') || '<div class="empty-note">Nenhum cartão cadastrado. Adicione na aba Cartão de Crédito.</div>';
+  }
+
+  // Categorias
+  const catsEl = document.getElementById('configCategorias');
+  if(catsEl){
+    const grouped = {};
+    DATA.categorias.forEach(c => { if(!grouped[c.tipo]) grouped[c.tipo]=[]; grouped[c.tipo].push(c); });
+    catsEl.innerHTML = ['Receita','Despesa','Transferência'].map(tipo => {
+      const cats = grouped[tipo]||[];
+      if(cats.length===0) return '';
+      return `<div style="margin-bottom:18px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-3);margin-bottom:8px">${tipo}</div>
+        ${cats.map(c => `
+          <div class="config-item" style="margin-bottom:6px">
+            <span class="config-tipo-badge ${tipo}">${tipo.slice(0,3)}</span>
+            <div class="config-item-name">${c.categoria}</div>
+            ${c.limite>0 ? `<div style="font-size:11.5px;color:var(--text-3)">Limite: ${fmtBRL(c.limite)}</div>` : ''}
+            <div class="config-item-actions">
+              <button class="config-icon-btn" onclick="editConfigCategoria('${c._dbId}')" title="Editar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>
+              </button>
+              <button class="config-icon-btn danger" onclick="deleteConfigItem('categoria','${c._dbId}','${c.categoria}')" title="Excluir">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+              </button>
+            </div>
+          </div>`).join('')}
+      </div>`;
+    }).join('');
+  }
+}
+
+function openAddConfig(mode, tipo=null){
+  configMode = mode; configTipo = tipo; configEditTarget = null;
+  const titles = {conta:'Adicionar conta', cartao:'Adicionar cartão', categoria:`Adicionar categoria (${tipo})`};
+  document.getElementById('configModalTitle').textContent = titles[mode]||'Adicionar';
+  document.getElementById('configModalName').value = '';
+  document.getElementById('configModalTipoGroup').style.display = mode==='conta' ? '' : 'none';
+  document.getElementById('configModalSaldoGroup').style.display = mode==='conta' ? '' : 'none';
+  document.getElementById('configModalLimiteGroup').style.display = mode==='categoria' ? '' : 'none';
+  document.getElementById('configModalLabel').textContent = mode==='cartao' ? 'Nome do cartão' : 'Nome';
+  document.getElementById('configModalSaldo').value = '0';
+  document.getElementById('configModalLimite').value = '0';
+  document.getElementById('configModalOverlay').classList.add('open');
+  setTimeout(()=>document.getElementById('configModalName').focus(), 100);
+}
+function editConfigConta(dbId){
+  const c = DATA.contas.find(x=>x._dbId===dbId);
+  if(!c) return;
+  configMode='conta'; configEditTarget=c;
+  document.getElementById('configModalTitle').textContent = 'Renomear conta';
+  document.getElementById('configModalName').value = c.conta;
+  document.getElementById('configModalTipoGroup').style.display = '';
+  document.getElementById('configModalSaldoGroup').style.display = 'none';
+  document.getElementById('configModalLimiteGroup').style.display = 'none';
+  document.getElementById('configModalTipo').value = c.tipo;
+  document.getElementById('configModalOverlay').classList.add('open');
+}
+function editConfigCategoria(dbId){
+  const c = DATA.categorias.find(x=>x._dbId===dbId);
+  if(!c) return;
+  configMode='categoria'; configTipo=c.tipo; configEditTarget=c;
+  document.getElementById('configModalTitle').textContent = 'Editar categoria';
+  document.getElementById('configModalName').value = c.categoria;
+  document.getElementById('configModalTipoGroup').style.display = 'none';
+  document.getElementById('configModalSaldoGroup').style.display = 'none';
+  document.getElementById('configModalLimiteGroup').style.display = '';
+  document.getElementById('configModalLimite').value = c.limite||0;
+  document.getElementById('configModalOverlay').classList.add('open');
+}
+function closeConfigModal(){
+  document.getElementById('configModalOverlay').classList.remove('open');
+  configEditTarget=null;
+}
+async function saveConfigItem(){
+  const nome = document.getElementById('configModalName').value.trim();
+  if(!nome){ showToast('Informe um nome.','error'); return; }
+  if(!currentUser) return;
+  const uid = currentUser.id;
+
+  if(configMode==='conta'){
+    const tipo = document.getElementById('configModalTipo').value;
+    if(configEditTarget){
+      configEditTarget.conta = nome; configEditTarget.tipo = tipo;
+      await db.from('contas').update({nome, tipo}).eq('id', configEditTarget._dbId);
+      showToast('Conta atualizada.');
+    } else {
+      const saldo = parseFloat(document.getElementById('configModalSaldo').value)||0;
+      const {data} = await db.from('contas').insert({user_id:uid, nome, tipo, saldo_inicial:saldo}).select().single();
+      if(data) DATA.contas.push({_dbId:data.id, conta:nome, tipo, saldoInicial:saldo, saldoAtual:saldo});
+      DATA.saldoTotal += saldo;
+      showToast(`Conta "${nome}" adicionada.`);
+    }
+  } else if(configMode==='categoria'){
+    const limite = parseFloat(document.getElementById('configModalLimite').value)||0;
+    if(configEditTarget){
+      configEditTarget.categoria = nome; configEditTarget.limite = limite;
+      await db.from('categorias').update({nome, limite_mensal:limite}).eq('id', configEditTarget._dbId);
+      showToast('Categoria atualizada.');
+    } else {
+      const {data} = await db.from('categorias').insert({user_id:uid, nome, tipo:configTipo, limite_mensal:limite}).select().single();
+      if(data) DATA.categorias.push({_dbId:data.id, categoria:nome, tipo:configTipo, limite, considerar:true});
+      showToast(`Categoria "${nome}" adicionada.`);
+    }
+  }
+  closeConfigModal();
+  renderAll();
+}
+async function deleteConfigItem(type, dbId, nome){
+  if(!confirm(`Excluir "${nome}"? Esta ação não pode ser desfeita.`)) return;
+  if(type==='conta'){
+    await db.from('contas').delete().eq('id', dbId);
+    DATA.contas = DATA.contas.filter(c=>c._dbId!==dbId);
+    DATA.saldoTotal = DATA.contas.reduce((s,c)=>s+c.saldoAtual,0);
+    showToast(`Conta "${nome}" excluída.`);
+  } else if(type==='cartao'){
+    await db.from('cartoes').delete().eq('id', dbId);
+    DATA.cartoes = DATA.cartoes.filter(c=>c._dbId!==dbId);
+    showToast(`Cartão "${nome}" excluído.`);
+  } else if(type==='categoria'){
+    await db.from('categorias').delete().eq('id', dbId);
+    DATA.categorias = DATA.categorias.filter(c=>c._dbId!==dbId);
+    showToast(`Categoria "${nome}" excluída.`);
+  }
+  renderAll();
 }
 
 // ===================== Status toggle helper =====================
@@ -3780,5 +3996,41 @@ renderAll();
   </button>
 </nav>
 
+
+<!-- Config add/edit modal -->
+<div class="cmodal-overlay" id="configModalOverlay" onclick="if(event.target===this)closeConfigModal()">
+  <div class="cmodal" style="width:380px">
+    <div class="cmodal-head">
+      <div class="cmodal-title" id="configModalTitle">Adicionar conta</div>
+      <button class="drawer-close" onclick="closeConfigModal()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="form-group">
+      <label class="form-label" id="configModalLabel">Nome</label>
+      <input type="text" class="form-input" id="configModalName" placeholder="">
+    </div>
+    <div class="form-group" id="configModalTipoGroup" style="display:none">
+      <label class="form-label">Tipo</label>
+      <select class="form-select" id="configModalTipo">
+        <option value="Conta Corrente">Conta Corrente</option>
+        <option value="Poupança">Poupança</option>
+        <option value="Carteira / Dinheiro">Carteira / Dinheiro</option>
+        <option value="Investimento">Investimento</option>
+        <option value="Outro">Outro</option>
+      </select>
+    </div>
+    <div class="form-group" id="configModalSaldoGroup" style="display:none">
+      <label class="form-label">Saldo inicial (R$)</label>
+      <input type="number" step="0.01" class="form-input" id="configModalSaldo" placeholder="0,00" value="0">
+    </div>
+    <div class="form-group" id="configModalLimiteGroup" style="display:none">
+      <label class="form-label">Limite mensal (R$) <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
+      <input type="number" step="0.01" min="0" class="form-input" id="configModalLimite" placeholder="0,00" value="0">
+    </div>
+    <div class="cmodal-actions">
+      <button class="btn btn-ghost" onclick="closeConfigModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveConfigItem()">Salvar</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
