@@ -1328,6 +1328,42 @@
     </div>
 
 
+    <!-- CONFIGURAÇÕES -->
+    <div class="view" id="view-configuracoes">
+      <div class="topbar">
+        <div>
+          <div class="page-title">Configurações</div>
+          <div class="page-sub">Gerencie suas contas, cartões e categorias</div>
+        </div>
+      </div>
+      <div class="grid-2b row-gap">
+        <div class="panel">
+          <div class="config-section-title">
+            Contas bancárias
+            <button class="btn btn-ghost" style="padding:7px 14px;font-size:12.5px;flex:none" onclick="openAddConfig('conta')">+ Adicionar</button>
+          </div>
+          <div id="configContas"></div>
+        </div>
+        <div class="panel">
+          <div class="config-section-title">
+            Cartões de crédito
+            <button class="btn btn-ghost" style="padding:7px 14px;font-size:12.5px;flex:none" onclick="openAddConfig('cartao')">+ Adicionar</button>
+          </div>
+          <div id="configCartoes"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="config-section-title">
+          Categorias
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost" style="padding:7px 14px;font-size:12.5px;flex:none" onclick="openAddConfig('categoria','Receita')">+ Receita</button>
+            <button class="btn btn-ghost" style="padding:7px 14px;font-size:12.5px;flex:none" onclick="openAddConfig('categoria','Despesa')">+ Despesa</button>
+          </div>
+        </div>
+        <div id="configCategorias"></div>
+      </div>
+    </div>
+
   </main>
 <!-- Pay invoice modal -->
 <div class="pay-modal-overlay" id="payModalOverlay">
@@ -2081,7 +2117,8 @@ document.querySelectorAll('.nav-item').forEach(item => {
     item.classList.add('active');
     document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
     currentView = item.dataset.view;
-    document.getElementById('view-'+currentView).classList.add('active');
+    const viewEl = document.getElementById('view-'+currentView);
+    if(viewEl) viewEl.classList.add('active');
     renderView(currentView);
   };
 });
