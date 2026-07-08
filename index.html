@@ -1909,9 +1909,9 @@ async function loadAllData() {
     ]);
 
     let nextId = 1;
-    DATA.contas = (cDb||[]).map(r => ({ _dbId:r.id, conta:r.nome, tipo:r.tipo, saldoInicial:+r.saldo_inicial||0, saldoAtual:0 }));
+    DATA.contas = (cDb||[]).map(r => ({ _dbId:r.id, conta:r.nome, tipo:r.tipo, saldoInicial:+r.saldo_inicial||0, saldoAtual:0, arquivado:r.arquivado||false }));
     DATA.cartoes = (krDb||[]).map(r => ({ _dbId:r.id, cartao:r.nome, banco:r.banco, limite:+r.limite||0, fechamento:r.dia_fechamento, vencimento:r.dia_vencimento }));
-    DATA.categorias = (catDb||[]).map(r => ({ _dbId:r.id, categoria:r.nome, tipo:r.tipo, limite:+r.limite_mensal||0, considerar:r.considerar_total }));
+    DATA.categorias = (catDb||[]).map(r => ({ _dbId:r.id, categoria:r.nome, tipo:r.tipo, limite:+r.limite_mensal||0, considerar:r.considerar_total, arquivado:r.arquivado||false }));
     DATA.transacoes = (trDb||[]).map(r => ({ _dbId:r.id, _id:nextId++, _source:'transacoes', data:r.data, descricao:r.descricao, tipo:r.tipo, categoria:r.categoria, conta:r.conta, contaDestino:r.conta_destino, formaPagamento:r.forma_pagamento, status:r.status, valor:+r.valor||0, obs:r.observacoes }));
     DATA.cartaoCompras = (ccDb||[]).map(r => ({ _dbId:r.id, _id:nextId++, _source:'cartaoCompras', data:r.data, descricao:r.descricao, categoria:r.categoria, cartao:r.cartao, parcela:r.parcela, valor:+r.valor||0, conferido:r.conferido, obs:r.observacoes }));
     DATA.faturas = (fatDb||[]).map(r => ({ _dbId:r.id, cartao:r.cartao, competencia:r.competencia, valorTotal:+r.valor_total||0, fechamento:r.data_fechamento, vencimento:r.data_vencimento, status:r.status }));
@@ -1932,7 +1932,7 @@ async function loadAllData() {
       else if(t.tipo==='Transferência') { sm[t.conta]=(+sm[t.conta]||0)-t.valor; if(t.contaDestino) sm[t.contaDestino]=(+sm[t.contaDestino]||0)+t.valor; }
     });
     DATA.contas.forEach(c => { c.saldoAtual = Math.round((sm[c.conta]||0)*100)/100; });
-    DATA.saldoTotal = DATA.contas.reduce((s,c)=>s+c.saldoAtual, 0);
+    DATA.saldoTotal = DATA.contas.filter(c=>!c.arquivado).reduce((s,c)=>s+c.saldoAtual, 0);
 
     // Rebuild months
     monthSet.clear();
@@ -2182,8 +2182,9 @@ function categorySums(key, tipo){
 // ===================== Sidebar =====================
 function renderSidebar(){
   document.getElementById('sidebarSaldo').textContent = fmtBRL(DATA.saldoTotal);
-  const maxAbs = Math.max(...DATA.contas.map(c => Math.abs(c.saldoAtual)), 1);
-  document.getElementById('acctList').innerHTML = DATA.contas.map(c => `
+  const contasAtivas = DATA.contas.filter(c=>!c.arquivado);
+  const maxAbs = Math.max(...contasAtivas.map(c => Math.abs(c.saldoAtual)), 1);
+  document.getElementById('acctList').innerHTML = contasAtivas.map(c => `
     <div class="acct-row">
       <div class="acct-bar" style="width:${Math.max((Math.abs(c.saldoAtual)/maxAbs)*100,3)}%"></div>
       <div class="acct-content"><span class="acct-name">${c.conta}</span><span class="acct-val">${fmtBRL(c.saldoAtual)}</span></div>
@@ -2811,69 +2812,72 @@ let configTipo = null;
 let configEditTarget = null;
 
 function renderConfiguracoes(){
-  // Contas
+  const EDIT_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>`;
+  const ARCH_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>`;
+  const UNARCH_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><polyline points="10 14 12 12 14 14"/><line x1="12" y1="12" x2="12" y2="17"/></svg>`;
+
+  // ── Contas ──────────────────────────────────────────
   const contasEl = document.getElementById('configContas');
   if(contasEl){
-    contasEl.innerHTML = DATA.contas.map(c => `
-      <div class="config-item" data-cid="${c._dbId}">
+    const ativas = DATA.contas.filter(c=>!c.arquivado);
+    const arquivadas = DATA.contas.filter(c=>c.arquivado);
+    const renderConta = (c, arq) => `
+      <div class="config-item" style="${arq?'opacity:.55':''}">
         <div style="flex:1">
-          <div class="config-item-name">${c.conta}</div>
-          <div class="config-item-sub">${c.tipo} · Saldo: ${fmtBRL(c.saldoAtual)}</div>
+          <div class="config-item-name">${c.conta} ${arq?'<span style="font-size:10px;color:var(--text-3)">(arquivada)</span>':''}</div>
+          <div class="config-item-sub">${c.tipo}${!arq?' · Saldo: '+fmtBRL(c.saldoAtual):''}</div>
         </div>
         <div class="config-item-actions">
-          <button class="config-icon-btn" onclick="editConfigConta('${c._dbId}')" title="Renomear">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>
-          </button>
-          <button class="config-icon-btn danger" onclick="deleteConfigItem('conta','${c._dbId}','${c.conta}')" title="Excluir">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
-          </button>
+          ${!arq?`<button class="config-icon-btn" onclick="editConfigConta('${c._dbId}')" title="Renomear">${EDIT_SVG}</button>`:''}
+          <button class="config-icon-btn ${arq?'':'danger'}" onclick="archiveConfigItem('conta','${c._dbId}',${arq},'${c.conta}')" title="${arq?'Desarquivar':'Arquivar'}">${arq?UNARCH_SVG:ARCH_SVG}</button>
         </div>
-      </div>`).join('') || '<div class="empty-note">Nenhuma conta cadastrada.</div>';
+      </div>`;
+    contasEl.innerHTML = ativas.map(c=>renderConta(c,false)).join('')
+      + (arquivadas.length ? `<div style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:.8px;margin:14px 0 8px;font-weight:700">Arquivadas</div>`+arquivadas.map(c=>renderConta(c,true)).join('') : '')
+      || '<div class="empty-note">Nenhuma conta. Clique em + Adicionar.</div>';
   }
 
-  // Cartões
+  // ── Cartões ─────────────────────────────────────────
   const cartoesEl = document.getElementById('configCartoes');
   if(cartoesEl){
-    cartoesEl.innerHTML = DATA.cartoes.map(c => `
+    cartoesEl.innerHTML = DATA.cartoes.length ? DATA.cartoes.map(c => `
       <div class="config-item">
         <div style="flex:1">
           <div class="config-item-name">${c.cartao}</div>
-          <div class="config-item-sub">${c.banco||'Sem banco'} · Limite: ${fmtBRL(c.limite)}</div>
+          <div class="config-item-sub">${c.banco||'Sem banco definido'} · Limite: ${fmtBRL(c.limite)}</div>
         </div>
         <div class="config-item-actions">
-          <button class="config-icon-btn danger" onclick="deleteConfigItem('cartao','${c._dbId}','${c.cartao}')" title="Excluir">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
-          </button>
+          <button class="config-icon-btn danger" onclick="archiveConfigItem('cartao','${c._dbId}',false,'${c.cartao}')" title="Arquivar">${ARCH_SVG}</button>
         </div>
-      </div>`).join('') || '<div class="empty-note">Nenhum cartão cadastrado. Adicione na aba Cartão de Crédito.</div>';
+      </div>`).join('') : '<div class="empty-note">Nenhum cartão. Adicione na aba Cartão de Crédito.</div>';
   }
 
-  // Categorias
+  // ── Categorias ───────────────────────────────────────
   const catsEl = document.getElementById('configCategorias');
   if(catsEl){
-    const grouped = {};
-    DATA.categorias.forEach(c => { if(!grouped[c.tipo]) grouped[c.tipo]=[]; grouped[c.tipo].push(c); });
-    catsEl.innerHTML = ['Receita','Despesa','Transferência'].map(tipo => {
-      const cats = grouped[tipo]||[];
-      if(cats.length===0) return '';
-      return `<div style="margin-bottom:18px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-3);margin-bottom:8px">${tipo}</div>
-        ${cats.map(c => `
-          <div class="config-item" style="margin-bottom:6px">
-            <span class="config-tipo-badge ${tipo}">${tipo.slice(0,3)}</span>
-            <div class="config-item-name">${c.categoria}</div>
-            ${c.limite>0 ? `<div style="font-size:11.5px;color:var(--text-3)">Limite: ${fmtBRL(c.limite)}</div>` : ''}
-            <div class="config-item-actions">
-              <button class="config-icon-btn" onclick="editConfigCategoria('${c._dbId}')" title="Editar">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>
-              </button>
-              <button class="config-icon-btn danger" onclick="deleteConfigItem('categoria','${c._dbId}','${c.categoria}')" title="Excluir">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
-              </button>
-            </div>
-          </div>`).join('')}
+    const ativas = DATA.categorias.filter(c=>!c.arquivado);
+    const arquivadas = DATA.categorias.filter(c=>c.arquivado);
+    const renderCat = (c, arq) => {
+      const tipo = c.tipo;
+      return `<div class="config-item" style="margin-bottom:6px${arq?';opacity:.55':''}">
+        <span class="config-tipo-badge ${tipo}">${tipo==='Transferência'?'Tra':tipo.slice(0,3)}</span>
+        <div class="config-item-name" style="flex:1">${c.categoria} ${arq?'<span style="font-size:10px;color:var(--text-3)">(arquivada)</span>':''}</div>
+        ${c.limite>0&&!arq?`<div style="font-size:11.5px;color:var(--text-3);margin-right:8px">R$ ${c.limite.toFixed(0)}/mês</div>`:''}
+        <div class="config-item-actions">
+          ${!arq?`<button class="config-icon-btn" onclick="editConfigCategoria('${c._dbId}')" title="Editar">${EDIT_SVG}</button>`:''}
+          <button class="config-icon-btn ${arq?'':'danger'}" onclick="archiveConfigItem('categoria','${c._dbId}',${arq},'${c.categoria}')" title="${arq?'Desarquivar':'Arquivar'}">${arq?UNARCH_SVG:ARCH_SVG}</button>
+        </div>
       </div>`;
-    }).join('');
+    };
+    const grouped = {};
+    ativas.forEach(c=>{ if(!grouped[c.tipo]) grouped[c.tipo]=[]; grouped[c.tipo].push(c); });
+    catsEl.innerHTML = ['Receita','Despesa','Transferência'].filter(t=>grouped[t]?.length).map(tipo=>`
+      <div style="margin-bottom:18px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-3);margin-bottom:8px">${tipo}</div>
+        ${grouped[tipo].map(c=>renderCat(c,false)).join('')}
+      </div>`).join('')
+      + (arquivadas.length ? `<details style="margin-top:10px"><summary style="cursor:pointer;font-size:12px;color:var(--text-3);padding:6px 0">Arquivadas (${arquivadas.length})</summary><div style="margin-top:8px">${arquivadas.map(c=>renderCat(c,true)).join('')}</div></details>` : '');
+    if(!catsEl.innerHTML) catsEl.innerHTML = '<div class="empty-note">Nenhuma categoria. Clique em + Receita ou + Despesa.</div>';
   }
 }
 
@@ -2953,23 +2957,30 @@ async function saveConfigItem(){
   closeConfigModal();
   renderAll();
 }
-async function deleteConfigItem(type, dbId, nome){
-  if(!confirm(`Excluir "${nome}"? Esta ação não pode ser desfeita.`)) return;
-  if(type==='conta'){
-    await db.from('contas').delete().eq('id', dbId);
-    DATA.contas = DATA.contas.filter(c=>c._dbId!==dbId);
-    DATA.saldoTotal = DATA.contas.reduce((s,c)=>s+c.saldoAtual,0);
-    showToast(`Conta "${nome}" excluída.`);
-  } else if(type==='cartao'){
-    await db.from('cartoes').delete().eq('id', dbId);
-    DATA.cartoes = DATA.cartoes.filter(c=>c._dbId!==dbId);
-    showToast(`Cartão "${nome}" excluído.`);
-  } else if(type==='categoria'){
-    await db.from('categorias').delete().eq('id', dbId);
-    DATA.categorias = DATA.categorias.filter(c=>c._dbId!==dbId);
-    showToast(`Categoria "${nome}" excluída.`);
-  }
-  renderAll();
+async function archiveConfigItem(type, dbId, isArchived, nome){
+  const action = isArchived ? 'desarquivar' : 'arquivar';
+  const newState = !isArchived;
+  try {
+    if(type==='conta'){
+      await db.from('contas').update({arquivado: newState}).eq('id', dbId);
+      const c = DATA.contas.find(x=>x._dbId===dbId);
+      if(c) c.arquivado = newState;
+      showToast(`Conta "${nome}" ${newState?'arquivada':'reativada'}.`);
+    } else if(type==='cartao'){
+      // cartoes don't have arquivado column — just delete if no transactions
+      if(!isArchived && confirm(`Excluir o cartão "${nome}"? Os lançamentos existentes são mantidos.`)){
+        await db.from('cartoes').delete().eq('id', dbId);
+        DATA.cartoes = DATA.cartoes.filter(c=>c._dbId!==dbId);
+        showToast(`Cartão "${nome}" removido.`);
+      }
+    } else if(type==='categoria'){
+      await db.from('categorias').update({arquivado: newState}).eq('id', dbId);
+      const c = DATA.categorias.find(x=>x._dbId===dbId);
+      if(c) c.arquivado = newState;
+      showToast(`Categoria "${nome}" ${newState?'arquivada':'reativada'}.`);
+    }
+  } catch(e){ showToast('Erro ao atualizar.','error'); console.error(e); }
+  renderConfiguracoes();
 }
 
 // ===================== Status toggle helper =====================
@@ -3555,7 +3566,7 @@ function setFormType(type){
   if(!isTransf){
     const tipoFiltro = isCartao ? 'Despesa' : type;
     const cats = DATA.categorias.filter(c =>
-      c.tipo === tipoFiltro && c.categoria !== 'Pagamento Fatura Cartão'
+      c.tipo === tipoFiltro && c.categoria !== 'Pagamento Fatura Cartão' && !c.arquivado
     );
     document.getElementById('fCategoria').innerHTML =
       cats.map(c => `<option value="${c.categoria}">${c.categoria}</option>`).join('');
@@ -3563,7 +3574,7 @@ function setFormType(type){
   document.getElementById('fContaGroup').style.display = isCartao ? 'none' : '';
   document.getElementById('fCartaoGroup').style.display = isCartao ? '' : 'none';
   document.getElementById('fContaDestinoGroup').style.display = isTransf ? '' : 'none';
-  const contaOpts = DATA.contas.map(c =>
+  const contaOpts = DATA.contas.filter(c=>!c.arquivado).map(c =>
     `<option value="${c.conta}">${c.conta}  (${fmtBRL(c.saldoAtual)})</option>`
   ).join('');
   document.getElementById('fConta').innerHTML = contaOpts;
