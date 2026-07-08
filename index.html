@@ -2206,9 +2206,9 @@ async function loadAllData() {
     monthSet.clear();
     DATA.transacoes.forEach(t => monthSet.add(monthKey(parseDate(t.data))));
     DATA.cartaoCompras.forEach(t => monthSet.add(getCartaoFaturaMonth(t)));
-    // Seed with current year months
+    // Seed months from Jan 2026 forward
     const _now = new Date(); const _base = _now.getFullYear();
-    for(let _y=_base-1;_y<=_base+1;_y++) for(let _m=1;_m<=12;_m++) monthSet.add(_y+'-'+String(_m).padStart(2,'0'));
+    for(let _y=2026;_y<=_base+1;_y++) for(let _m=1;_m<=12;_m++) monthSet.add(_y+'-'+String(_m).padStart(2,'0'));
     DATA.transacoes.forEach(t => monthSet.add(monthKey(parseDate(t.data))));
     DATA.cartaoCompras.forEach(t => monthSet.add(getCartaoFaturaMonth(t)));
     months.length = 0;
@@ -2344,8 +2344,9 @@ const monthSet = new Set();
 // Always include all months for current year and neighbors so picker always works
 (function seedMonths(){
   const now = new Date();
-  const base = now.getFullYear();
-  for(let y = base-1; y <= base+1; y++){
+  const thisYear = now.getFullYear();
+  // Start from Jan 2026, go to end of next year
+  for(let y = 2026; y <= thisYear + 1; y++){
     for(let m = 1; m <= 12; m++){
       monthSet.add(y+'-'+String(m).padStart(2,'0'));
     }
@@ -2410,6 +2411,7 @@ function buildMonthPicker(mountId){
   };
 }
 monthMounts.forEach(buildMonthPicker);
+refreshMonthPickers(); // populate labels immediately after building
 document.addEventListener('click', () => {
   document.querySelectorAll('.mp-panel').forEach(p=>p.classList.remove('open'));
   document.querySelectorAll('.mp-btn').forEach(b=>b.classList.remove('open'));
@@ -3147,7 +3149,6 @@ function renderView(view){
     chartDespInst = renderDonut('chartDespesas','legendDespesas','donutCenterDesp', categorySums(currentMonth,'Despesa'), chartDespInst);
     renderRecent(currentMonth);
   } else if(view === 'transacoes'){
-    buildMonthPicker('monthPickerRoot5');
     showSubtab(transSubtab || 'todas');
   } else if(view === 'cartao'){
     renderFaturaTotal(currentMonth);
@@ -3165,9 +3166,9 @@ function renderView(view){
 }
 
 function renderAll(){
-  refreshMonthPickers();
   renderSidebar();
   renderView(currentView);
+  refreshMonthPickers(); // refresh AFTER renderView (so nothing overwrites pickers)
 }
 
 
