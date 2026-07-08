@@ -1754,11 +1754,23 @@ async function handleAuth() {
       if(pass !== confirm) { errEl.textContent = 'As senhas não coincidem.'; btn.disabled=false; btn.textContent='Criar conta'; return; }
       result = await db.auth.signUp({ email, password: pass });
       if(!result.error && result.data.user) {
+        currentUser = result.data.user;
         errEl.style.color='var(--positive)';
         errEl.textContent = 'Conta criada! Entrando...';
+        setTimeout(async () => {
+          showAppScreen();
+          await loadAllData();
+        }, 500);
+        return;
       }
     } else {
       result = await db.auth.signInWithPassword({ email, password: pass });
+      if(!result.error && result.data.user) {
+        currentUser = result.data.user;
+        showAppScreen();
+        await loadAllData();
+        return;
+      }
     }
     if(result.error) {
       errEl.style.color='var(--negative)';
@@ -1774,18 +1786,8 @@ document.addEventListener('keydown', e => {
   if(e.key==='Enter' && document.getElementById('loginOverlay').style.display!=='none') handleAuth();
 });
 async function handleLogout() {
-  await db.auth.signOut();
-  DATA.contas=[]; DATA.cartoes=[]; DATA.categorias=[]; DATA.transacoes=[];
-  DATA.cartaoCompras=[]; DATA.faturas=[]; DATA.metas=[]; DATA.dividas=[];
-  DATA.saldoTotal=0;
-  document.getElementById('appRoot').style.display='none';
-  document.getElementById('loginOverlay').style.display='flex';
-  document.getElementById('loginError').textContent='';
-  document.getElementById('loginEmail').value='';
-  document.getElementById('loginPass').value='';
-  document.getElementById('loginBtn').textContent='Entrar';
-  document.getElementById('loginBtn').disabled=false;
-  showLoginTab('login');
+  try { await db.auth.signOut(); } catch(e) { console.warn('signout:', e); }
+  window.location.reload();
 }
 
 // ── App show/hide ────────────────────────────────────
