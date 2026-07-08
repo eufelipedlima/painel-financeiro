@@ -2664,27 +2664,70 @@ function renderFaturaTotal(key){
 
 function renderInvoices(key){
   const grid = document.getElementById('invoiceGrid');
-  let faturasDoMes = DATA.faturas.filter(f => f.competencia && f.competencia.slice(0,7) === key);
-  if(cardFilter !== 'Todos') faturasDoMes = faturasDoMes.filter(f => f.cartao === cardFilter);
-  if(faturasDoMes.length === 0){ grid.innerHTML = '<div class="empty-note">Nenhuma fatura cadastrada para este mês.</div>'; return; }
-  grid.innerHTML = `<div class="invoice-list" style="margin-top:0">${faturasDoMes.map((f,i) => `
+
+  // Build invoice list from actual purchases (not just paid records)
+  const comprasMes = getMonthCartao(key);
+  const perCard = {};
+  comprasMes.forEach(c => {
+    if(!perCard[c.cartao]) perCard[c.cartao] = {cartao:c.cartao, total:0, compras:0};
+    perCard[c.cartao].total += c.valor;
+    perCard[c.cartao].compras++;
+  });
+
+  // Merge with any existing fatura records (for paid status)
+  const faturasPagas = DATA.faturas.filter(f => f.competencia && f.competencia.slice(0,7) === key);
+  const faturaStatusMap = {};
+  faturasPagas.forEach(f => { faturaStatusMap[f.cartao] = f; });
+
+  // Merge: show cartões with purchases + mark as paid if fatura exists
+  let items = Object.values(perCard).map(c => {
+    const fat = faturaStatusMap[c.cartao];
+    const cartaoObj = DATA.cartoes.find(k => k.cartao === c.cartao);
+    return {
+      cartao: c.cartao,
+      total: c.total,
+      compras: c.compras,
+      status: fat?.status || 'Pendente',
+      _dbId: fat?._dbId,
+      competencia: key + '-01',
+      fechamento: cartaoObj?.fechamento,
+      vencimento: cartaoObj?.vencimento,
+    };
+  });
+
+  // Also include paid faturas for cartões with no purchases this month (historical)
+  faturasPagas.forEach(f => {
+    if(!perCard[f.cartao]) items.push({...f, total:f.valorTotal, compras:0});
+  });
+
+  if(cardFilter !== 'Todos') items = items.filter(f => f.cartao === cardFilter);
+
+  if(items.length === 0){
+    grid.innerHTML = '<div class="empty-note" style="font-size:12.5px">Nenhuma compra lançada neste mês.</div>';
+    return;
+  }
+
+  grid.innerHTML = `<div class="invoice-list" style="margin-top:0">${items.map((f,i) => `
     <div class="invoice-row ${f.cartao===cardFilter?'selected':''}" data-card="${f.cartao}">
       <div class="inv-row-name">
         <span class="inv-row-dot" style="background:${CAT_COLORS[i % CAT_COLORS.length]}"></span>
         ${f.cartao}
       </div>
-      <div class="inv-row-value">${fmtBRL(f.valorTotal)}</div>
+      <div class="inv-row-value">${fmtBRL(f.total)}</div>
       <div class="inv-row-meta">
-        <span>Fecha ${fmtDateBR(f.fechamento)}</span>
-        <span>Vence ${fmtDateBR(f.vencimento)}</span>
+        ${f.fechamento?`<span>Fecha dia ${f.fechamento}</span>`:''}
+        ${f.vencimento?`<span>Vence dia ${f.vencimento}</span>`:''}
+        <span>${f.compras} compra${f.compras!==1?'s':''}</span>
       </div>
       <div><span class="inv-status-pill ${f.status}" style="margin:0">${f.status}</span></div>
       ${f.status !== 'Pago' ? `
-        <button class="invoice-pay-btn" style="width:auto;margin:0;padding:7px 14px;font-size:12px" data-cartao="${f.cartao}" data-comp="${f.competencia}" data-valor="${f.valorTotal}">
+        <button class="invoice-pay-btn" style="width:auto;margin:0;padding:7px 14px;font-size:12px"
+          data-cartao="${f.cartao}" data-comp="${f.competencia}" data-valor="${f.total}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
-          Pagar
-        </button>` : `<div></div>`}
+          Pagar fatura
+        </button>` : `<div style="font-size:11.5px;color:var(--positive)">✓ Paga</div>`}
     </div>`).join('')}</div>`;
+
   grid.querySelectorAll('.invoice-row').forEach(row => {
     row.onclick = (e) => {
       if(e.target.closest('.invoice-pay-btn')) return;
@@ -2986,10 +3029,10 @@ let configEditTarget = null;
 
 function renderConfiguracoes(){
   if(configTab==='perfil'){ renderPerfil(); return; }
-  const EDIT_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>`;
-  const ARCH_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>`;
-  const UNARCH_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><polyline points="10 14 12 12 14 14"/><line x1="12" y1="12" x2="12" y2="17"/></svg>`;
-  const TRASH_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>`;
+  const EDIT_SVG = `✎`;
+  const ARCH_SVG = `⊟`;
+  const UNARCH_SVG = `⊕`;
+  const TRASH_SVG = `✕`;
 
   // ── Contas ──────────────────────────────────────────
   const contasEl = document.getElementById('configContas');
