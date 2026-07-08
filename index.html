@@ -1050,7 +1050,8 @@
 <!-- Loading overlay -->
 <div id="loadingOverlay">
   <div class="loading-spinner"></div>
-  <div class="loading-text">Carregando seus dados...</div>
+  <div class="loading-text" id="loadingText">Carregando seus dados...</div>
+  <div style="font-size:12px;color:var(--text-3);margin-top:6px" id="loadingSubText">Conectando ao banco de dados...</div>
 </div>
 
 <div class="app" id="appRoot" style="display:none">
@@ -2000,12 +2001,17 @@ async function ensureDefaults(uid) {
 // ── Load all data from Supabase ──────────────────────
 async function loadAllData() {
   showLoadingOverlay(true);
-  // Safety timeout — if loading takes more than 8s, render anyway
+  // Warn after 5s that it's taking long (Supabase waking up)
+  const warnTimeout = setTimeout(() => {
+    const sub = document.getElementById('loadingSubText');
+    if(sub) sub.textContent = 'O banco está acordando... pode levar até 20 segundos na primeira vez.';
+  }, 5000);
+  // Safety timeout — if loading takes more than 25s, render anyway
   const loadingTimeout = setTimeout(() => {
     console.warn('Loading timeout — rendering with available data');
     showLoadingOverlay(false);
     renderAll();
-  }, 8000);
+  }, 25000);
   try {
     const uid = currentUser.id;
     await ensureDefaults(uid);
@@ -2076,6 +2082,7 @@ async function loadAllData() {
     renderAll();
   } finally {
     clearTimeout(loadingTimeout);
+    clearTimeout(warnTimeout);
     showLoadingOverlay(false);
   }
 }
@@ -3156,7 +3163,19 @@ function showConfigTab(tab){
     b.classList.toggle('active', b.dataset.ctab===tab);
   });
   if(tab==='perfil') renderPerfil();
-  else if(tab==='contas'||tab==='cartoes'||tab==='categorias') renderConfiguracoes();
+  else if(tab==='contas'||tab==='cartoes'||tab==='categorias'){
+    // If data is empty, may need to reload
+    if(DATA.contas.length===0 && tab==='contas'){
+      document.getElementById('configContas').innerHTML = `
+        <div style="text-align:center;padding:30px 20px">
+          <div style="color:var(--text-2);margin-bottom:14px">Os dados ainda não carregaram.</div>
+          <button class="btn btn-primary" style="max-width:200px" onclick="loadAllData()">🔄 Recarregar dados</button>
+        </div>`;
+      document.getElementById('configTabContas').style.display = '';
+      return;
+    }
+    renderConfiguracoes();
+  }
 }
 // Sub-tab onclick wired directly in HTML
 // Wire config sub-tabs via event delegation on the bar
