@@ -1883,14 +1883,17 @@ async function loadAllData() {
     monthSet.clear();
     DATA.transacoes.forEach(t => monthSet.add(monthKey(parseDate(t.data))));
     DATA.cartaoCompras.forEach(t => monthSet.add(monthKey(parseDate(t.data))));
+    // Always include current month so dashboard renders even with no data
+    monthSet.add(monthKey(new Date()));
     months.length = 0;
     months.push(...Array.from(monthSet).sort());
-    currentMonth = months.length > 0 ? months[months.length-1] : monthKey(new Date());
+    currentMonth = months[months.length-1];
 
     renderAll();
   } catch(e) {
     console.error('Load error:', e);
     showToast('Erro ao carregar dados. Verifique sua conexão.', 'error');
+    renderAll(); // render anyway to hide loading
   } finally {
     showLoadingOverlay(false);
   }
