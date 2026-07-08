@@ -4250,18 +4250,29 @@ document.getElementById('syncExportBtn').onclick = () => {
   showToast(`${pendingSync.length} lançamento(s) exportado(s) em CSV.`);
 };
 // ===================== Theme toggle =====================
-let lightMode = false;
+// ── Theme: default light, persisted in localStorage ──────────
+const savedTheme = localStorage.getItem('pf-theme') || 'light';
+let lightMode = savedTheme === 'light';
+document.documentElement.classList.toggle('light', lightMode);
+
+function applyThemeUI(){
+  document.getElementById('themeLabel').textContent = lightMode ? 'Modo escuro' : 'Modo claro';
+  const icon = document.getElementById('themeIcon');
+  if(icon){
+    icon.innerHTML = lightMode
+      ? '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>'
+      : '<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>';
+  }
+  const knob = document.querySelector('.toggle-knob');
+  if(knob) knob.style.transform = lightMode ? 'translateX(18px)' : 'translateX(0)';
+}
+applyThemeUI();
+
 document.getElementById('themeToggle').onclick = () => {
   lightMode = !lightMode;
   document.documentElement.classList.toggle('light', lightMode);
-  document.getElementById('themeLabel').textContent = lightMode ? 'Modo escuro' : 'Modo claro';
-  const icon = document.getElementById('themeIcon');
-  if(lightMode){
-    icon.innerHTML = '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>';
-  } else {
-    icon.innerHTML = '<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>';
-  }
-  // Rebuild charts with new theme colors
+  localStorage.setItem('pf-theme', lightMode ? 'light' : 'dark');
+  applyThemeUI();
   renderView(currentView);
 };
 
