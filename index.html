@@ -2401,13 +2401,14 @@ function buildMonthPicker(mountId){
   };
   prevBtn.onclick = (e) => {
     e.stopPropagation();
-    const idx = months.indexOf(currentMonth);
-    if(idx > 0){ currentMonth = months[idx-1]; renderAll(); }
+    const prev = shiftMonth(currentMonth, -1);
+    if(prev >= '2026-01'){ currentMonth = prev; renderAll(); }
   };
   nextBtn.onclick = (e) => {
     e.stopPropagation();
-    const idx = months.indexOf(currentMonth);
-    if(idx < months.length-1){ currentMonth = months[idx+1]; renderAll(); }
+    const next = shiftMonth(currentMonth, 1);
+    const maxM = (new Date().getFullYear()+1) + '-12';
+    if(next <= maxM){ currentMonth = next; renderAll(); }
   };
 }
 monthMounts.forEach(buildMonthPicker);
@@ -2422,11 +2423,10 @@ function refreshMonthPickers(){
     const panel = document.getElementById(mountId+'-panel');
     if(!label) return;
     label.textContent = monthLabel(currentMonth).replace(/^\w/, c=>c.toUpperCase());
-    const idx = months.indexOf(currentMonth);
-  const prevA = document.getElementById(mountId+'-prev');
-  const nextA = document.getElementById(mountId+'-next');
-  if(prevA) prevA.disabled = idx <= 0;
-  if(nextA) nextA.disabled = idx >= months.length-1;
+    const prevA = document.getElementById(mountId+'-prev');
+    const nextA = document.getElementById(mountId+'-next');
+    if(prevA) prevA.disabled = currentMonth <= '2026-01';
+    if(nextA) nextA.disabled = currentMonth >= (new Date().getFullYear()+1) + '-12';
   panel.innerHTML = months.map(m => `<div class="mp-opt ${m===currentMonth?'active':''}" data-m="${m}">${monthLabel(m)}</div>`).join('');
     panel.querySelectorAll('.mp-opt').forEach(opt => {
       opt.onclick = (e) => {
@@ -2498,11 +2498,15 @@ function renderSidebar(){
   const ACCT_COLORS = ['#6C63FF','#2DD4A7','#FFB454','#FF7A72','#4EA8DE','#C084FC'];
   const contasAtivas = DATA.contas.filter(c=>!c.arquivado);
   document.getElementById('acctList').innerHTML = contasAtivas.map((c,i) => `
-    <div class="acct-row">
-      <div class="acct-bar" style="width:${Math.max((Math.abs(c.saldoAtual)/maxAbs)*100,3)}%"></div>
-      <div class="acct-content"><span class="acct-name">${c.conta}</span><span class="acct-val">${fmtBRL(c.saldoAtual)}</span></div>
+    <div class="acct-item" data-conta="${c.conta}">
+      <div class="acct-item-dot" style="background:${ACCT_COLORS[i%ACCT_COLORS.length]}"></div>
+      <div class="acct-item-info">
+        <div class="acct-item-name">${c.conta}</div>
+      </div>
+      <div class="acct-item-val" style="color:${c.saldoAtual<0?'var(--negative)':'var(--text-2)'}">${fmtBRL(c.saldoAtual)}</div>
     </div>
-  `).join('');
+  `).join('') || '<div style="font-size:12px;color:var(--text-3);padding:6px 10px">Nenhuma conta ativa</div>';
+  document.getElementById('sidebarSaldo').textContent = fmtBRL(DATA.saldoTotal);
 }
 
 // ===================== KPI animation =====================
@@ -2576,6 +2580,7 @@ function chartColors(){
 }
 
 function renderFluxoChart(key){
+  try {
   const [y,m] = key.split('-').map(Number);
   const daysInMonth = new Date(y, m, 0).getDate();
   const trans = getMonthTransacoes(key);
@@ -2623,6 +2628,7 @@ function renderFluxoChart(key){
       }
     }
   });
+  } catch(e){ console.warn('Chart error:', e.message); }
 }
 
 // ===================== Donuts =====================
@@ -4328,7 +4334,8 @@ document.getElementById('syncExportBtn').onclick = () => {
 };
 // ===================== Theme toggle =====================
 // ── Theme: default light, persisted in localStorage ──────────
-const savedTheme = localStorage.getItem('pf-theme') || 'light';
+let savedTheme = 'light';
+try { savedTheme = localStorage.getItem('pf-theme') || 'light'; } catch(e) {}
 let lightMode = savedTheme === 'light';
 document.documentElement.classList.toggle('light', lightMode);
 
@@ -4348,7 +4355,7 @@ applyThemeUI();
 document.getElementById('themeToggle').onclick = () => {
   lightMode = !lightMode;
   document.documentElement.classList.toggle('light', lightMode);
-  localStorage.setItem('pf-theme', lightMode ? 'light' : 'dark');
+  try { localStorage.setItem('pf-theme', lightMode ? 'light' : 'dark'); } catch(e) {}
   applyThemeUI();
   renderView(currentView);
 };
