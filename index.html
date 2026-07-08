@@ -1057,7 +1057,7 @@
       <div class="sidebar-user-label">Logado como</div>
       <div class="sidebar-user-email" id="sidebarUserEmail">—</div>
     </div>
-    <button class="logout-btn" onclick="handleLogout()">
+    <button class="logout-btn" id="logoutBtn">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       Sair da conta
     </button>
@@ -3723,6 +3723,17 @@ document.querySelectorAll('.nav-item').forEach(item => {
 });
 
 // Metas/Dívidas buttons wired via inline onclick in HTML
+
+// Logout button — wired directly to avoid event interception
+const logoutBtnEl = document.getElementById('logoutBtn');
+if(logoutBtnEl) {
+  logoutBtnEl.addEventListener('click', async function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    try { await db.auth.signOut(); } catch(err) { console.warn(err); }
+    window.location.reload();
+  });
+}
 
 document.getElementById('fabBtn').onclick = openDrawer;
 document.getElementById('drawerClose').onclick = closeDrawer;
