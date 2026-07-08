@@ -1089,10 +1089,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/><path d="M14 15l1.5 1.5L18 13"/></svg>
         Dívidas
       </div>
-      <div class="nav-item" data-view="configuracoes">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-        Configurações
-      </div>
+
     </nav>
 
     <div class="sidebar-divider"></div>
@@ -1107,6 +1104,11 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       Sair da conta
     </button>
+    <div class="sidebar-divider" style="margin:8px 4px"></div>
+    <div class="nav-item" data-view="configuracoes" style="margin-bottom:4px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      Configurações
+    </div>
     <button class="theme-toggle" id="themeToggle">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" id="themeIcon"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
       <span id="themeLabel">Modo claro</span>
@@ -1330,37 +1332,80 @@
 
     <!-- CONFIGURAÇÕES -->
     <div class="view" id="view-configuracoes">
-      <div class="topbar">
-        <div>
-          <div class="page-title">Configurações</div>
-          <div class="page-sub">Gerencie suas contas, cartões e categorias</div>
+      <div class="topbar" style="margin-bottom:20px">
+        <div><div class="page-title">Configurações</div></div>
+      </div>
+      <div class="subtab-bar" id="configSubtabs" style="margin-bottom:20px">
+        <button class="subtab active" data-ctab="perfil">👤 Perfil</button>
+        <button class="subtab" data-ctab="contas">🏦 Contas</button>
+        <button class="subtab" data-ctab="cartoes">💳 Cartões</button>
+        <button class="subtab" data-ctab="categorias">🏷️ Categorias</button>
+      </div>
+
+      <!-- Perfil -->
+      <div id="configTabPerfil">
+        <div class="panel" style="max-width:560px">
+          <div class="panel-head"><div class="panel-title">Perfil da conta</div></div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Nome</label>
+              <input type="text" class="form-input" id="perfilNome" placeholder="Seu nome">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Sobrenome</label>
+              <input type="text" class="form-input" id="perfilSobrenome" placeholder="Seu sobrenome">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">E-mail</label>
+            <input type="text" class="form-input" id="perfilEmail" disabled style="opacity:.6;cursor:not-allowed">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Telefone</label>
+            <input type="text" class="form-input" id="perfilTelefone" placeholder="(11) 99999-9999">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Biografia <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
+            <textarea class="form-input" id="perfilBio" rows="3" placeholder="Escreva uma breve descrição sobre você..." style="resize:vertical;min-height:80px"></textarea>
+          </div>
+          <button class="btn btn-primary" style="max-width:200px" onclick="savePerfil()">Salvar perfil</button>
         </div>
       </div>
-      <div class="grid-2b row-gap">
+
+      <!-- Contas -->
+      <div id="configTabContas" style="display:none">
         <div class="panel">
           <div class="config-section-title">
             Contas bancárias
-            <button class="btn btn-ghost" style="padding:7px 14px;font-size:12.5px;flex:none" onclick="openAddConfig('conta')">+ Adicionar</button>
+            <button class="btn btn-ghost" style="padding:7px 14px;font-size:12.5px;flex:none" onclick="openAddConfig('conta')">+ Adicionar conta</button>
           </div>
           <div id="configContas"></div>
         </div>
+      </div>
+
+      <!-- Cartões -->
+      <div id="configTabCartoes" style="display:none">
         <div class="panel">
           <div class="config-section-title">
             Cartões de crédito
-            <button class="btn btn-ghost" style="padding:7px 14px;font-size:12.5px;flex:none" onclick="openAddConfig('cartao')">+ Adicionar</button>
+            <button class="btn btn-ghost" style="padding:7px 14px;font-size:12.5px;flex:none" onclick="openAddConfig('cartao')">+ Adicionar cartão</button>
           </div>
           <div id="configCartoes"></div>
         </div>
       </div>
-      <div class="panel">
-        <div class="config-section-title">
-          Categorias
-          <div style="display:flex;gap:8px">
-            <button class="btn btn-ghost" style="padding:7px 14px;font-size:12.5px;flex:none" onclick="openAddConfig('categoria','Receita')">+ Receita</button>
-            <button class="btn btn-ghost" style="padding:7px 14px;font-size:12.5px;flex:none" onclick="openAddConfig('categoria','Despesa')">+ Despesa</button>
+
+      <!-- Categorias -->
+      <div id="configTabCategorias" style="display:none">
+        <div class="panel">
+          <div class="config-section-title">
+            Categorias
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-ghost" style="padding:7px 14px;font-size:12.5px;flex:none" onclick="openAddConfig('categoria','Receita')">+ Receita</button>
+              <button class="btn btn-ghost" style="padding:7px 14px;font-size:12.5px;flex:none" onclick="openAddConfig('categoria','Despesa')">+ Despesa</button>
+            </div>
           </div>
+          <div id="configCategorias"></div>
         </div>
-        <div id="configCategorias"></div>
       </div>
     </div>
 
@@ -1915,7 +1960,10 @@ async function ensureDefaults(uid) {
       {user_id:uid, nome:'Pagamento Fatura Cartão', tipo:'Despesa', limite_mensal:0},
       {user_id:uid, nome:'Transferência entre Contas', tipo:'Transferência', limite_mensal:0},
     ]);
-    // Default subcategorias
+  }
+  // Check subcategorias independently (may be empty even if other defaults exist)
+  const { data: subCheck } = await db.from('subcategorias').select('id').limit(1);
+  if(!subCheck || subCheck.length === 0) {
     await db.from('subcategorias').insert([
       {user_id:uid, categoria_nome:'Alimentação', nome:'Supermercado'},
       {user_id:uid, categoria_nome:'Alimentação', nome:'Restaurante'},
@@ -1994,6 +2042,10 @@ async function loadAllData() {
     const parcMap = {};
     (ppDb||[]).forEach(r => { if(!parcMap[r.divida_id]) parcMap[r.divida_id]=[]; parcMap[r.divida_id].push({ _dbId:r.id, numero:r.numero, valorParcela:+r.valor_parcela||0, dataVencimento:r.data_vencimento, status:r.status }); });
     DATA.dividas = (dvDb||[]).map(r => ({ _dbId:r.id, _id:nextId++, nome:r.nome, credor:r.credor, valorTotal:+r.valor_total||0, valorRestante:+r.valor_restante||0, valorEntrada:+r.valor_entrada||0, numParcelas:r.num_parcelas, valorParcela:+r.valor_parcela||0, frequencia:r.frequencia, taxa:+r.taxa||0, dataInicio:r.data_inicio, conta:r.conta, status:r.status, modalidade:r.modalidade, parcelas:parcMap[r.id]||[] }));
+
+    // Load perfil
+    const {data: perfilDb} = await safe(db.from('perfis').select('*').eq('user_id', uid).single());
+    DATA.perfil = perfilDb ? { _dbId:perfilDb.id, nome:perfilDb.nome||'', sobrenome:perfilDb.sobrenome||'', telefone:perfilDb.telefone||'', biografia:perfilDb.biografia||'' } : {};
 
     // Calculate saldos from transactions
     const sm = {};
@@ -2124,7 +2176,7 @@ db.auth.onAuthStateChange(async (event, session) => {
   // If no session, loginOverlay is already visible (default)
 })();
 
-const DATA = { saldoTotal:0, contas:[], cartoes:[], categorias:[], subcategorias:[], transacoes:[], cartaoCompras:[], faturas:[], metas:[], dividas:[] };
+const DATA = { saldoTotal:0, contas:[], cartoes:[], categorias:[], subcategorias:[], transacoes:[], cartaoCompras:[], faturas:[], metas:[], dividas:[], perfil:{} };
 
 const MESES_PT = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
 const CAT_COLORS = ["#6C63FF","#2DD4A7","#FF7A72","#FFB454","#5AA9E6","#C77DFF","#4FD1C5","#F2994A","#9BA1B0","#E56399","#7BC67E","#B08D57"];
@@ -2869,7 +2921,7 @@ function renderView(view){
   } else if(view === 'dividas'){
     renderDividas();
   } else if(view === 'configuracoes'){
-    renderConfiguracoes();
+    showConfigTab(configTab);
   }
 }
 
@@ -2886,6 +2938,7 @@ let configTipo = null;
 let configEditTarget = null;
 
 function renderConfiguracoes(){
+  if(configTab==='perfil'){ renderPerfil(); return; }
   const EDIT_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>`;
   const ARCH_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>`;
   const UNARCH_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><polyline points="10 14 12 12 14 14"/><line x1="12" y1="12" x2="12" y2="17"/></svg>`;
@@ -2968,15 +3021,18 @@ function openAddSubcategoria(categoriaNome){
 }
 function openAddConfig(mode, tipo=null){
   configMode = mode; configTipo = tipo; configEditTarget = null;
-  const titles = {conta:'Adicionar conta', cartao:'Adicionar cartão', categoria:`Adicionar categoria (${tipo})`};
+  const titles = {conta:'Adicionar conta bancária', cartao:'Adicionar cartão de crédito', categoria:`Nova categoria — ${tipo||'Despesa'}`};
   document.getElementById('configModalTitle').textContent = titles[mode]||'Adicionar';
   document.getElementById('configModalName').value = '';
-  document.getElementById('configModalTipoGroup').style.display = mode==='conta' ? '' : 'none';
-  document.getElementById('configModalSaldoGroup').style.display = mode==='conta' ? '' : 'none';
-  document.getElementById('configModalLimiteGroup').style.display = mode==='categoria' ? '' : 'none';
-  document.getElementById('configModalLabel').textContent = mode==='cartao' ? 'Nome do cartão' : 'Nome';
-  document.getElementById('configModalSaldo').value = '0';
-  document.getElementById('configModalLimite').value = '0';
+  document.getElementById('configModalLabel').textContent = mode==='cartao' ? 'Nome do cartão' : mode==='conta' ? 'Nome da conta' : 'Nome da categoria';
+  // Show/hide field groups
+  document.getElementById('configModalContaFields').style.display = mode==='conta' ? '' : 'none';
+  document.getElementById('configModalCartaoFields').style.display = mode==='cartao' ? '' : 'none';
+  document.getElementById('configModalCatFields').style.display = mode==='categoria' ? '' : 'none';
+  // Reset values
+  if(mode==='conta'){ document.getElementById('configModalSaldo').value='0'; document.getElementById('configModalTipo').value='Conta Corrente'; }
+  if(mode==='cartao'){ document.getElementById('configModalBanco').value=''; document.getElementById('configModalFechamento').value=''; document.getElementById('configModalVencimento').value=''; document.getElementById('configModalLimiteCartao').value='0'; }
+  if(mode==='categoria'){ document.getElementById('configModalLimite').value='0'; }
   document.getElementById('configModalOverlay').classList.add('open');
   setTimeout(()=>document.getElementById('configModalName').focus(), 100);
 }
@@ -3027,6 +3083,14 @@ async function saveConfigItem(){
       DATA.saldoTotal += saldo;
       showToast(`Conta "${nome}" adicionada.`);
     }
+  } else if(configMode==='cartao'){
+    const banco = document.getElementById('configModalBanco').value.trim()||null;
+    const fechamento = parseInt(document.getElementById('configModalFechamento').value)||null;
+    const vencimento = parseInt(document.getElementById('configModalVencimento').value)||null;
+    const limite = parseFloat(document.getElementById('configModalLimiteCartao').value)||0;
+    const {data} = await db.from('cartoes').insert({user_id:uid, nome, banco, dia_fechamento:fechamento, dia_vencimento:vencimento, limite}).select().single();
+    if(data) DATA.cartoes.push({_dbId:data.id, cartao:nome, banco, fechamento, vencimento, limite});
+    showToast(`Cartão "${nome}" adicionado.`);
   } else if(configMode==='categoria'){
     const limite = parseFloat(document.getElementById('configModalLimite').value)||0;
     if(configEditTarget){
@@ -3078,6 +3142,55 @@ async function archiveConfigItem(type, dbId, isArchived, nome){
     }
   } catch(e){ showToast('Erro ao atualizar.','error'); console.error(e); }
   renderConfiguracoes();
+}
+
+// ===================== Configurações sub-tabs =====================
+let configTab = 'perfil';
+function showConfigTab(tab){
+  configTab = tab;
+  ['perfil','contas','cartoes','categorias'].forEach(t=>{
+    const el=document.getElementById('configTab'+t.charAt(0).toUpperCase()+t.slice(1));
+    if(el) el.style.display = t===tab ? '' : 'none';
+  });
+  document.querySelectorAll('#configSubtabs .subtab').forEach(b=>{
+    b.classList.toggle('active', b.dataset.ctab===tab);
+  });
+  if(tab==='perfil') renderPerfil();
+  else if(tab==='contas'||tab==='cartoes'||tab==='categorias') renderConfiguracoes();
+}
+setTimeout(()=>{
+  document.querySelectorAll('#configSubtabs .subtab').forEach(btn=>{
+    btn.onclick = ()=> showConfigTab(btn.dataset.ctab);
+  });
+},0);
+
+// ===================== Perfil =====================
+function renderPerfil(){
+  const emailEl = document.getElementById('perfilEmail');
+  if(emailEl && currentUser) emailEl.value = currentUser.email||'';
+  const p = DATA.perfil||{};
+  const nomeEl=document.getElementById('perfilNome'); if(nomeEl) nomeEl.value=p.nome||'';
+  const sobEl=document.getElementById('perfilSobrenome'); if(sobEl) sobEl.value=p.sobrenome||'';
+  const telEl=document.getElementById('perfilTelefone'); if(telEl) telEl.value=p.telefone||'';
+  const bioEl=document.getElementById('perfilBio'); if(bioEl) bioEl.value=p.biografia||'';
+}
+async function savePerfil(){
+  if(!currentUser) return;
+  const nome=document.getElementById('perfilNome').value.trim();
+  const sobrenome=document.getElementById('perfilSobrenome').value.trim();
+  const telefone=document.getElementById('perfilTelefone').value.trim();
+  const biografia=document.getElementById('perfilBio').value.trim();
+  const row={user_id:currentUser.id, nome, sobrenome, telefone, biografia};
+  try{
+    if(DATA.perfil._dbId){
+      await db.from('perfis').update(row).eq('id', DATA.perfil._dbId);
+    } else {
+      const {data}=await db.from('perfis').upsert(row).select().single();
+      if(data) DATA.perfil._dbId=data.id;
+    }
+    DATA.perfil={...DATA.perfil, nome, sobrenome, telefone, biografia};
+    showToast('Perfil salvo com sucesso.');
+  }catch(e){ showToast('Erro ao salvar perfil.','error'); console.error(e); }
 }
 
 // ===================== Status toggle helper =====================
@@ -4133,7 +4246,7 @@ renderAll();
 
 <!-- Config add/edit modal -->
 <div class="cmodal-overlay" id="configModalOverlay" onclick="if(event.target===this)closeConfigModal()">
-  <div class="cmodal" style="width:380px">
+  <div class="cmodal" style="width:420px">
     <div class="cmodal-head">
       <div class="cmodal-title" id="configModalTitle">Adicionar conta</div>
       <button class="drawer-close" onclick="closeConfigModal()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
@@ -4142,23 +4255,50 @@ renderAll();
       <label class="form-label" id="configModalLabel">Nome</label>
       <input type="text" class="form-input" id="configModalName" placeholder="">
     </div>
-    <div class="form-group" id="configModalTipoGroup" style="display:none">
-      <label class="form-label">Tipo</label>
-      <select class="form-select" id="configModalTipo">
-        <option value="Conta Corrente">Conta Corrente</option>
-        <option value="Poupança">Poupança</option>
-        <option value="Carteira / Dinheiro">Carteira / Dinheiro</option>
-        <option value="Investimento">Investimento</option>
-        <option value="Outro">Outro</option>
-      </select>
+    <!-- Conta fields -->
+    <div id="configModalContaFields" style="display:none">
+      <div class="form-group">
+        <label class="form-label">Tipo</label>
+        <select class="form-select" id="configModalTipo">
+          <option value="Conta Corrente">Conta Corrente</option>
+          <option value="Poupança">Poupança</option>
+          <option value="Carteira / Dinheiro">Carteira / Dinheiro</option>
+          <option value="Investimento">Investimento</option>
+          <option value="Outro">Outro</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Saldo inicial (R$)</label>
+        <input type="number" step="0.01" class="form-input" id="configModalSaldo" placeholder="0,00" value="0">
+      </div>
     </div>
-    <div class="form-group" id="configModalSaldoGroup" style="display:none">
-      <label class="form-label">Saldo inicial (R$)</label>
-      <input type="number" step="0.01" class="form-input" id="configModalSaldo" placeholder="0,00" value="0">
+    <!-- Cartão fields -->
+    <div id="configModalCartaoFields" style="display:none">
+      <div class="form-group">
+        <label class="form-label">Banco / Instituição <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
+        <input type="text" class="form-input" id="configModalBanco" placeholder="Ex: Itaú, Nubank, C6...">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Dia de fechamento</label>
+          <input type="number" min="1" max="31" class="form-input" id="configModalFechamento" placeholder="Ex: 15">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Dia de vencimento</label>
+          <input type="number" min="1" max="31" class="form-input" id="configModalVencimento" placeholder="Ex: 22">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Limite (R$) <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
+        <input type="number" step="0.01" min="0" class="form-input" id="configModalLimiteCartao" placeholder="0,00" value="0">
+      </div>
     </div>
-    <div class="form-group" id="configModalLimiteGroup" style="display:none">
-      <label class="form-label">Limite mensal (R$) <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
-      <input type="number" step="0.01" min="0" class="form-input" id="configModalLimite" placeholder="0,00" value="0">
+    <!-- Categoria fields -->
+    <div id="configModalCatFields" style="display:none">
+      <div class="form-group">
+        <label class="form-label">Limite mensal (R$) <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
+        <input type="number" step="0.01" min="0" class="form-input" id="configModalLimite" placeholder="0,00" value="0">
+      </div>
     </div>
     <div class="cmodal-actions">
       <button class="btn btn-ghost" onclick="closeConfigModal()">Cancelar</button>
