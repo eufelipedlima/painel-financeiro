@@ -1040,10 +1040,10 @@
   .cc-item-actions{ display:flex; gap:6px; flex-shrink:0; }
 
   .cat-row{
-    display:flex; align-items:flex-start; gap:10px; padding:10px 14px;
+    display:flex; align-items:center; gap:10px; padding:10px 14px;
     border-radius:10px; border:1px solid var(--border-soft);
     background:var(--surface-2); margin-bottom:6px;
-    transition:border-color .12s ease;
+    transition:border-color .12s ease; flex-wrap:wrap;
   }
   .cat-row:hover{ border-color:#3A3F52; }
   .cat-row.archived{ opacity:.5; }
@@ -1082,6 +1082,21 @@
   }
   .cat-action-btn:hover{ background:var(--accent-soft); color:var(--accent-2); border-color:var(--accent); }
   .cat-action-btn.danger:hover{ background:var(--negative-soft); color:var(--negative); border-color:var(--negative); }
+
+
+  .cat-row-sub-toggle{
+    display:inline-flex; align-items:center; gap:5px; padding:3px 10px;
+    background:var(--surface-3); border:1px solid var(--border); border-radius:20px;
+    font-size:12px; color:var(--text-3); cursor:pointer; transition:.12s ease;
+    font-family:'Inter',sans-serif; font-weight:600; user-select:none;
+  }
+  .cat-row-sub-toggle:hover{ border-color:#3A3F52; color:var(--text-1); }
+  .cat-row-sub-toggle.open{ border-color:var(--accent-soft); color:var(--accent-2); background:var(--accent-soft); }
+  .cat-row-subs-panel{
+    display:none; flex-wrap:wrap; gap:5px; padding:8px 10px;
+    border-top:1px solid var(--border-soft); margin-top:6px;
+  }
+  .cat-row-subs-panel.open{ display:flex; }
 
 </style>
 </head>
@@ -3140,17 +3155,19 @@ function renderConfiguracoes(){
       const tipo = c.tipo;
       const subs = DATA.subcategorias.filter(s=>s.categoriaNome===c.categoria&&!s.arquivado);
       const subArq = DATA.subcategorias.filter(s=>s.categoriaNome===c.categoria&&s.arquivado);
-      const subsHTML = !arq ? `
-        ${subs.map(s=>`<span class="sub-tag">
-          ${s.nome}
-          <button class="sub-tag-btn cfg-edit-sub" data-id="${s._dbId}" title="Editar">${EDIT_SVG}</button>
-          <button class="sub-tag-btn danger cfg-arch" data-type="subcategoria" data-id="${s._dbId}" data-archived="false" data-nome="${s.nome}" title="Arquivar">${ARCH_SVG}</button>
-        </span>`).join('')}
-        <button class="sub-add-btn cfg-add-sub" data-cat="${c.categoria}">+ sub</button>
-        ${subArq.length?`<button class="sub-add-btn cfg-subarch-toggle" data-cat="${c.categoria}" style="color:var(--text-3);border-color:var(--border-soft)">▸ ${subArq.length} arquivadas</button>`:``}` : '';
-      const subArqHTML = !arq && subArq.length ? `<div class="cfg-subarch-list" data-cat="${c.categoria}" style="display:none;flex-wrap:wrap;gap:5px;margin-top:6px;padding-top:6px;border-top:1px solid var(--border-soft)">
-        ${subArq.map(s=>`<span class="sub-tag" style="opacity:.6">${s.nome}<button class="sub-tag-btn cfg-arch" data-type="subcategoria" data-id="${s._dbId}" data-archived="true" data-nome="${s.nome}" title="Reativar">${UNARCH_SVG}</button></span>`).join('')}
-      </div>` : '';
+      const totalSubs = subs.length + subArq.length;
+      const toggleLabel = totalSubs > 0 ? `${subs.length} subcategoria${subs.length!==1?'s':''}${subArq.length?` · ${subArq.length} arquivada${subArq.length!==1?'s':''}`:''}` : '';
+      const panelId = 'subpanel-'+c._dbId;
+      const subsPanel = !arq ? `
+        <div class="cat-row-subs-panel" id="${panelId}">
+          ${subs.map(s=>`<span class="sub-tag">
+            ${s.nome}
+            <button class="sub-tag-btn cfg-edit-sub" data-id="${s._dbId}" title="Editar">${EDIT_SVG}</button>
+            <button class="sub-tag-btn danger cfg-arch" data-type="subcategoria" data-id="${s._dbId}" data-archived="false" data-nome="${s.nome}" title="Arquivar">${ARCH_SVG}</button>
+          </span>`).join('')}
+          ${subArq.length?`<div style="width:100%;padding-top:4px;border-top:1px solid var(--border-soft);margin-top:4px;font-size:11px;color:var(--text-3)">Arquivadas:</div>${subArq.map(s=>`<span class="sub-tag" style="opacity:.6">${s.nome}<button class="sub-tag-btn cfg-arch" data-type="subcategoria" data-id="${s._dbId}" data-archived="true" data-nome="${s.nome}" title="Reativar">${UNARCH_SVG}</button></span>`).join('')}`:''}
+          <button class="sub-add-btn cfg-add-sub" data-cat="${c.categoria}" style="align-self:center">+ subcategoria</button>
+        </div>` : '';
       return `<div class="cat-row${arq?' archived':''}">
         <div class="cat-row-left">
           <span class="config-tipo-badge ${tipo}" style="flex-shrink:0">${tipo==='Transferência'?'TRA':tipo==='Receita'?'REC':'DES'}</span>
@@ -3159,7 +3176,12 @@ function renderConfiguracoes(){
             ${c.limite>0&&!arq?`<div class="cat-row-limit">Limite: ${fmtBRL(c.limite)}/mês</div>`:''}
           </div>
         </div>
-        <div class="cat-row-subs">${subsHTML}${subArqHTML}</div>
+        <div class="cat-row-subs" style="align-items:center">
+          ${!arq?`<button class="cat-row-sub-toggle cfg-sub-toggle" data-panel="${panelId}" title="${totalSubs} subcategorias">
+            ${totalSubs > 0 ? toggleLabel : '+ subcategorias'}
+          </button>`:''}
+        </div>
+        ${subsPanel}
         <div class="cat-row-actions">
           ${!arq?`<button class="cat-action-btn cfg-edit-cat" data-id="${c._dbId}" title="Editar">${EDIT_SVG}</button>`:''}
           <button class="cat-action-btn ${arq?'':'danger'} cfg-arch" data-type="categoria" data-id="${c._dbId}" data-archived="${arq}" data-nome="${c.categoria}" title="${arq?'Reativar':'Arquivar'}">${arq?UNARCH_SVG:ARCH_SVG}</button>
@@ -3176,16 +3198,15 @@ function renderConfiguracoes(){
       + (arquivadas.length?`<details style="margin-top:12px"><summary style="cursor:pointer;font-size:12px;color:var(--text-3);padding:4px 0">Arquivadas (${arquivadas.length})</summary><div style="margin-top:8px">${arquivadas.map(c=>renderCat(c,true)).join('')}</div></details>`:'');
     if(!catsEl.innerHTML) catsEl.innerHTML='<div class="empty-note">Nenhuma categoria.</div>';
     catsEl.querySelectorAll('.cfg-edit-cat').forEach(btn=>btn.addEventListener('click',()=>editConfigCategoria(btn.dataset.id)));
-    catsEl.querySelectorAll('.cfg-edit-sub').forEach(btn=>btn.addEventListener('click',()=>editConfigSubcategoria(btn.dataset.id)));
-    catsEl.querySelectorAll('.cfg-arch').forEach(btn=>btn.addEventListener('click',()=>archiveConfigItem(btn.dataset.type,btn.dataset.id,btn.dataset.archived==='true',btn.dataset.nome)));
-    catsEl.querySelectorAll('.cfg-add-sub').forEach(btn=>btn.addEventListener('click',()=>openAddSubcategoria(btn.dataset.cat)));
-    catsEl.querySelectorAll('.cfg-subarch-toggle').forEach(btn=>btn.addEventListener('click',()=>{
-      const list=catsEl.querySelector(`.cfg-subarch-list[data-cat="${btn.dataset.cat}"]`);
-      if(list){
-        const open=list.style.display==='none';
-        list.style.display=open?'flex':'none';
-        btn.textContent=open?`▾ ${btn.textContent.replace(/[▸▾]\s*/,'')} arquivadas`:`▸ ${btn.textContent.replace(/[▸▾]\s*/,'')} arquivadas`;
-      }
+    catsEl.querySelectorAll('.cfg-edit-sub').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();editConfigSubcategoria(btn.dataset.id);}));
+    catsEl.querySelectorAll('.cfg-arch').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();archiveConfigItem(btn.dataset.type,btn.dataset.id,btn.dataset.archived==='true',btn.dataset.nome);}));
+    catsEl.querySelectorAll('.cfg-add-sub').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();openAddSubcategoria(btn.dataset.cat);}));
+    catsEl.querySelectorAll('.cfg-sub-toggle').forEach(btn=>btn.addEventListener('click',e=>{
+      e.stopPropagation();
+      const panel = document.getElementById(btn.dataset.panel);
+      if(!panel) return;
+      const open = panel.classList.toggle('open');
+      btn.classList.toggle('open', open);
     }));
   }
 }
