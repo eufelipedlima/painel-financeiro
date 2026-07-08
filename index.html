@@ -1507,7 +1507,11 @@
     <!-- Categoria (oculto em Transferência) -->
     <div class="form-group" id="fCategoriaGroup">
       <label class="form-label">Categoria</label>
-      <select class="form-select" id="fCategoria"></select>
+      <select class="form-select" id="fCategoria" onchange="updateSubcategorias()"></select>
+    </div>
+    <div class="form-group" id="fSubcategoriaGroup" style="display:none">
+      <label class="form-label">Subcategoria <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
+      <select class="form-select" id="fSubcategoria"></select>
     </div>
 
     <!-- Conta (oculto em Cartão) -->
@@ -1911,6 +1915,37 @@ async function ensureDefaults(uid) {
       {user_id:uid, nome:'Pagamento Fatura Cartão', tipo:'Despesa', limite_mensal:0},
       {user_id:uid, nome:'Transferência entre Contas', tipo:'Transferência', limite_mensal:0},
     ]);
+    // Default subcategorias
+    await db.from('subcategorias').insert([
+      {user_id:uid, categoria_nome:'Alimentação', nome:'Supermercado'},
+      {user_id:uid, categoria_nome:'Alimentação', nome:'Restaurante'},
+      {user_id:uid, categoria_nome:'Alimentação', nome:'Delivery'},
+      {user_id:uid, categoria_nome:'Alimentação', nome:'Padaria / Café'},
+      {user_id:uid, categoria_nome:'Alimentação', nome:'Feira / Hortifruti'},
+      {user_id:uid, categoria_nome:'Transporte', nome:'Combustível'},
+      {user_id:uid, categoria_nome:'Transporte', nome:'Uber / 99'},
+      {user_id:uid, categoria_nome:'Transporte', nome:'Estacionamento'},
+      {user_id:uid, categoria_nome:'Transporte', nome:'Manutenção veículo'},
+      {user_id:uid, categoria_nome:'Saúde', nome:'Farmácia'},
+      {user_id:uid, categoria_nome:'Saúde', nome:'Consulta médica'},
+      {user_id:uid, categoria_nome:'Saúde', nome:'Academia'},
+      {user_id:uid, categoria_nome:'Saúde', nome:'Plano de saúde'},
+      {user_id:uid, categoria_nome:'Moradia', nome:'Aluguel'},
+      {user_id:uid, categoria_nome:'Moradia', nome:'Condomínio'},
+      {user_id:uid, categoria_nome:'Moradia', nome:'Energia elétrica'},
+      {user_id:uid, categoria_nome:'Moradia', nome:'Água'},
+      {user_id:uid, categoria_nome:'Moradia', nome:'Internet'},
+      {user_id:uid, categoria_nome:'Lazer', nome:'Cinema / Teatro'},
+      {user_id:uid, categoria_nome:'Lazer', nome:'Streaming'},
+      {user_id:uid, categoria_nome:'Lazer', nome:'Viagem'},
+      {user_id:uid, categoria_nome:'Lazer', nome:'Bar / Balada'},
+      {user_id:uid, categoria_nome:'Educação', nome:'Curso / Treinamento'},
+      {user_id:uid, categoria_nome:'Educação', nome:'Livros'},
+      {user_id:uid, categoria_nome:'Educação', nome:'Mensalidade escolar'},
+      {user_id:uid, categoria_nome:'Serviços / Assinaturas', nome:'Software'},
+      {user_id:uid, categoria_nome:'Serviços / Assinaturas', nome:'Celular'},
+      {user_id:uid, categoria_nome:'Serviços / Assinaturas', nome:'TV a cabo'},
+    ]);
   }
 }
 
@@ -1928,13 +1963,14 @@ async function loadAllData() {
     await ensureDefaults(uid);
     const safe = async (q) => { try { const r = await q; return r; } catch(e) { console.warn('Query error:', e); return {data:[]}; } };
     const [
-      {data:cDb}, {data:krDb}, {data:catDb}, {data:trDb},
+      {data:cDb}, {data:krDb}, {data:catDb}, {data:subDb}, {data:trDb},
       {data:ccDb}, {data:fatDb}, {data:mtDb}, {data:mmDb},
       {data:dvDb}, {data:ppDb}
     ] = await Promise.all([
       safe(db.from('contas').select('*').order('created_at')),
       safe(db.from('cartoes').select('*').order('created_at')),
       safe(db.from('categorias').select('*').order('tipo,nome')),
+      safe(db.from('subcategorias').select('*').order('categoria_nome,nome')),
       safe(db.from('transacoes').select('*').order('data,created_at')),
       safe(db.from('cartao_compras').select('*').order('data,created_at')),
       safe(db.from('faturas_cartao').select('*').order('competencia')),
@@ -1948,8 +1984,9 @@ async function loadAllData() {
     DATA.contas = (cDb||[]).map(r => ({ _dbId:r.id, conta:r.nome, tipo:r.tipo, saldoInicial:+r.saldo_inicial||0, saldoAtual:0, arquivado:r.arquivado||false }));
     DATA.cartoes = (krDb||[]).map(r => ({ _dbId:r.id, cartao:r.nome, banco:r.banco, limite:+r.limite||0, fechamento:r.dia_fechamento, vencimento:r.dia_vencimento }));
     DATA.categorias = (catDb||[]).map(r => ({ _dbId:r.id, categoria:r.nome, tipo:r.tipo, limite:+r.limite_mensal||0, considerar:r.considerar_total, arquivado:r.arquivado||false }));
-    DATA.transacoes = (trDb||[]).map(r => ({ _dbId:r.id, _id:nextId++, _source:'transacoes', data:r.data, descricao:r.descricao, tipo:r.tipo, categoria:r.categoria, conta:r.conta, contaDestino:r.conta_destino, formaPagamento:r.forma_pagamento, status:r.status, valor:+r.valor||0, obs:r.observacoes }));
-    DATA.cartaoCompras = (ccDb||[]).map(r => ({ _dbId:r.id, _id:nextId++, _source:'cartaoCompras', data:r.data, descricao:r.descricao, categoria:r.categoria, cartao:r.cartao, parcela:r.parcela, valor:+r.valor||0, conferido:r.conferido, obs:r.observacoes }));
+    DATA.subcategorias = (subDb||[]).map(r => ({ _dbId:r.id, categoriaNome:r.categoria_nome, nome:r.nome, arquivado:r.arquivado||false }));
+    DATA.transacoes = (trDb||[]).map(r => ({ _dbId:r.id, _id:nextId++, _source:'transacoes', data:r.data, descricao:r.descricao, tipo:r.tipo, categoria:r.categoria, subcategoria:r.subcategoria||null, conta:r.conta, contaDestino:r.conta_destino, formaPagamento:r.forma_pagamento, status:r.status, valor:+r.valor||0, obs:r.observacoes }));
+    DATA.cartaoCompras = (ccDb||[]).map(r => ({ _dbId:r.id, _id:nextId++, _source:'cartaoCompras', data:r.data, descricao:r.descricao, categoria:r.categoria, subcategoria:r.subcategoria||null, cartao:r.cartao, parcela:r.parcela, valor:+r.valor||0, conferido:r.conferido, obs:r.observacoes }));
     DATA.faturas = (fatDb||[]).map(r => ({ _dbId:r.id, cartao:r.cartao, competencia:r.competencia, valorTotal:+r.valor_total||0, fechamento:r.data_fechamento, vencimento:r.data_vencimento, status:r.status }));
     const movMap = {};
     (mmDb||[]).forEach(r => { if(!movMap[r.meta_id]) movMap[r.meta_id]=[]; movMap[r.meta_id].push({ _dbId:r.id, data:r.data, tipo:r.tipo, valor:+r.valor||0, conta:r.conta, obs:r.observacoes }); });
@@ -1995,7 +2032,7 @@ async function loadAllData() {
 async function dbSaveTransaction(entry) {
   if(!currentUser) return;
   try {
-    const row = { user_id:currentUser.id, data:entry.data, descricao:entry.descricao, tipo:entry.tipo, categoria:entry.categoria||null, conta:entry.conta||null, conta_destino:entry.contaDestino||null, forma_pagamento:entry.formaPagamento||null, status:entry.status, valor:entry.valor, observacoes:entry.obs||null };
+    const row = { user_id:currentUser.id, data:entry.data, descricao:entry.descricao, tipo:entry.tipo, categoria:entry.categoria||null, subcategoria:entry.subcategoria||null, conta:entry.conta||null, conta_destino:entry.contaDestino||null, forma_pagamento:entry.formaPagamento||null, status:entry.status, valor:entry.valor, observacoes:entry.obs||null };
     if(entry._dbId) { await db.from('transacoes').update(row).eq('id',entry._dbId); }
     else { const {data} = await db.from('transacoes').insert(row).select().single(); if(data) entry._dbId=data.id; }
   } catch(e) { console.error('tx sync',e); }
@@ -2003,7 +2040,7 @@ async function dbSaveTransaction(entry) {
 async function dbSaveCartaoCompra(entry) {
   if(!currentUser) return;
   try {
-    const row = { user_id:currentUser.id, data:entry.data, descricao:entry.descricao, categoria:entry.categoria||null, cartao:entry.cartao, parcela:entry.parcela||null, valor:entry.valor, conferido:entry.conferido||'Não', observacoes:entry.obs||null };
+    const row = { user_id:currentUser.id, data:entry.data, descricao:entry.descricao, categoria:entry.categoria||null, subcategoria:entry.subcategoria||null, cartao:entry.cartao, parcela:entry.parcela||null, valor:entry.valor, conferido:entry.conferido||'Não', observacoes:entry.obs||null };
     if(entry._dbId) { await db.from('cartao_compras').update(row).eq('id',entry._dbId); }
     else { const {data} = await db.from('cartao_compras').insert(row).select().single(); if(data) entry._dbId=data.id; }
   } catch(e) { console.error('cc sync',e); }
@@ -2087,7 +2124,7 @@ db.auth.onAuthStateChange(async (event, session) => {
   // If no session, loginOverlay is already visible (default)
 })();
 
-const DATA = { saldoTotal:0, contas:[], cartoes:[], categorias:[], transacoes:[], cartaoCompras:[], faturas:[], metas:[], dividas:[] };
+const DATA = { saldoTotal:0, contas:[], cartoes:[], categorias:[], subcategorias:[], transacoes:[], cartaoCompras:[], faturas:[], metas:[], dividas:[] };
 
 const MESES_PT = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
 const CAT_COLORS = ["#6C63FF","#2DD4A7","#FF7A72","#FFB454","#5AA9E6","#C77DFF","#4FD1C5","#F2994A","#9BA1B0","#E56399","#7BC67E","#B08D57"];
@@ -2459,7 +2496,7 @@ function renderAllTable(){
       <td class="mono">${fmtDateBR(r.data)}</td>
       <td>${r.descricao||''}</td>
       <td><span class="tag ${r.tipo}">${r.tipo}</span></td>
-      <td>${r.categoria||''}</td>
+      <td>${r.categoria||''}${r.subcategoria?`<div style="font-size:10.5px;color:var(--text-3);margin-top:2px">${r.subcategoria}</div>`:''}</td>
       <td>${r.conta||''}</td>
       <td><span class="status-dot ${r.status}">${r.status}</span></td>
       <td class="val-cell">${fmtBRL(r.valor)}</td>
@@ -2918,6 +2955,17 @@ function renderConfiguracoes(){
   }
 }
 
+function openAddSubcategoria(categoriaNome){
+  configMode = 'subcategoria'; configTipo = categoriaNome; configEditTarget = null;
+  document.getElementById('configModalTitle').textContent = `Nova subcategoria — ${categoriaNome}`;
+  document.getElementById('configModalLabel').textContent = 'Nome da subcategoria';
+  document.getElementById('configModalName').value = '';
+  document.getElementById('configModalTipoGroup').style.display = 'none';
+  document.getElementById('configModalSaldoGroup').style.display = 'none';
+  document.getElementById('configModalLimiteGroup').style.display = 'none';
+  document.getElementById('configModalOverlay').classList.add('open');
+  setTimeout(()=>document.getElementById('configModalName').focus(), 100);
+}
 function openAddConfig(mode, tipo=null){
   configMode = mode; configTipo = tipo; configEditTarget = null;
   const titles = {conta:'Adicionar conta', cartao:'Adicionar cartão', categoria:`Adicionar categoria (${tipo})`};
@@ -2991,11 +3039,19 @@ async function saveConfigItem(){
       showToast(`Categoria "${nome}" adicionada.`);
     }
   }
+  if(configMode==='subcategoria'){
+    const catNome = configTipo;
+    const {data} = await db.from('subcategorias').insert({user_id:uid, categoria_nome:catNome, nome}).select().single();
+    if(data) DATA.subcategorias.push({_dbId:data.id, categoriaNome:catNome, nome, arquivado:false});
+    showToast(`Subcategoria "${nome}" adicionada.`);
+    closeConfigModal();
+    renderConfiguracoes();
+    return;
+  }
   closeConfigModal();
   renderAll();
 }
 async function archiveConfigItem(type, dbId, isArchived, nome){
-  const action = isArchived ? 'desarquivar' : 'arquivar';
   const newState = !isArchived;
   try {
     if(type==='conta'){
@@ -3004,7 +3060,6 @@ async function archiveConfigItem(type, dbId, isArchived, nome){
       if(c) c.arquivado = newState;
       showToast(`Conta "${nome}" ${newState?'arquivada':'reativada'}.`);
     } else if(type==='cartao'){
-      // cartoes don't have arquivado column — just delete if no transactions
       if(!isArchived && confirm(`Excluir o cartão "${nome}"? Os lançamentos existentes são mantidos.`)){
         await db.from('cartoes').delete().eq('id', dbId);
         DATA.cartoes = DATA.cartoes.filter(c=>c._dbId!==dbId);
@@ -3015,6 +3070,11 @@ async function archiveConfigItem(type, dbId, isArchived, nome){
       const c = DATA.categorias.find(x=>x._dbId===dbId);
       if(c) c.arquivado = newState;
       showToast(`Categoria "${nome}" ${newState?'arquivada':'reativada'}.`);
+    } else if(type==='subcategoria'){
+      await db.from('subcategorias').update({arquivado: newState}).eq('id', dbId);
+      const s = DATA.subcategorias.find(x=>x._dbId===dbId);
+      if(s) s.arquivado = newState;
+      showToast(`Subcategoria "${nome}" ${newState?'arquivada':'reativada'}.`);
     }
   } catch(e){ showToast('Erro ao atualizar.','error'); console.error(e); }
   renderConfiguracoes();
@@ -3542,6 +3602,16 @@ function openEditDrawer(id, source){
     document.getElementById('fConta').value = entry.conta || '';
     if(tipo === 'Transferência') document.getElementById('fContaDestino').value = entry.contaDestino || '';
     if(tipo !== 'Transferência') setStatusToggle('fStatus', entry.status || 'Pago');
+    // Set subcategoria after categories are populated
+    setTimeout(() => {
+      updateSubcategorias();
+      if(entry.subcategoria) {
+        setTimeout(() => {
+          const sel = document.getElementById('fSubcategoria');
+          if(sel) sel.value = entry.subcategoria;
+        }, 80);
+      }
+    }, 60);
   }
   // Update drawer header to show edit mode
   document.querySelector('.drawer-title').innerHTML = 'Editar Lançamento <span class="drawer-mode-badge">✎ editando</span>';
@@ -3622,12 +3692,27 @@ function setFormType(type){
   document.getElementById('rowStatusFormaPagto').style.display = (isCartao || isTransf) ? 'none' : '';
   document.getElementById('fStatusTransfGroup').style.display = isTransf ? '' : 'none';
   document.getElementById('fParcelaGroup').style.display = isCartao ? '' : 'none';
+  // Reset subcategoria
+  document.getElementById('fSubcategoriaGroup').style.display = 'none';
+  document.getElementById('fSubcategoria').innerHTML = '';
+  if(!isTransf) setTimeout(updateSubcategorias, 50);
+}
+function updateSubcategorias(){
+  const cat = document.getElementById('fCategoria')?.value;
+  const grp = document.getElementById('fSubcategoriaGroup');
+  const sel = document.getElementById('fSubcategoria');
+  if(!cat || !grp || !sel) return;
+  const subs = DATA.subcategorias.filter(s => s.categoriaNome === cat && !s.arquivado);
+  if(subs.length === 0){ grp.style.display='none'; return; }
+  grp.style.display = '';
+  sel.innerHTML = '<option value="">— Nenhuma —</option>' + subs.map(s=>`<option value="${s.nome}">${s.nome}</option>`).join('');
 }
 function saveEntry(){
   const data = document.getElementById('fData').value;
   const valor = parseFloat(document.getElementById('fValor').value);
   const descricao = document.getElementById('fDescricao').value.trim();
   const obs = document.getElementById('fObs').value.trim() || null;
+  const subcategoria = document.getElementById('fSubcategoria')?.value || null;
   if(!data){ showToast('Preencha a data do lançamento.', 'error'); return; }
   if(!valor || valor <= 0){ showToast('Informe um valor maior que zero.', 'error'); return; }
   if(!descricao){ showToast('Preencha a descrição.', 'error'); return; }
@@ -3697,6 +3782,7 @@ function saveEntry(){
       contaDestino: isTransf ? document.getElementById('fContaDestino').value : null,
       formaPagamento: isTransf ? 'Transferência' : document.getElementById('fFormaPagto').value,
       status: isTransf ? document.getElementById('fStatusTransf').value : document.getElementById('fStatus').value,
+      subcategoria: isTransf ? null : subcategoria,
       valor, obs, _source: 'transacoes', _new: true
     };
     DATA.transacoes.push(entry);
