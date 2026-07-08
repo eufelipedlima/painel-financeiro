@@ -1336,10 +1336,10 @@
         <div><div class="page-title">Configurações</div></div>
       </div>
       <div class="subtab-bar" id="configSubtabs" style="margin-bottom:20px">
-        <button class="subtab active" data-ctab="perfil" onclick="showConfigTab('perfil')">👤 Perfil</button>
-        <button class="subtab" data-ctab="contas" onclick="showConfigTab('contas')">🏦 Contas</button>
-        <button class="subtab" data-ctab="cartoes" onclick="showConfigTab('cartoes')">💳 Cartões</button>
-        <button class="subtab" data-ctab="categorias" onclick="showConfigTab('categorias')">🏷️ Categorias</button>
+        <button class="subtab active" data-ctab="perfil">👤 Perfil</button>
+        <button class="subtab" data-ctab="contas">🏦 Contas</button>
+        <button class="subtab" data-ctab="cartoes">💳 Cartões</button>
+        <button class="subtab" data-ctab="categorias">🏷️ Categorias</button>
       </div>
 
       <!-- Perfil -->
@@ -3159,6 +3159,14 @@ function showConfigTab(tab){
   else if(tab==='contas'||tab==='cartoes'||tab==='categorias') renderConfiguracoes();
 }
 // Sub-tab onclick wired directly in HTML
+// Wire config sub-tabs via event delegation on the bar
+const configSubtabsBar = document.getElementById('configSubtabs');
+if(configSubtabsBar){
+  configSubtabsBar.addEventListener('click', function(e){
+    const btn = e.target.closest('.subtab[data-ctab]');
+    if(btn) showConfigTab(btn.dataset.ctab);
+  });
+}
 
 // ===================== Perfil =====================
 function renderPerfil(){
