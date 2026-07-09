@@ -3648,37 +3648,45 @@ function showSubtab(name){
 }
 
 function renderAtrasadas(){
-  const today = new Date(); today.setHours(0,0,0,0);
-  const rows = DATA.transacoes.filter(t => t.status === 'Pendente' && parseDate(t.data) < today);
-  // KPI summary for overdue items
+  const today = new Date(); today.setHours(23,59,59,999); // include entire today
+  const rows = DATA.transacoes.filter(t => t.status === 'Pendente' && parseDate(t.data) <= today);
+  // KPI summary — always show
   const kpiEl = document.getElementById('atrasadasKpis');
   if(kpiEl){
+    kpiEl.style.display = '';
     const totalRec = rows.filter(t=>t.tipo==='Receita').reduce((s,t)=>s+t.valor,0);
     const totalPag = rows.filter(t=>t.tipo==='Despesa').reduce((s,t)=>s+t.valor,0);
-    const oldest  = rows.length ? rows.sort((a,b)=>parseDate(a.data)-parseDate(b.data))[0] : null;
-    const diasAtr  = oldest ? Math.abs(daysUntil(oldest.data)) : 0;
+    const sorted = [...rows].sort((a,b)=>parseDate(a.data)-parseDate(b.data));
+    const oldest = sorted[0];
+    const diasAtr = oldest ? Math.abs(daysUntil(oldest.data)) : 0;
     kpiEl.innerHTML = `
-      <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">A Receber (atrasado)</span></div><div class="kpi-value num" style="color:var(--negative)">${fmtBRL(totalRec)}</div><div style="font-size:11.5px;color:var(--text-3);margin-top:4px">${rows.filter(t=>t.tipo==='Receita').length} lançamentos</div></div>
-      <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">A Pagar (atrasado)</span></div><div class="kpi-value num" style="color:var(--negative)">${fmtBRL(totalPag)}</div><div style="font-size:11.5px;color:var(--text-3);margin-top:4px">${rows.filter(t=>t.tipo==='Despesa').length} lançamentos</div></div>
-      <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">Total em atraso</span></div><div class="kpi-value num" style="color:var(--negative)">${fmtBRL(totalRec+totalPag)}</div><div style="font-size:11.5px;color:var(--text-3);margin-top:4px">${rows.length} lançamento${rows.length!==1?'s':''} · mais antigo ${diasAtr}d</div></div>`;
+      <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">A Receber em atraso</span></div><div class="kpi-value num" style="color:${totalRec>0?'var(--negative)':'var(--positive)'}">${fmtBRL(totalRec)}</div><div style="font-size:11.5px;color:var(--text-3);margin-top:4px">${rows.filter(t=>t.tipo==='Receita').length} lançamento(s)</div></div>
+      <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">A Pagar em atraso</span></div><div class="kpi-value num" style="color:${totalPag>0?'var(--negative)':'var(--positive)'}">${fmtBRL(totalPag)}</div><div style="font-size:11.5px;color:var(--text-3);margin-top:4px">${rows.filter(t=>t.tipo==='Despesa').length} lançamento(s)</div></div>
+      <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">Total em atraso</span></div><div class="kpi-value num" style="color:${(totalRec+totalPag)>0?'var(--negative)':'var(--positive)'}">${fmtBRL(totalRec+totalPag)}</div><div style="font-size:11.5px;color:var(--text-3);margin-top:4px">${rows.length} item(s)${oldest?` · mais antigo há ${diasAtr}d`:''}</div></div>`;
   }
   const body = document.getElementById('atrasadasBody');
   const empty = document.getElementById('atrasadasEmpty');
   if(!body) return;
-  if(rows.length === 0){ body.innerHTML=''; if(empty) empty.style.display='block'; if(kpiEl) kpiEl.style.display='none'; return; }
+  if(rows.length === 0){
+    body.innerHTML='';
+    if(empty){ empty.style.display='block'; empty.textContent='Nenhuma transação atrasada. Tudo em dia! ✓'; }
+    return;
+  }
   if(empty) empty.style.display='none';
-  body.innerHTML = rows.sort((a,b)=>parseDate(a.data)-parseDate(b.data)).map(t => {
-    const days = Math.abs(daysUntil(t.data));
+  body.innerHTML = [...rows].sort((a,b)=>parseDate(a.data)-parseDate(b.data)).map(t => {
+    const days = daysUntil(t.data);
+    const daysAbs = Math.abs(days);
+    const isRec = t.tipo === 'Receita';
     return `<tr>
       <td class="mono">${fmtDateBR(t.data)}</td>
       <td>${t.descricao||''}</td>
       <td><span class="tag ${t.tipo}">${t.tipo}</span></td>
       <td>${t.categoria||''}</td>
-      <td><span class="urgency-pill overdue">Atrasado ${days}d</span></td>
+      <td><span class="urgency-pill overdue">${days===0?'Vence hoje':`Atrasado ${daysAbs}d`}</span></td>
       <td class="val-cell">${fmtBRL(t.valor)}</td>
-      <td><button class="pend-confirm-btn ${t.tipo==='Receita'?'receita':'despesa'}" data-id="${t._id}">
+      <td><button class="pend-confirm-btn ${isRec?'receita':'despesa'}" data-id="${t._id}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
-        ${t.tipo==='Receita'?'Recebi':'Paguei'}
+        ${isRec?'Recebi':'Paguei'}
       </button></td>
     </tr>`;
   }).join('');
