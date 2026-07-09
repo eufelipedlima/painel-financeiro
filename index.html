@@ -466,15 +466,19 @@
     --warning-soft: rgba(217,119,6,0.08);
     --shadow-card: 0 1px 2px rgba(17,24,39,0.05), 0 4px 16px -4px rgba(17,24,39,0.08);
   }
-  html.light .brand-mark{ background:linear-gradient(135deg,#4F46E5,#3730A3); }
-  html.light .fab{ background:linear-gradient(135deg,#4F46E5,#3730A3); box-shadow:0 4px 14px rgba(79,70,229,0.4); }
-  html.light .btn-primary{ background:#4F46E5; box-shadow:none; }
+  html.light .brand-mark{ background:#4F46E5; }
+  html.light .fab{ background:#4F46E5; box-shadow:0 4px 12px rgba(79,70,229,0.3); }
+  html.light .btn-primary{ background:#4F46E5; }
   html.light .btn-primary:hover{ background:#4338CA; }
-  html.light .kpi-card:hover{ border-color:#D1D5DE; box-shadow:0 2px 8px rgba(17,24,39,0.08); }
+  html.light .kpi-card:hover{ border-color:#D4D8E2; }
   html.light .panel:hover{ border-color:#D8DCE8; }
-  html.light ::-webkit-scrollbar-thumb{ background:#D1D5DB; }
-  html.light .data-table tr:hover td{ background:#F9FAFB; }
-  html.light .sidebar{ border-right-color:#E8EBF2; }
+  html.light ::-webkit-scrollbar-thumb{ background:#CBD2DB; }
+  html.light .data-table tr:hover td{ background:#F8F9FB; }
+  html.light .sidebar{ background:#FAFBFD; border-right:1px solid #E8EBF0; }
+  html.light .nav-item.active{ background:rgba(79,70,229,0.08); }
+  html.light .acct-item:hover{ background:#F3F4F6; }
+  html.light .sidebar-saldo-block{ border-color:#E8EBF0; }
+  html.light .sidebar-saldo-block .val{ color:#111827; }
 
   /* ---------- Theme toggle ---------- */
   .theme-toggle{
@@ -1113,24 +1117,23 @@
 
   /* ── Sidebar account items ── */
   .acct-item{
-    display:flex; align-items:center; gap:10px; padding:8px 10px 8px 12px;
-    border-radius:10px; margin-bottom:4px; cursor:pointer;
-    border:1px solid transparent; transition:.12s ease; position:relative;
+    display:flex; align-items:center; gap:9px; padding:7px 10px 7px 12px;
+    border-radius:8px; margin-bottom:2px; cursor:pointer;
+    border:1px solid transparent; transition:.12s ease;
   }
-  .acct-item:hover{ background:var(--surface-2); border-color:var(--border-soft); }
-  .acct-item.active{ background:var(--accent-soft); border-color:var(--accent-soft); }
-  .acct-item-dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; background:var(--accent); }
+  .acct-item:hover{ background:var(--surface-2); }
+  .acct-item-dot{ width:7px; height:7px; border-radius:50%; flex-shrink:0; }
   .acct-item-info{ flex:1; min-width:0; }
-  .acct-item-name{ font-size:12.5px; font-weight:600; color:var(--text-1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .acct-item-val{ font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; white-space:nowrap; flex-shrink:0; color:var(--text-2); }
+  .acct-item-name{ font-size:12.5px; font-weight:500; color:var(--text-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .acct-item-val{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; font-weight:600; white-space:nowrap; flex-shrink:0; color:var(--text-2); }
 
   /* ── Sidebar saldo block ── */
   .sidebar-saldo-block{
-    background:var(--surface-2); border-radius:12px; padding:12px 14px;
-    margin:8px 0 4px; border:1px solid var(--border-soft);
+    padding:10px 12px; margin:10px 0 6px;
+    border-top:1px solid var(--border-soft); border-bottom:1px solid var(--border-soft);
   }
-  .sidebar-saldo-block .lbl{ font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--text-3); margin-bottom:4px; font-weight:700; }
-  .sidebar-saldo-block .val{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:20px; color:var(--text-1); }
+  .sidebar-saldo-block .lbl{ font-size:10px; text-transform:uppercase; letter-spacing:1.2px; color:var(--text-3); margin-bottom:4px; font-weight:600; }
+  .sidebar-saldo-block .val{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:22px; color:var(--text-1); letter-spacing:-0.3px; }
 
   /* ── Sidebar bottom section ── */
   .sidebar-bottom{
@@ -1167,13 +1170,13 @@
 
   /* Section label */
   .sidebar-section-label{
-    font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1px;
-    color:var(--text-3); padding:0 12px; margin-bottom:6px; margin-top:4px;
+    font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:1.2px;
+    color:var(--text-3); padding:0 12px 5px; margin-top:8px;
   }
 
-  /* Chip tags — slightly refined */
-  .tag{ font-size:10.5px; padding:3px 9px; border-radius:6px; font-weight:600;
-        text-transform:uppercase; letter-spacing:0.3px; white-space:nowrap; }
+  /* Chip tags — refined pill */
+  .tag{ font-size:10px; padding:3px 8px; border-radius:5px; font-weight:700;
+        text-transform:uppercase; letter-spacing:0.5px; white-space:nowrap; }
 
   /* Form inputs — lighter feel */
   html.light .form-input, html.light .form-select{
