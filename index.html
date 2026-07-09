@@ -3084,17 +3084,19 @@ function markEntryAsPaid(id){
   renderAll();
 }
 function renderPending(){
-  const pend = DATA.transacoes.filter(t => t.status === 'Pendente');
+  const allPend = DATA.transacoes.filter(t => t.status === 'Pendente');
+  // Filter by selected month
+  const pend = allPend.filter(t => inMonth(t.data, currentMonth));
   const totalReceber = pend.filter(t=>t.tipo==='Receita').reduce((s,t)=>s+t.valor,0);
   const totalPagar = pend.filter(t=>t.tipo==='Despesa').reduce((s,t)=>s+t.valor,0);
-  const faturaPend = DATA.faturas.filter(f=>f.status==='Pendente').reduce((s,f)=>s+f.valorTotal,0);
+  const faturaPend = DATA.faturas.filter(f=>f.status==='Pendente' && f.competencia && f.competencia.slice(0,7)===currentMonth).reduce((s,f)=>s+(f.valorTotal||0),0);
   document.getElementById('pendingKpis').innerHTML = `
     <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">A Receber</span></div><div class="kpi-value num" style="color:var(--positive)">${fmtBRL(totalReceber)}</div></div>
     <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">A Pagar (conta)</span></div><div class="kpi-value num" style="color:var(--negative)">${fmtBRL(totalPagar)}</div></div>
     <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">Faturas Pendentes</span></div><div class="kpi-value num" style="color:var(--warning)">${fmtBRL(faturaPend)}</div></div>`;
   const body = document.getElementById('pendingBody');
   const empty = document.getElementById('pendingEmpty');
-  if(pend.length === 0){ body.innerHTML=''; empty.style.display='block'; return; }
+  if(pend.length === 0){ body.innerHTML=''; empty.style.display='block'; empty.textContent=`Nenhuma pendência em ${monthLabel(currentMonth)}.`; return; }
   empty.style.display = 'none';
   body.innerHTML = pend.sort((a,b)=>parseDate(a.data)-parseDate(b.data)).map(t => {
     const days = daysUntil(t.data);
