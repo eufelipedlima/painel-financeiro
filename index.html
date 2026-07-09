@@ -1371,8 +1371,9 @@
 
       <!-- Atrasadas sub-tab -->
       <div id="subtabAtrasadas" style="display:none">
+        <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px" id="atrasadasKpis"></div>
         <div class="panel">
-          <div style="font-size:13px;color:var(--negative);padding:10px 0 16px;font-weight:500">Todas as transações com data vencida e ainda pendentes</div>
+          <div style="font-size:13px;color:var(--negative);padding:10px 0 16px;font-weight:500">Todas as transações com data vencida e ainda não pagas — de qualquer mês</div>
           <table class="data-table">
             <thead><tr><th>Vencimento</th><th>Descrição</th><th>Tipo</th><th>Categoria</th><th>Atraso</th><th style="text-align:right;">Valor</th><th></th></tr></thead>
             <tbody id="atrasadasBody"></tbody>
@@ -3084,23 +3085,22 @@ function markEntryAsPaid(id){
   renderAll();
 }
 function renderPending(){
-  // Show pending items due up to and including the selected month
-  // (this month's items + overdue from past months)
-  const pend = DATA.transacoes.filter(t => {
-    if(t.status !== 'Pendente') return false;
-    const txMonth = monthKey(parseDate(t.data));
-    return txMonth <= currentMonth;
-  });
+  // Show ONLY items due in the exact selected month
+  const pend = DATA.transacoes.filter(t =>
+    t.status === 'Pendente' && inMonth(t.data, currentMonth)
+  );
   const totalReceber = pend.filter(t=>t.tipo==='Receita').reduce((s,t)=>s+t.valor,0);
-  const totalPagar = pend.filter(t=>t.tipo==='Despesa').reduce((s,t)=>s+t.valor,0);
-  const faturaPend = DATA.faturas.filter(f=>f.status==='Pendente' && f.competencia && f.competencia.slice(0,7)<=currentMonth).reduce((s,f)=>s+(f.valorTotal||0),0);
+  const totalPagar   = pend.filter(t=>t.tipo==='Despesa').reduce((s,t)=>s+t.valor,0);
+  const faturaPend   = DATA.faturas.filter(f =>
+    f.status==='Pendente' && f.competencia && f.competencia.slice(0,7)===currentMonth
+  ).reduce((s,f)=>s+(f.valorTotal||0),0);
   document.getElementById('pendingKpis').innerHTML = `
     <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">A Receber</span></div><div class="kpi-value num" style="color:var(--positive)">${fmtBRL(totalReceber)}</div></div>
     <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">A Pagar (conta)</span></div><div class="kpi-value num" style="color:var(--negative)">${fmtBRL(totalPagar)}</div></div>
     <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">Faturas Pendentes</span></div><div class="kpi-value num" style="color:var(--warning)">${fmtBRL(faturaPend)}</div></div>`;
   const body = document.getElementById('pendingBody');
   const empty = document.getElementById('pendingEmpty');
-  if(pend.length === 0){ body.innerHTML=''; if(empty){ empty.style.display='block'; empty.textContent=`Nenhuma pendência até ${monthLabel(currentMonth)}.`; } return; }
+  if(pend.length === 0){ body.innerHTML=''; if(empty){ empty.style.display='block'; empty.textContent=`Nenhuma pendência em ${monthLabel(currentMonth)}.`; } return; }
   if(empty) empty.style.display='none';
   body.innerHTML = pend.sort((a,b)=>parseDate(a.data)-parseDate(b.data)).map(t => {
     const days = daysUntil(t.data);
@@ -3650,10 +3650,22 @@ function showSubtab(name){
 function renderAtrasadas(){
   const today = new Date(); today.setHours(0,0,0,0);
   const rows = DATA.transacoes.filter(t => t.status === 'Pendente' && parseDate(t.data) < today);
+  // KPI summary for overdue items
+  const kpiEl = document.getElementById('atrasadasKpis');
+  if(kpiEl){
+    const totalRec = rows.filter(t=>t.tipo==='Receita').reduce((s,t)=>s+t.valor,0);
+    const totalPag = rows.filter(t=>t.tipo==='Despesa').reduce((s,t)=>s+t.valor,0);
+    const oldest  = rows.length ? rows.sort((a,b)=>parseDate(a.data)-parseDate(b.data))[0] : null;
+    const diasAtr  = oldest ? Math.abs(daysUntil(oldest.data)) : 0;
+    kpiEl.innerHTML = `
+      <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">A Receber (atrasado)</span></div><div class="kpi-value num" style="color:var(--negative)">${fmtBRL(totalRec)}</div><div style="font-size:11.5px;color:var(--text-3);margin-top:4px">${rows.filter(t=>t.tipo==='Receita').length} lançamentos</div></div>
+      <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">A Pagar (atrasado)</span></div><div class="kpi-value num" style="color:var(--negative)">${fmtBRL(totalPag)}</div><div style="font-size:11.5px;color:var(--text-3);margin-top:4px">${rows.filter(t=>t.tipo==='Despesa').length} lançamentos</div></div>
+      <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">Total em atraso</span></div><div class="kpi-value num" style="color:var(--negative)">${fmtBRL(totalRec+totalPag)}</div><div style="font-size:11.5px;color:var(--text-3);margin-top:4px">${rows.length} lançamento${rows.length!==1?'s':''} · mais antigo ${diasAtr}d</div></div>`;
+  }
   const body = document.getElementById('atrasadasBody');
   const empty = document.getElementById('atrasadasEmpty');
   if(!body) return;
-  if(rows.length === 0){ body.innerHTML=''; if(empty) empty.style.display='block'; return; }
+  if(rows.length === 0){ body.innerHTML=''; if(empty) empty.style.display='block'; if(kpiEl) kpiEl.style.display='none'; return; }
   if(empty) empty.style.display='none';
   body.innerHTML = rows.sort((a,b)=>parseDate(a.data)-parseDate(b.data)).map(t => {
     const days = Math.abs(daysUntil(t.data));
