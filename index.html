@@ -1850,6 +1850,10 @@
       <select class="form-select" id="movConta"></select>
     </div>
     <div class="form-group">
+      <label class="form-label">Categoria <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
+      <select class="form-select" id="movCategoria"></select>
+    </div>
+    <div class="form-group">
       <label class="form-label">Observações <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
       <input type="text" class="form-input" id="movObs" placeholder="">
     </div>
@@ -1919,14 +1923,20 @@
         </div>
       </div>
     </div>
-    <div class="form-group">
-      <label class="form-label">Status</label>
-      <select class="form-select" id="dStatus">
-        <option value="Ativa">Ativa</option>
-        <option value="Atrasada">Atrasada</option>
-        <option value="Suspensa">Suspensa</option>
-        <option value="Quitada">Quitada</option>
-      </select>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Categoria das parcelas</label>
+        <select class="form-select" id="dCategoria"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Status</label>
+        <select class="form-select" id="dStatus">
+          <option value="Ativa">Ativa</option>
+          <option value="Atrasada">Atrasada</option>
+          <option value="Suspensa">Suspensa</option>
+          <option value="Quitada">Quitada</option>
+        </select>
+      </div>
     </div>
 
     <!-- Calc mode (only in parcelada mode, shown by JS) -->
@@ -2192,7 +2202,7 @@ async function loadAllData() {
     DATA.metas = (mtDb||[]).map(r => ({ _dbId:r.id, _id:nextId++, nome:r.nome, descricao:r.descricao, status:r.status, valorMeta:+r.valor_meta||0, valorAtual:+r.valor_atual||0, dataAlvo:r.data_alvo, criadaEm:r.created_at?.split('T')[0], movimentacoes:movMap[r.id]||[] }));
     const parcMap = {};
     (ppDb||[]).forEach(r => { if(!parcMap[r.divida_id]) parcMap[r.divida_id]=[]; parcMap[r.divida_id].push({ _dbId:r.id, numero:r.numero, valorParcela:+r.valor_parcela||0, dataVencimento:r.data_vencimento, status:r.status }); });
-    DATA.dividas = (dvDb||[]).map(r => ({ _dbId:r.id, _id:nextId++, nome:r.nome, credor:r.credor, valorTotal:+r.valor_total||0, valorRestante:+r.valor_restante||0, valorEntrada:+r.valor_entrada||0, numParcelas:r.num_parcelas, valorParcela:+r.valor_parcela||0, frequencia:r.frequencia, taxa:+r.taxa||0, dataInicio:r.data_inicio, conta:r.conta, status:r.status, modalidade:r.modalidade, parcelas:parcMap[r.id]||[] }));
+    DATA.dividas = (dvDb||[]).map(r => ({ _dbId:r.id, _id:nextId++, nome:r.nome, credor:r.credor, categoria:r.categoria, valorTotal:+r.valor_total||0, valorRestante:+r.valor_restante||0, valorEntrada:+r.valor_entrada||0, numParcelas:r.num_parcelas, valorParcela:+r.valor_parcela||0, frequencia:r.frequencia, taxa:+r.taxa||0, dataInicio:r.data_inicio, conta:r.conta, status:r.status, modalidade:r.modalidade, parcelas:parcMap[r.id]||[] }));
 
     // Load perfil
     const {data: perfilDb} = await safe(db.from('perfis').select('*').eq('user_id', uid).single());
@@ -2273,7 +2283,7 @@ async function dbSaveMetaMov(meta, mov) {
 async function dbSaveDivida(divida) {
   if(!currentUser) return;
   try {
-    const row = { user_id:currentUser.id, nome:divida.nome, credor:divida.credor||null, valor_total:divida.valorTotal, valor_restante:divida.valorRestante, valor_entrada:divida.valorEntrada||0, num_parcelas:divida.numParcelas||1, valor_parcela:divida.valorParcela||0, frequencia:divida.frequencia||'mensal', taxa:divida.taxa||0, data_inicio:divida.dataInicio||null, conta:divida.conta||null, status:divida.status, modalidade:divida.modalidade };
+    const row = { user_id:currentUser.id, nome:divida.nome, credor:divida.credor||null, categoria:divida.categoria||null, valor_total:divida.valorTotal, valor_restante:divida.valorRestante, valor_entrada:divida.valorEntrada||0, num_parcelas:divida.numParcelas||1, valor_parcela:divida.valorParcela||0, frequencia:divida.frequencia||'mensal', taxa:divida.taxa||0, data_inicio:divida.dataInicio||null, conta:divida.conta||null, status:divida.status, modalidade:divida.modalidade };
     if(divida._dbId) { await db.from('dividas').update(row).eq('id',divida._dbId); }
     else {
       const {data} = await db.from('dividas').insert(row).select().single();
@@ -3774,6 +3784,16 @@ function openMovModal(metaId, tipo){
   document.getElementById('movValor').value = '';
   document.getElementById('movObs').value = '';
   document.getElementById('movConta').innerHTML = DATA.contas.map(c=>`<option value="${c.conta}">${c.conta} (${fmtBRL(c.saldoAtual)})</option>`).join('');
+  const allCats = DATA.categorias.filter(c=>!c.arquivado);
+  const fallbackMovCats = ['Investimentos','Salário','Freelance / Consultoria','Outros (Receita)','Outros (Despesa)'];
+  const movCatList = allCats.length > 0 ? allCats.map(c=>c.categoria) : fallbackMovCats;
+  document.getElementById('movCategoria').innerHTML =
+    `<option value="">— Nenhuma —</option>` +
+    movCatList.map(n=>`<option value="${n}">${n}</option>`).join('');
+  // Smart pre-select: deposits → Investimentos, withdrawals → Outros
+  const smartDef = movTipo === 'deposito' ? 'Investimentos' : 'Outros (Receita)';
+  const sel = document.getElementById('movCategoria');
+  if(sel) sel.value = movCatList.includes(smartDef) ? smartDef : (movCatList[0]||'');
   document.getElementById('movModalOverlay').classList.add('open');
 }
 function closeMov(){ document.getElementById('movModalOverlay').classList.remove('open'); movMetaId=null; }
@@ -3794,8 +3814,10 @@ function saveMov(){
   meta.movimentacoes = meta.movimentacoes||[];
   meta.movimentacoes.push({data, tipo:movTipo, valor, conta, obs});
   // Create transaction
+  const movCatSel = document.getElementById('movCategoria');
+  const movCatVal = (movCatSel?.value && movCatSel.value !== '') ? movCatSel.value : (movTipo==='deposito' ? 'Investimentos' : 'Outros (Receita)');
   const desc = movTipo==='deposito' ? `Depósito meta: ${meta.nome}` : `Retirada meta: ${meta.nome}`;
-  const entry = {data, descricao:desc, tipo:movTipo==='deposito'?'Despesa':'Receita', categoria:'Investimentos', conta, contaDestino:null, formaPagamento:'Transferência', status:'Pago', valor, obs:`Meta: ${meta.nome}`, _source:'transacoes', _new:true};
+  const entry = {data, descricao:desc, tipo:movTipo==='deposito'?'Despesa':'Receita', categoria:movCatVal||'Investimentos', conta, contaDestino:null, formaPagamento:'Transferência', status:'Pago', valor, obs:`Meta: ${meta.nome}`, _source:'transacoes', _new:true};
   entry._id = _nextId++;
   DATA.transacoes.push(entry);
   // Update account balance
@@ -3913,15 +3935,26 @@ function pagarParcela(dividaId, parcNum){
   p.status = 'Pago';
   d.valorRestante = Math.max(0, Math.round((d.valorRestante-p.valorParcela)*100)/100);
   if(d.valorRestante <= 0) d.status = 'Quitada';
-  // Create transaction
-  const entry = { _id:_nextId++, data:new Date().toISOString().split('T')[0], descricao:`Parcela ${parcNum}/${d.parcelas.length} - ${d.nome}`, tipo:'Despesa', categoria:'Pagamento Fatura Cartão', conta:d.conta||DATA.contas[0]?.conta, contaDestino:null, formaPagamento:'Boleto', status:'Pago', valor:p.valorParcela, obs:`Dívida: ${d.nome}`, _source:'transacoes', _new:true };
-  DATA.transacoes.push(entry);
-  const contaObj = DATA.contas.find(c=>c.conta===entry.conta);
-  if(contaObj){ contaObj.saldoAtual-=p.valorParcela; DATA.saldoTotal-=p.valorParcela; }
-  pendingSync.push(entry); updateSyncBar();
+  // Find existing pending transaction for this installment and mark it as paid
+  const txMarker = `DIV:${d._dbId}|PARC:${parcNum}`;
+  const existingTx = DATA.transacoes.find(t => (t.obs||'').includes(txMarker));
+  if(existingTx){
+    existingTx.status = 'Pago';
+    dbUpdateEntryStatus(existingTx, 'Pago');
+    // Update account balance from the existing transaction
+    const contaObj = DATA.contas.find(c=>c.conta===existingTx.conta);
+    if(contaObj){ contaObj.saldoAtual-=p.valorParcela; DATA.saldoTotal-=p.valorParcela; }
+  } else {
+    // Fallback: create new paid transaction if pending one doesn't exist
+    const entry = { _id:_nextId++, data:new Date().toISOString().split('T')[0], descricao:`${d.nome} — Parcela ${parcNum}/${d.parcelas.length}`, tipo:'Despesa', categoria:d.categoria||'Outros (Despesa)', conta:d.conta||DATA.contas[0]?.conta, contaDestino:null, formaPagamento:'Boleto', status:'Pago', valor:p.valorParcela, obs:txMarker, _source:'transacoes', _new:true };
+    DATA.transacoes.push(entry);
+    const contaObj = DATA.contas.find(c=>c.conta===entry.conta);
+    if(contaObj){ contaObj.saldoAtual-=p.valorParcela; DATA.saldoTotal-=p.valorParcela; }
+    pendingSync.push(entry); updateSyncBar();
+    dbSaveTransaction(entry);
+  }
   dbUpdateParcela(p);
   dbUpdateDividaRestante(d);
-  dbSaveTransaction(entry);
   showToast(`Parcela ${parcNum} de "${d.nome}" paga.`);
   renderDividas(); renderSidebar();
 }
@@ -3940,6 +3973,13 @@ function openDividaModal(id=null){
   document.getElementById('dStatus').value = dividaEditTarget?.status||'Ativa';
   document.getElementById('dTaxa').value = dividaEditTarget?.taxa||0;
   document.getElementById('dConta').innerHTML = DATA.contas.map(c=>`<option value="${c.conta}">${c.conta}</option>`).join('');
+  const despesaCats = DATA.categorias.filter(c=>c.tipo==='Despesa'&&!c.arquivado);
+  const defaultCats = ['Moradia','Alimentação','Transporte','Saúde','Educação','Lazer','Outros (Despesa)'];
+  const catOpts = despesaCats.length > 0 ? despesaCats.map(c=>c.categoria) : defaultCats;
+  document.getElementById('dCategoria').innerHTML = catOpts.map(n=>`<option value="${n}">${n}</option>`).join('');
+  // Set saved category or smart default
+  const savedCat = dividaEditTarget?.categoria;
+  if(savedCat) document.getElementById('dCategoria').value = savedCat;
   document.querySelectorAll('.dmode-tab').forEach(t=>t.classList.toggle('active',t.dataset.dmode===dividaMode));
   document.getElementById('dParcelaSection').style.display = dividaMode==='parcelada'?'':'none';
   document.getElementById('dividaModalOverlay').classList.add('open');
