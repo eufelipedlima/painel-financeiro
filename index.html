@@ -3084,24 +3084,29 @@ function markEntryAsPaid(id){
   renderAll();
 }
 function renderPending(){
-  const allPend = DATA.transacoes.filter(t => t.status === 'Pendente');
-  // Filter by selected month
-  const pend = allPend.filter(t => inMonth(t.data, currentMonth));
+  // Show pending items due up to and including the selected month
+  // (this month's items + overdue from past months)
+  const pend = DATA.transacoes.filter(t => {
+    if(t.status !== 'Pendente') return false;
+    const txMonth = monthKey(parseDate(t.data));
+    return txMonth <= currentMonth;
+  });
   const totalReceber = pend.filter(t=>t.tipo==='Receita').reduce((s,t)=>s+t.valor,0);
   const totalPagar = pend.filter(t=>t.tipo==='Despesa').reduce((s,t)=>s+t.valor,0);
-  const faturaPend = DATA.faturas.filter(f=>f.status==='Pendente' && f.competencia && f.competencia.slice(0,7)===currentMonth).reduce((s,f)=>s+(f.valorTotal||0),0);
+  const faturaPend = DATA.faturas.filter(f=>f.status==='Pendente' && f.competencia && f.competencia.slice(0,7)<=currentMonth).reduce((s,f)=>s+(f.valorTotal||0),0);
   document.getElementById('pendingKpis').innerHTML = `
     <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">A Receber</span></div><div class="kpi-value num" style="color:var(--positive)">${fmtBRL(totalReceber)}</div></div>
     <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">A Pagar (conta)</span></div><div class="kpi-value num" style="color:var(--negative)">${fmtBRL(totalPagar)}</div></div>
     <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">Faturas Pendentes</span></div><div class="kpi-value num" style="color:var(--warning)">${fmtBRL(faturaPend)}</div></div>`;
   const body = document.getElementById('pendingBody');
   const empty = document.getElementById('pendingEmpty');
-  if(pend.length === 0){ body.innerHTML=''; empty.style.display='block'; empty.textContent=`Nenhuma pendência em ${monthLabel(currentMonth)}.`; return; }
-  empty.style.display = 'none';
+  if(pend.length === 0){ body.innerHTML=''; if(empty){ empty.style.display='block'; empty.textContent=`Nenhuma pendência até ${monthLabel(currentMonth)}.`; } return; }
+  if(empty) empty.style.display='none';
   body.innerHTML = pend.sort((a,b)=>parseDate(a.data)-parseDate(b.data)).map(t => {
     const days = daysUntil(t.data);
     const isRec = t.tipo === 'Receita';
-    return `<tr>
+    const isOverdue = days < 0;
+    return `<tr${isOverdue?' style="opacity:.85"':''}>
       <td class="mono">${fmtDateBR(t.data)}</td>
       <td>${t.descricao||''}</td>
       <td><span class="tag ${t.tipo}">${t.tipo}</span></td>
