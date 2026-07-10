@@ -124,7 +124,7 @@
   @keyframes fadeIn{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);} }
 
   /* KPI cards */
-  .kpi-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:22px;}
+  .kpi-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:14px;}
   .kpi-card{
     background:var(--surface); border:1px solid var(--border-soft); border-radius:var(--radius);
     padding:18px 20px; box-shadow:var(--shadow-card); position:relative; overflow:hidden;
@@ -1323,6 +1323,48 @@
     background:var(--surface-2);
   }
 
+
+  /* Overview compact insights row */
+  .ov-insights-row{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:14px;
+  }
+  .ov-insight-block{
+    background:var(--surface); border:1px solid var(--border-soft); border-radius:10px;
+    padding:14px 16px; box-shadow:var(--shadow-card);
+  }
+  .ov-insight-lbl{ font-size:10px; text-transform:uppercase; letter-spacing:.8px; color:var(--text-3); font-weight:600; margin-bottom:6px; }
+  .ov-insight-val{ font-size:19px; font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:-0.5px; }
+  .ov-insight-sub{ font-size:11px; color:var(--text-3); margin-top:4px; line-height:1.4; }
+  .ov-cat-pill{
+    display:inline-flex; align-items:center; gap:5px; padding:3px 8px;
+    border-radius:6px; font-size:11px; font-weight:600; margin-bottom:4px;
+  }
+
+  /* Overview metas progress */
+  .ov-meta-item{ display:flex; flex-direction:column; gap:4px; padding:8px 0; border-bottom:1px solid var(--border-soft); }
+  .ov-meta-item:last-child{ border-bottom:none; }
+  .ov-meta-header{ display:flex; justify-content:space-between; align-items:center; }
+  .ov-meta-name{ font-size:12.5px; font-weight:600; }
+  .ov-meta-pct{ font-size:11px; font-weight:700; color:var(--accent-2); }
+  .ov-meta-bar{ height:4px; background:var(--surface-3); border-radius:99px; overflow:hidden; }
+  .ov-meta-fill{ height:100%; border-radius:99px; background:var(--accent); transition:width .5s ease; }
+  .ov-meta-vals{ font-size:10.5px; color:var(--text-3); display:flex; justify-content:space-between; }
+
+  /* Overview dividas */
+  .ov-divida-item{ display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--border-soft); }
+  .ov-divida-item:last-child{ border-bottom:none; }
+  .ov-divida-info{ flex:1; min-width:0; }
+  .ov-divida-name{ font-size:12.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ov-divida-credor{ font-size:11px; color:var(--text-3); }
+  .ov-divida-val{ font-size:13px; font-weight:700; font-variant-numeric:tabular-nums; color:var(--negative); flex-shrink:0; }
+
+  /* Overview fatura chips */
+  .ov-fatura-total{ font-size:22px; font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:-0.5px; margin-bottom:10px; }
+  .ov-fatura-chip{ display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px solid var(--border-soft); font-size:12px; }
+  .ov-fatura-chip:last-child{ border-bottom:none; }
+  .ov-fatura-chip-name{ display:flex; align-items:center; gap:6px; color:var(--text-2); font-weight:500; }
+  .ov-fatura-chip-val{ font-weight:700; font-variant-numeric:tabular-nums; }
+
 </style>
 </head>
 <body>
@@ -1443,34 +1485,55 @@
         <div class="month-picker" id="monthPickerRoot"></div>
       </div>
 
+      <!-- Row 1: 4 compact KPI cards -->
       <div class="kpi-grid" id="kpiRow"></div>
 
-      <div class="panel row-gap">
-        <div class="panel-head">
-          <div>
-            <div class="panel-title">Fluxo do mês</div>
-            <div class="panel-sub">Saldo acumulado diário (receitas − despesas)</div>
-          </div>
+      <!-- Row 2: Fatura cartão + Fluxo side by side -->
+      <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-bottom:16px">
+        <div class="panel" id="ovFaturaPanel">
+          <div class="panel-head"><div class="panel-title">Faturas do cartão</div></div>
+          <div id="ovFaturaContent"><div class="empty-note">Sem faturas este mês</div></div>
         </div>
-        <div class="hero-chart-wrap"><canvas id="chartFluxo"></canvas></div>
-      </div>
-
-      <div class="grid-2b row-gap" id="insightsRow"></div>
-
-      <div class="grid-2b row-gap">
         <div class="panel">
           <div class="panel-head">
-            <div><div class="panel-title">Receitas por categoria</div><div class="panel-sub">Mês selecionado</div></div>
+            <div><div class="panel-title">Fluxo do mês</div><div class="panel-sub">Receitas − Despesas acumulado diário</div></div>
           </div>
+          <div style="height:160px"><canvas id="chartFluxo"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Row 3: 4 compact insight cards -->
+      <div class="ov-insights-row" id="insightsRow"></div>
+
+      <!-- Row 4: Metas + Dívidas quick view -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+        <div class="panel">
+          <div class="panel-head">
+            <div><div class="panel-title">Metas</div><div class="panel-sub">Progresso das metas ativas</div></div>
+            <button class="btn btn-ghost" style="padding:5px 12px;font-size:12px" onclick="[...document.querySelectorAll('.nav-item')].find(n=>n.dataset.view==='metas')?.click()">Ver todas →</button>
+          </div>
+          <div id="ovMetasContent"><div class="empty-note">Nenhuma meta cadastrada</div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head">
+            <div><div class="panel-title">Dívidas</div><div class="panel-sub">Status das dívidas ativas</div></div>
+            <button class="btn btn-ghost" style="padding:5px 12px;font-size:12px" onclick="[...document.querySelectorAll('.nav-item')].find(n=>n.dataset.view==='dividas')?.click()">Ver todas →</button>
+          </div>
+          <div id="ovDividasContent"><div class="empty-note">Nenhuma dívida cadastrada</div></div>
+        </div>
+      </div>
+
+      <!-- Row 5: Category donuts -->
+      <div class="grid-2b" style="margin-bottom:16px">
+        <div class="panel">
+          <div class="panel-head"><div><div class="panel-title">Receitas por categoria</div><div class="panel-sub">Mês selecionado</div></div></div>
           <div class="donut-wrap">
             <div class="donut-canvas"><canvas id="chartReceitas"></canvas><div class="donut-center" id="donutCenterRec"></div></div>
             <div class="donut-legend" id="legendReceitas"></div>
           </div>
         </div>
         <div class="panel">
-          <div class="panel-head">
-            <div><div class="panel-title">Despesas por categoria</div><div class="panel-sub">Conta + cartão</div></div>
-          </div>
+          <div class="panel-head"><div><div class="panel-title">Despesas por categoria</div><div class="panel-sub">Conta + cartão</div></div></div>
           <div class="donut-wrap">
             <div class="donut-canvas"><canvas id="chartDespesas"></canvas><div class="donut-center" id="donutCenterDesp"></div></div>
             <div class="donut-legend" id="legendDespesas"></div>
@@ -1478,12 +1541,13 @@
         </div>
       </div>
 
+      <!-- Row 6: Recent transactions -->
       <div class="panel">
         <div class="panel-head">
           <div><div class="panel-title">Lançamentos recentes</div><div class="panel-sub">Últimos 6 do mês selecionado</div></div>
         </div>
         <table class="data-table" id="recentTable">
-          <thead><tr><th>Data</th><th>Descrição</th><th>Tipo</th><th>Categoria</th><th style="text-align:right;">Valor</th></tr></thead>
+          <thead><tr><th>Data</th><th>Descrição</th><th>Tipo</th><th>Categoria</th><th style="text-align:right">Valor</th></tr></thead>
           <tbody id="recentBody"></tbody>
         </table>
       </div>
@@ -3535,29 +3599,37 @@ function renderInsights(key){
   const top = despCats[0];
 
   const row = document.getElementById('insightsRow');
+  const top2 = despCats[1];
+  const recCats = categorySums(key, 'Receita');
+  const topRec = recCats[0];
+  const totalFatura = DATA.cartaoCompras.filter(t=>getCartaoFaturaMonth(t)===key).reduce((s,t)=>s+t.valor,0);
+
   row.innerHTML = `
-    <div class="panel">
-      <div class="panel-head"><div><div class="panel-title">Taxa de economia</div><div class="panel-sub">Resultado ÷ receita do mês</div></div></div>
-      <div class="insight-flex">
-        <div class="ring-wrap">
-          <div class="ring-outer" id="savingsRing" style="background:conic-gradient(${ringColor} 0deg, var(--surface-3) 0deg);"></div>
-          <div class="ring-inner"><div class="ring-value num" id="savingsRingVal">0%</div><div class="ring-label">poupado</div></div>
-        </div>
-        <div class="insight-info">
-          <div class="insight-sub">${savingsMsg}</div>
-        </div>
-      </div>
+    <div class="ov-insight-block">
+      <div class="ov-insight-lbl">Taxa de economia</div>
+      <div class="ov-insight-val" style="color:${savingsRate>=20?'var(--positive)':savingsRate>=0?'var(--warning)':'var(--negative)'}">${savingsRate.toFixed(0)}%</div>
+      <div class="ov-insight-sub">${savingsMsg}</div>
     </div>
-    <div class="panel">
-      <div class="panel-head"><div><div class="panel-title">Maior categoria de gasto</div><div class="panel-sub">Conta + cartão, mês selecionado</div></div></div>
+    <div class="ov-insight-block">
+      <div class="ov-insight-lbl">Maior despesa</div>
       ${top ? `
-      <div class="insight-flex">
-        <div class="insight-cat-icon" style="background:${CAT_COLORS[0]}">${top[0].slice(0,2).toUpperCase()}</div>
-        <div class="insight-info">
-          <div class="insight-figure num">${fmtBRL(top[1])}</div>
-          <div class="insight-sub">${top[0]} representa <strong style="color:var(--text-1)">${((top[1]/totalDesp)*100).toFixed(0)}%</strong> das despesas do mês</div>
-        </div>
-      </div>` : `<div class="empty-note">Sem despesas neste mês.</div>`}
+        <div class="ov-cat-pill" style="background:${CAT_COLORS[0]}22;color:${CAT_COLORS[0]}">${top[0]}</div>
+        <div class="ov-insight-val">${fmtBRL(top[1])}</div>
+        <div class="ov-insight-sub">${totalDesp>0?((top[1]/totalDesp)*100).toFixed(0)+'% das despesas':''}</div>
+      ` : '<div class="ov-insight-sub">Sem despesas</div>'}
+    </div>
+    <div class="ov-insight-block">
+      <div class="ov-insight-lbl">Maior receita</div>
+      ${topRec ? `
+        <div class="ov-cat-pill" style="background:${CAT_COLORS[2]}22;color:${CAT_COLORS[2]}">${topRec[0]}</div>
+        <div class="ov-insight-val" style="color:var(--positive)">${fmtBRL(topRec[1])}</div>
+        <div class="ov-insight-sub">${recCats.reduce((s,[,v])=>s+v,0)>0?((topRec[1]/recCats.reduce((s,[,v])=>s+v,0))*100).toFixed(0)+'% das receitas':''}</div>
+      ` : '<div class="ov-insight-sub">Sem receitas</div>'}
+    </div>
+    <div class="ov-insight-block">
+      <div class="ov-insight-lbl">Fatura cartão</div>
+      <div class="ov-insight-val" style="color:${totalFatura>0?'var(--negative)':'var(--text-1)'}">${fmtBRL(totalFatura)}</div>
+      <div class="ov-insight-sub">${DATA.cartoes.length} cartão${DATA.cartoes.length!==1?'es':''} · ${DATA.cartaoCompras.filter(t=>getCartaoFaturaMonth(t)===key).length} compra${DATA.cartaoCompras.filter(t=>getCartaoFaturaMonth(t)===key).length!==1?'s':''}</div>
     </div>`;
 
   requestAnimationFrame(() => {
@@ -3577,13 +3649,73 @@ function renderInsights(key){
   });
 }
 
+
+// ── Overview: fatura cartão panel ──────────────────────────
+function renderOvFatura(key){
+  const el = document.getElementById('ovFaturaContent');
+  if(!el) return;
+  const compras = DATA.cartaoCompras.filter(t=>getCartaoFaturaMonth(t)===key);
+  const total = compras.reduce((s,t)=>s+t.valor,0);
+  if(total === 0){ el.innerHTML='<div class="empty-note" style="font-size:12px">Sem compras no cartão este mês.</div>'; return; }
+  const perCard = {};
+  compras.forEach(t=>{ perCard[t.cartao]=(perCard[t.cartao]||0)+t.valor; });
+  el.innerHTML = `
+    <div style="margin-bottom:10px">
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--text-3);font-weight:600;margin-bottom:3px">Total do mês</div>
+      <div class="ov-fatura-total" style="color:var(--negative)">${fmtBRL(total)}</div>
+    </div>
+    ${Object.entries(perCard).map(([card,val],i)=>`
+      <div class="ov-fatura-chip">
+        <div class="ov-fatura-chip-name"><span style="width:7px;height:7px;border-radius:50%;background:${CAT_COLORS[i%CAT_COLORS.length]};flex-shrink:0"></span>${card}</div>
+        <div class="ov-fatura-chip-val" style="color:var(--negative)">${fmtBRL(val)}</div>
+      </div>`).join('')}`;
+}
+
+// ── Overview: metas quick view ──────────────────────────────
+function renderOvMetas(){
+  const el = document.getElementById('ovMetasContent');
+  if(!el) return;
+  const ativas = DATA.metas.filter(m=>m.status!=='Concluída'&&m.status!=='Cancelada').slice(0,3);
+  if(ativas.length===0){ el.innerHTML='<div class="empty-note" style="font-size:12px">Nenhuma meta ativa.</div>'; return; }
+  el.innerHTML = ativas.map(m=>{
+    const pct = m.valorMeta>0 ? Math.min((m.valorAtual/m.valorMeta)*100,100) : 0;
+    return `<div class="ov-meta-item">
+      <div class="ov-meta-header">
+        <div class="ov-meta-name">${m.nome}</div>
+        <div class="ov-meta-pct">${pct.toFixed(0)}%</div>
+      </div>
+      <div class="ov-meta-bar"><div class="ov-meta-fill" style="width:${pct}%"></div></div>
+      <div class="ov-meta-vals"><span>${fmtBRL(m.valorAtual)}</span><span>${fmtBRL(m.valorMeta)}</span></div>
+    </div>`;
+  }).join('');
+}
+
+// ── Overview: dívidas quick view ────────────────────────────
+function renderOvDividas(){
+  const el = document.getElementById('ovDividasContent');
+  if(!el) return;
+  const ativas = DATA.dividas.filter(d=>d.status==='Ativa'||d.status==='Atrasada').slice(0,3);
+  if(ativas.length===0){ el.innerHTML='<div class="empty-note" style="font-size:12px">Sem dívidas ativas.</div>'; return; }
+  el.innerHTML = ativas.map(d=>`
+    <div class="ov-divida-item">
+      <div class="ov-divida-info">
+        <div class="ov-divida-name">${d.nome}</div>
+        <div class="ov-divida-credor">${d.credor||d.categoria||''}${d.modalidade==='parcelada'?` · ${d.numParcelas}x`:''}</div>
+      </div>
+      <div class="ov-divida-val">${fmtBRL(d.valorRestante)}</div>
+    </div>`).join('');
+}
+
 // ===================== Master render =====================
 function renderView(view){
   if(view === 'overview'){
     document.getElementById('ovSubtitle').textContent = 'Referente a ' + monthLabel(currentMonth);
     renderKPIs(currentMonth);
+    renderOvFatura(currentMonth);
     renderFluxoChart(currentMonth);
     renderInsights(currentMonth);
+    renderOvMetas();
+    renderOvDividas();
     chartRecInst = renderDonut('chartReceitas','legendReceitas','donutCenterRec', categorySums(currentMonth,'Receita'), chartRecInst);
     chartDespInst = renderDonut('chartDespesas','legendDespesas','donutCenterDesp', categorySums(currentMonth,'Despesa'), chartDespInst);
     renderRecent(currentMonth);
