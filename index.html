@@ -1532,30 +1532,42 @@
       <div class="topbar">
         <div>
           <div class="page-title">Cartão de Crédito</div>
-          <div class="page-sub">Faturas e compras lançadas</div>
+          <div class="page-sub">Limites, faturas e compras do mês</div>
         </div>
         <div class="month-picker" id="monthPickerRoot3"></div>
       </div>
 
-      <div class="panel row-gap" style="padding:16px 20px">
-        <div style="display:flex;gap:16px;align-items:stretch;flex-wrap:wrap">
-          <div id="faturaTotalPanel" style="flex:1;min-width:220px"></div>
-          <div style="flex:2;min-width:260px">
-            <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--text-3);margin-bottom:10px">Faturas por cartão <span style="font-weight:400;opacity:.7">· clique para filtrar</span></div>
-            <div class="invoice-grid" id="invoiceGrid"></div>
+      <!-- Card visuals row -->
+      <div id="ccCardsRow" class="cc-cards-row"></div>
+
+      <!-- KPI row -->
+      <div class="cc-kpi-row" id="ccKpiRow"></div>
+
+      <!-- Middle: category chart + invoice -->
+      <div class="grid-2" style="margin-bottom:18px">
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">Gastos por categoria</div></div>
+          <div style="height:160px;max-width:200px;margin:0 auto"><canvas id="chartCartaoCat"></canvas></div>
+          <div id="ccCatLegend" style="margin-top:12px"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">Fatura do mês</div>
           </div>
+          <div class="invoice-grid" id="invoiceGrid"></div>
         </div>
       </div>
 
+      <!-- Purchases table -->
       <div class="panel">
         <div class="panel-head">
-          <div><div class="panel-title" id="purchasesTitle">Compras lançadas no mês</div></div>
+          <div class="panel-title" id="cardPurchasesTitle">Compras lançadas no mês</div>
         </div>
         <table class="data-table">
-          <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Cartão</th><th>Parcela</th><th style="text-align:right;">Valor</th></tr></thead>
+          <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Cartão</th><th>Parcela</th><th style="text-align:right">Valor</th><th></th></tr></thead>
           <tbody id="cardPurchasesBody"></tbody>
         </table>
-        <div class="empty-note" id="cardPurchasesEmpty" style="display:none;">Nenhuma compra lançada neste mês.</div>
+        <div class="empty-note" id="cardPurchasesEmpty" style="display:none">Nenhuma compra lançada neste mês.</div>
       </div>
     </div>
 
