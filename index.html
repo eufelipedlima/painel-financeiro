@@ -1719,6 +1719,77 @@
     .fab{ transition: opacity .2s ease, transform .2s ease, box-shadow .15s ease; }
   }
 
+
+  /* ── Premium debt cards ── */
+  .new-divida-card{
+    background:var(--surface); border:1px solid var(--border-soft);
+    border-radius:14px; overflow:hidden; box-shadow:var(--shadow-card);
+    margin-bottom:14px; transition:box-shadow .15s ease;
+  }
+  .new-divida-card:hover{ box-shadow:0 4px 20px rgba(0,0,0,0.12); }
+
+  .ndc-header{
+    display:flex; align-items:flex-start; justify-content:space-between;
+    padding:16px 18px 12px; gap:12px;
+  }
+  .ndc-name{ font-size:16px; font-weight:700; color:var(--text-1); margin-bottom:3px; }
+  .ndc-sub{ font-size:12px; color:var(--text-3); font-weight:500; }
+  .ndc-badge{
+    font-size:10.5px; font-weight:700; padding:4px 12px; border-radius:20px;
+    text-transform:uppercase; letter-spacing:.5px; flex-shrink:0; white-space:nowrap;
+  }
+
+  .ndc-progress-section{ padding:0 18px 14px; }
+  .ndc-progress-header{
+    display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;
+  }
+  .ndc-prog-lbl{ font-size:11.5px; color:var(--text-3); font-weight:600; }
+  .ndc-prog-pct{ font-size:13px; font-weight:800; }
+  .ndc-progress-bar{
+    height:8px; background:var(--surface-3); border-radius:99px; overflow:hidden;
+  }
+  .ndc-progress-fill{ height:100%; border-radius:99px; transition:width .6s ease; }
+
+  .ndc-numbers{
+    display:grid; grid-template-columns:repeat(4,1fr);
+    border-top:1px solid var(--border-soft); border-bottom:1px solid var(--border-soft);
+  }
+  .ndc-num-block{
+    padding:12px 18px; border-right:1px solid var(--border-soft);
+  }
+  .ndc-num-block:last-child{ border-right:none; }
+  .ndc-num-block.highlight{ background:var(--surface-2); }
+  .ndc-num-lbl{ font-size:10px; color:var(--text-3); font-weight:700; text-transform:uppercase; letter-spacing:.6px; margin-bottom:4px; }
+  .ndc-num-val{ font-size:15px; font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:-0.3px; }
+
+  .ndc-footer{
+    display:flex; align-items:center; gap:8px; padding:12px 18px;
+    background:var(--surface-2);
+  }
+  .ndc-btn{
+    padding:7px 16px; border-radius:8px; font-size:12.5px; font-weight:600;
+    cursor:pointer; font-family:'Inter',sans-serif; border:1.5px solid var(--border);
+    background:var(--surface); color:var(--text-2); transition:.12s ease;
+  }
+  .ndc-btn:hover{ background:var(--surface-3); color:var(--text-1); }
+  .ndc-btn.secondary{
+    background:var(--accent-soft); color:var(--accent-2); border-color:var(--accent-soft);
+  }
+  .ndc-btn.secondary:hover{ background:var(--accent); color:#fff; }
+
+  @media (max-width: 768px){
+    .ndc-numbers{ grid-template-columns:1fr 1fr; }
+    .ndc-num-block:nth-child(2){ border-right:none; }
+    .ndc-num-block:nth-child(3){ border-top:1px solid var(--border-soft); }
+    .ndc-num-block:nth-child(4){ border-top:1px solid var(--border-soft); border-right:none; }
+    .ndc-header{ padding:14px 14px 10px; }
+    .ndc-progress-section{ padding:0 14px 12px; }
+    .ndc-num-block{ padding:10px 14px; }
+    .ndc-num-val{ font-size:14px; }
+    .ndc-footer{ padding:10px 14px; }
+    .ndc-name{ font-size:15px; }
+  }
+
 </style>
 </head>
 <body>
@@ -5048,50 +5119,82 @@ function renderDividas(){
     list.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--text-3)"><div style="font-size:15px;font-weight:600;color:var(--text-2);margin-bottom:6px">Nenhuma dívida cadastrada</div><div>Clique em "+ Nova Dívida" para começar</div></div>';
     return;
   }
-  list.innerHTML = DATA.dividas.map(d => {
+  list.innerHTML = DATA.dividas.map((d,idx) => {
     const pctPago = d.valorTotal > 0 ? Math.min((d.valorTotal-d.valorRestante)/d.valorTotal*100, 100) : 0;
     const parcelas = d.parcelas||[];
     const pagas = parcelas.filter(p=>p.status==='Pago').length;
-    const nextPend = parcelas.find(p=>p.status==='Pendente');
+    const pendentes = parcelas.filter(p=>p.status==='Pendente');
+    const nextPend = pendentes.sort((a,b)=>parseDate(a.dataVencimento)-parseDate(b.dataVencimento))[0];
     const atrasada = d.status === 'Atrasada';
-    const mensalVal = d.valorParcela > 0 ? fmtBRL(d.valorParcela)+'/parc' : '';
-    const parcRows = parcelas.map(p => `
-      <div class="parc-row">
+    const quitada = d.status === 'Quitada';
+    const accentColor = quitada ? 'var(--positive)' : atrasada ? 'var(--negative)' : 'var(--warning)';
+    const CARD_COLORS = ['#6366F1','#10B981','#F59E0B','#EF4444','#8B5CF6','#06B6D4'];
+    const cardColor = CARD_COLORS[idx % CARD_COLORS.length];
+    const parcRows = parcelas.map(p => {
+      const isAtras = p.status==='Pendente' && parseDate(p.dataVencimento)<hoje;
+      return `<div class="parc-row">
         <div class="parc-num">${p.numero}/${parcelas.length}</div>
-        <div class="parc-info"><div>${fmtDateBR(p.dataVencimento)}</div></div>
+        <div class="parc-info">${fmtDateBR(p.dataVencimento)}</div>
         <div class="parc-val">${fmtBRL(p.valorParcela)}</div>
-        <span class="parc-status-dot ${p.status}">${p.status}</span>
+        <span class="parc-status-dot ${p.status}">${p.status}${isAtras?' ⚠':''}</span>
         ${p.status!=='Pago'?`<button class="parc-pay-btn" data-did="${d._id}" data-pnum="${p.numero}">Pagar</button>`:''}
-      </div>`).join('');
-    return `<div class="divida-card" data-did="${d._id}">
-      <div class="dc-top">
-        <span class="dc-dot ${d.status}"></span>
-        <span class="dc-name">${d.nome}</span>
-        ${d.credor?`<span class="dc-credor">· ${d.credor}</span>`:''}
-        <span class="divida-status-badge ${d.status}">${d.status}</span>
+      </div>`;
+    }).join('');
+
+    return `<div class="new-divida-card" data-did="${d._id}" style="border-left:4px solid ${cardColor}">
+      <!-- Header -->
+      <div class="ndc-header">
+        <div class="ndc-title-wrap">
+          <div class="ndc-name">${d.nome}</div>
+          <div class="ndc-sub">${[d.credor, d.categoria].filter(Boolean).join(' · ')}</div>
+        </div>
+        <span class="ndc-badge" style="background:${accentColor}15;color:${accentColor};border:1px solid ${accentColor}40">${d.status}</span>
       </div>
-      <div class="dc-bar-row">
-        <div class="dc-bar"><div class="dc-bar-fill${atrasada?' atrasada':''}" style="width:${pctPago}%"></div></div>
-        <span class="dc-pct">${pctPago.toFixed(0)}%</span>
+
+      <!-- Progress section -->
+      <div class="ndc-progress-section">
+        <div class="ndc-progress-header">
+          <span class="ndc-prog-lbl">${pagas} de ${parcelas.length || 1} parcelas pagas</span>
+          <span class="ndc-prog-pct" style="color:${cardColor}">${pctPago.toFixed(0)}%</span>
+        </div>
+        <div class="ndc-progress-bar">
+          <div class="ndc-progress-fill" style="width:${pctPago}%;background:${cardColor}"></div>
+        </div>
       </div>
-      <div class="dc-stats">
-        <span>Total: <span class="val">${fmtBRL(d.valorTotal)}</span></span>
-        <span class="sep">·</span>
-        <span>Restante: <span class="val" style="color:var(--negative)">${fmtBRL(d.valorRestante)}</span></span>
-        ${parcelas.length>0?`<span class="sep">·</span><span>Parcelas: <span class="val">${pagas}/${parcelas.length}</span></span>`:''}
-        ${nextPend?`<span class="sep">·</span><span>Próx: <span class="val">${fmtDateBR(nextPend.dataVencimento)}</span></span>`:''}
-        ${mensalVal?`<span class="sep">·</span><span><span class="val">${mensalVal}</span></span>`:''}
+
+      <!-- Key numbers grid -->
+      <div class="ndc-numbers">
+        <div class="ndc-num-block">
+          <div class="ndc-num-lbl">💰 Total</div>
+          <div class="ndc-num-val">${fmtBRL(d.valorTotal)}</div>
+        </div>
+        <div class="ndc-num-block highlight">
+          <div class="ndc-num-lbl">⏳ Restante</div>
+          <div class="ndc-num-val" style="color:${quitada?'var(--positive)':atrasada?'var(--negative)':'var(--text-1)'}">${fmtBRL(d.valorRestante)}</div>
+        </div>
+        ${d.valorParcela>0?`<div class="ndc-num-block">
+          <div class="ndc-num-lbl">📅 Parcela</div>
+          <div class="ndc-num-val">${fmtBRL(d.valorParcela)}</div>
+        </div>`:''}
+        ${nextPend?`<div class="ndc-num-block">
+          <div class="ndc-num-lbl">🗓 Próximo</div>
+          <div class="ndc-num-val" style="color:${atrasada?'var(--negative)':'var(--text-1)'}">${fmtDateBR(nextPend.dataVencimento)}</div>
+        </div>`:''}
       </div>
-      <div class="dc-actions">
-        ${parcelas.length>0?`<button class="divida-action-btn primary" data-toggle="${d._id}">▾ Ver ${parcelas.length} parcelas</button>`:''}
-        <button class="divida-action-btn" data-dedit="${d._id}">✎ Editar</button>
+
+      <!-- Actions -->
+      <div class="ndc-footer">
+        ${parcelas.length>0?`<button class="ndc-btn secondary" data-toggle="${d._id}">▾ Ver ${parcelas.length} parcelas</button>`:''}
+        <button class="ndc-btn" data-dedit="${d._id}">✎ Editar</button>
       </div>
-      <div class="divida-parcelas" id="parc-${d._id}">${parcRows||'<div class="empty-note">Nenhuma parcela cadastrada.</div>'}</div>
+
+      <!-- Parcelas (hidden by default) -->
+      <div class="divida-parcelas" id="parc-${d._id}">${parcRows||'<div class="empty-note">Nenhuma parcela.</div>'}</div>
     </div>`;
   }).join('');
   // Wire toggle + pay
   list.querySelectorAll('[data-toggle]').forEach(btn => {
-    btn.onclick = () => { const el=document.getElementById('parc-'+btn.dataset.toggle); if(el) el.classList.toggle('open'); };
+    btn.onclick = () => { const el=document.getElementById('parc-'+btn.dataset.toggle); if(el){ el.classList.toggle('open'); btn.textContent=el.classList.contains('open')?'▲ Fechar parcelas':`▾ Ver ${el.querySelectorAll('.parc-row').length} parcelas`; } };
   });
   list.querySelectorAll('.parc-pay-btn').forEach(btn => {
     btn.onclick = () => pagarParcela(parseInt(btn.dataset.did), parseInt(btn.dataset.pnum));
