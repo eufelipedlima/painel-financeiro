@@ -5197,11 +5197,69 @@ function renderDividas(){
     btn.onclick = () => { const el=document.getElementById('parc-'+btn.dataset.toggle); if(el){ el.classList.toggle('open'); btn.textContent=el.classList.contains('open')?'▲ Fechar parcelas':`▾ Ver ${el.querySelectorAll('.parc-row').length} parcelas`; } };
   });
   list.querySelectorAll('.parc-pay-btn').forEach(btn => {
-    btn.onclick = () => pagarParcela(parseInt(btn.dataset.did), parseInt(btn.dataset.pnum));
+    btn.onclick = () => openParcPayModal(parseInt(btn.dataset.did), parseInt(btn.dataset.pnum));
   });
   list.querySelectorAll('[data-dedit]').forEach(btn => {
     btn.onclick = () => openDividaModal(parseInt(btn.dataset.dedit));
   });
+}
+
+
+// ── Parcela payment modal ──────────────────────────────────
+let _parcPayDivId = null;
+let _parcPayNum = null;
+
+function openParcPayModal(dividaId, parcNum){
+  _parcPayDivId = dividaId;
+  _parcPayNum = parcNum;
+  const d = DATA.dividas.find(x=>x._id===dividaId);
+  const p = d && (d.parcelas||[]).find(x=>x.numero===parcNum);
+  if(!d||!p) return;
+  document.getElementById('parcPayTitle').textContent = `Pagar parcela ${parcNum}/${d.parcelas.length}`;
+  document.getElementById('parcPayDesc').textContent = `${d.nome} · ${fmtBRL(p.valorParcela)}`;
+  document.getElementById('parcPayData').value = new Date().toISOString().split('T')[0];
+  document.getElementById('parcPayValor').value = p.valorParcela.toFixed(2);
+  document.getElementById('parcPayConta').innerHTML =
+    DATA.contas.filter(c=>!c.arquivado).map(c=>`<option value="${c.conta}">${c.conta} (${fmtBRL(c.saldoAtual)})</option>`).join('');
+  // Default to debt's account
+  if(d.conta) document.getElementById('parcPayConta').value = d.conta;
+  const overlay = document.getElementById('parcPayOverlay');
+  overlay.style.display='flex';
+  requestAnimationFrame(()=>overlay.classList.add('open'));
+}
+function closeParcPayModal(){
+  const overlay = document.getElementById('parcPayOverlay');
+  overlay.classList.remove('open');
+  setTimeout(()=>{ overlay.style.display='none'; },250);
+  _parcPayDivId=null; _parcPayNum=null;
+}
+function confirmParcPay(){
+  if(_parcPayDivId===null||_parcPayNum===null) return;
+  const conta = document.getElementById('parcPayConta').value;
+  const data = document.getElementById('parcPayData').value;
+  const valor = parseFloat(document.getElementById('parcPayValor').value)||0;
+  // Update conta balance
+  const contaObj = DATA.contas.find(c=>c.conta===conta);
+  if(contaObj){ contaObj.saldoAtual=Math.round((contaObj.saldoAtual-valor)*100)/100; DATA.saldoTotal=Math.round((DATA.saldoTotal-valor)*100)/100; }
+  // Use existing pagarParcela logic but override date/conta
+  const d = DATA.dividas.find(x=>x._id===_parcPayDivId);
+  const p = d&&(d.parcelas||[]).find(x=>x.numero===_parcPayNum);
+  if(d&&p){
+    p.status='Pago';
+    d.valorRestante=Math.max(0,Math.round((d.valorRestante-p.valorParcela)*100)/100);
+    if(d.valorRestante<=0) d.status='Quitada';
+    const txMarker=`DIV:${d._dbId}|PARC:${_parcPayNum}`;
+    const existingTx=DATA.transacoes.find(t=>(t.obs||'').includes(txMarker));
+    if(existingTx){ existingTx.status='Pago'; existingTx.data=data; existingTx.conta=conta; dbUpdateEntryStatus(existingTx,'Pago'); }
+    else {
+      const entry={_id:_nextId++,data,descricao:`${d.nome} — Parcela ${_parcPayNum}/${d.parcelas.length}`,tipo:'Despesa',categoria:d.categoria||'Outros (Despesa)',conta,contaDestino:null,formaPagamento:'Boleto',status:'Pago',valor:p.valorParcela,obs:txMarker,_source:'transacoes',_new:true};
+      DATA.transacoes.push(entry); pendingSync.push(entry); updateSyncBar(); dbSaveTransaction(entry);
+    }
+    dbUpdateParcela(p); dbUpdateDividaRestante(d);
+    showToast(`Parcela ${_parcPayNum} de "${d.nome}" paga!`);
+  }
+  closeParcPayModal();
+  renderDividas(); renderSidebar();
 }
 
 function addDateByFreq(isoDate, freq){
@@ -6106,6 +6164,33 @@ renderAll();
       Configurações
     </a>
   </div>
+
+
+<!-- PARCELA PAYMENT MODAL -->
+<div class="cmodal-overlay" id="parcPayOverlay" style="display:none" onclick="closeParcPayModal()">
+  <div class="cmodal" onclick="event.stopPropagation()" style="max-width:420px">
+    <div class="cmodal-title" id="parcPayTitle">Pagar parcela</div>
+    <div style="font-size:13px;color:var(--text-3);margin-bottom:20px" id="parcPayDesc"></div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Data do pagamento</label>
+        <input type="date" class="form-input" id="parcPayData">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Valor</label>
+        <input type="number" class="form-input" id="parcPayValor" step="0.01">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Conta de pagamento</label>
+      <select class="form-select" id="parcPayConta"></select>
+    </div>
+    <div class="cmodal-actions">
+      <button class="btn btn-ghost" onclick="closeParcPayModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmParcPay()">✓ Confirmar pagamento</button>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
