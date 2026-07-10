@@ -1705,6 +1705,19 @@
     #payModalOverlay{ z-index:400 !important; }
   }
 
+
+  @media (max-width: 768px){
+    .fab{
+      bottom: 76px !important;
+      right: 14px !important;
+      padding: 10px 18px !important;
+      font-size: 13px !important;
+      box-shadow: 0 4px 16px rgba(79,70,229,0.35), 0 2px 8px rgba(0,0,0,0.15) !important;
+    }
+    .fab.hidden-by-scroll{ opacity:0; pointer-events:none; transform:translateY(8px); }
+    .fab{ transition: opacity .2s ease, transform .2s ease, box-shadow .15s ease; }
+  }
+
 </style>
 </head>
 <body>
@@ -3485,6 +3498,18 @@ document.getElementById('searchInput').addEventListener('input', renderAllTable)
 (function(){
   // Run after DOM is fully parsed (nav HTML is after script tag)
   function initMobileNav(){
+
+  function mobileNavigate(view){
+    // Use same logic as desktop nav items
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+    const desktopItem = document.querySelector('.nav-item[data-view="'+view+'"]');
+    if(desktopItem) desktopItem.classList.add('active');
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    currentView = view;
+    const viewEl = document.getElementById('view-'+view);
+    if(viewEl) viewEl.classList.add('active');
+    renderView(view);
+  }
   function updateMobNav(view){
     document.querySelectorAll('.mob-nav-item[data-view]').forEach(item=>{
       item.classList.toggle('active', item.dataset.view === view);
@@ -3493,7 +3518,7 @@ document.getElementById('searchInput').addEventListener('input', renderAllTable)
 
   document.querySelectorAll('.mob-nav-item[data-view]').forEach(item=>{
     item.addEventListener('click', ()=>{
-      navigate(item.dataset.view);
+      mobileNavigate(item.dataset.view);
       updateMobNav(item.dataset.view);
     });
   });
@@ -3559,6 +3584,22 @@ document.getElementById('searchInput').addEventListener('input', renderAllTable)
     });
   }
 
+
+  // Hide FAB on scroll down, show on scroll up (mobile)
+  if(window.innerWidth <= 768){
+    let lastScrollY = 0;
+    const mainEl = document.querySelector('main.main');
+    if(mainEl){
+      mainEl.addEventListener('scroll', ()=>{
+        const fab = document.getElementById('fabBtn');
+        if(!fab) return;
+        const y = mainEl.scrollTop;
+        if(y > lastScrollY + 10){ fab.classList.add('hidden-by-scroll'); }
+        else if(y < lastScrollY - 5){ fab.classList.remove('hidden-by-scroll'); }
+        lastScrollY = y;
+      }, {passive:true});
+    }
+  }
   } // end initMobileNav
   if(document.readyState === 'loading'){
     document.addEventListener('DOMContentLoaded', initMobileNav);
@@ -5948,15 +5989,15 @@ renderAll();
   <div class="mob-more-drawer" id="mobMoreDrawer">
     <div class="mob-more-title">Mais opções</div>
     <a class="mob-more-item" data-view="orcamento">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 3"/></svg>
       Orçamento
     </a>
     <a class="mob-more-item" data-view="dividas">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/><path d="M14 15l1.5 1.5L18 13"/></svg>
       Dívidas
     </a>
     <a class="mob-more-item" data-view="configuracoes">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
       Configurações
     </a>
   </div>
