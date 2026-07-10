@@ -1569,44 +1569,88 @@
   @media (max-width: 768px){
     .mobile-trans-list{ display:block; }
     #allTable{ display:none; }
-    .table-summary{ font-size:11px; }
+    .table-summary{ font-size:11px; padding:8px 0; }
 
     .mob-trans-card{
       background:var(--surface); border:1px solid var(--border-soft);
-      border-radius:12px; padding:14px 16px; margin-bottom:10px;
-      box-shadow:var(--shadow-card);
+      border-radius:14px; margin-bottom:10px;
+      box-shadow:var(--shadow-card); overflow:hidden;
+      border-left:4px solid var(--border);
     }
+    .mob-trans-card.status-pago{ border-left-color:var(--positive); }
+    .mob-trans-card.status-pendente{ border-left-color:#F59E0B; }
+    .mob-trans-card.status-atrasado{ border-left-color:var(--negative); }
+
+    /* Header area */
+    .mob-trans-header{ padding:14px 14px 10px; }
     .mob-trans-top{
-      display:flex; align-items:flex-start; justify-content:space-between;
-      margin-bottom:8px;
+      display:flex; align-items:flex-start; justify-content:space-between; gap:8px;
+      margin-bottom:6px;
     }
-    .mob-trans-desc{ font-size:14px; font-weight:700; color:var(--text-1); flex:1; margin-right:8px; line-height:1.3; }
-    .mob-trans-val{ font-size:16px; font-weight:800; font-variant-numeric:tabular-nums; flex-shrink:0; }
+    .mob-trans-desc{
+      font-size:15px; font-weight:700; color:var(--text-1);
+      flex:1; line-height:1.3;
+    }
+    .mob-trans-val{
+      font-size:17px; font-weight:800; font-variant-numeric:tabular-nums;
+      flex-shrink:0; letter-spacing:-0.3px;
+    }
     .mob-trans-val.rec{ color:var(--positive); }
     .mob-trans-val.desp{ color:var(--negative); }
     .mob-trans-val.cart{ color:var(--accent-2); }
+
+    /* Divider */
+    .mob-trans-divider{ height:1px; background:var(--border-soft); margin:0 14px; }
+
+    /* Meta grid */
     .mob-trans-meta{
-      display:grid; grid-template-columns:1fr 1fr; gap:6px 10px;
-      margin-bottom:10px;
+      display:grid; grid-template-columns:1fr 1fr;
+      gap:0; padding:0;
     }
-    .mob-trans-field{ display:flex; flex-direction:column; gap:1px; }
-    .mob-trans-lbl{ font-size:9.5px; text-transform:uppercase; letter-spacing:.6px; color:var(--text-3); font-weight:700; }
-    .mob-trans-fval{ font-size:12.5px; color:var(--text-2); font-weight:500; }
-    .mob-trans-bottom{
+    .mob-trans-field{
+      display:flex; flex-direction:column; gap:2px;
+      padding:10px 14px;
+      border-bottom:1px solid var(--border-soft);
+      border-right:1px solid var(--border-soft);
+    }
+    .mob-trans-field:nth-child(2n){ border-right:none; }
+    .mob-trans-field:nth-last-child(-n+2){ border-bottom:none; }
+    .mob-trans-lbl{
+      font-size:9px; text-transform:uppercase; letter-spacing:.8px;
+      color:var(--text-3); font-weight:700;
+    }
+    .mob-trans-fval{ font-size:13px; color:var(--text-1); font-weight:600; }
+
+    /* Footer */
+    .mob-trans-footer{
       display:flex; align-items:center; justify-content:space-between;
-      padding-top:10px; border-top:1px solid var(--border-soft);
+      padding:10px 14px;
+      background:var(--surface-2);
     }
-    .mob-trans-status{ display:flex; align-items:center; }
+    .mob-trans-card.status-pago .mob-trans-footer{ background:rgba(16,185,129,0.06); }
+    .mob-trans-card.status-pendente .mob-trans-footer{ background:rgba(245,158,11,0.06); }
+    .mob-trans-card.status-atrasado .mob-trans-footer{ background:rgba(248,113,113,0.08); }
+
+    .mob-trans-status-badge{
+      display:flex; align-items:center; gap:5px;
+      font-size:12.5px; font-weight:700;
+    }
+    .mob-trans-status-badge.pago{ color:var(--positive); }
+    .mob-trans-status-badge.pendente{ color:#B45309; }
+    .mob-trans-status-badge.atrasado{ color:var(--negative); }
+
+    .mob-trans-actions{ display:flex; gap:6px; }
     .mob-trans-edit{
-      padding:6px 12px; border-radius:7px; background:var(--surface-2);
+      padding:7px 12px; border-radius:8px; background:var(--surface-3);
       border:1px solid var(--border-soft); font-size:12px; font-weight:600;
       color:var(--text-2); cursor:pointer; font-family:'Inter',sans-serif;
     }
     .mob-trans-pagar{
-      padding:6px 14px; border-radius:7px; background:var(--accent);
-      border:none; font-size:12px; font-weight:600;
+      padding:7px 14px; border-radius:8px; background:#F59E0B;
+      border:none; font-size:12px; font-weight:700;
       color:#fff; cursor:pointer; font-family:'Inter',sans-serif;
     }
+    .mob-trans-pagar.rec{ background:var(--positive); }
   }
 
 
@@ -1619,7 +1663,8 @@
     font-family:'Inter',sans-serif; cursor:pointer; white-space:nowrap;
   }
   .mob-filter-dropdown{
-    position:absolute; top:calc(100% + 6px); left:0; right:0; z-index:100;
+    position:absolute; top:calc(100% + 6px); right:0; left:auto; z-index:100;
+    min-width:180px; white-space:nowrap;
     background:var(--surface); border:1px solid var(--border-soft);
     border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.15);
     display:none; overflow:hidden;
@@ -3358,23 +3403,42 @@ function renderAllTable(){
         const isRec = t.tipo==='Receita';
         const isCart = t._source==='cartaoCompras'||t.tipo==='Cartão';
         const valClass = isRec?'rec':isCart?'cart':'desp';
-        const signal = isRec?'+':'-';
+        const signal = isRec?'+':'−';
         const isPend = t.status==='Pendente';
-        return `<div class="mob-trans-card">
-          <div class="mob-trans-top">
-            <div class="mob-trans-desc">${t.descricao||'—'}</div>
-            <div class="mob-trans-val ${valClass}">${signal}${fmtBRL(t.valor)}</div>
+        const isAtras = t.status==='Atrasado';
+        const statusKey = isPend?'pendente':isAtras?'atrasado':'pago';
+        const statusIcon = isPend?'⏱':isAtras?'⚠':'✓';
+        const statusTxt = isPend?'Pendente':isAtras?'Atrasado':'Pago';
+        return `<div class="mob-trans-card status-${statusKey}">
+          <div class="mob-trans-header">
+            <div class="mob-trans-top">
+              <div class="mob-trans-desc">${t.descricao||'—'}</div>
+              <div class="mob-trans-val ${valClass}">${signal}${fmtBRL(t.valor)}</div>
+            </div>
           </div>
+          <div class="mob-trans-divider"></div>
           <div class="mob-trans-meta">
-            <div class="mob-trans-field"><div class="mob-trans-lbl">Data</div><div class="mob-trans-fval">${fmtDateBR(t.data)}</div></div>
-            <div class="mob-trans-field"><div class="mob-trans-lbl">Categoria</div><div class="mob-trans-fval">${t.categoria||'—'}</div></div>
-            <div class="mob-trans-field"><div class="mob-trans-lbl">Tipo</div><div class="mob-trans-fval"><span class="tag ${t.tipo}" style="font-size:10px;padding:2px 7px">${t.tipo}</span></div></div>
-            <div class="mob-trans-field"><div class="mob-trans-lbl">Conta</div><div class="mob-trans-fval">${t.conta||'—'}</div></div>
+            <div class="mob-trans-field">
+              <div class="mob-trans-lbl">📅 Data</div>
+              <div class="mob-trans-fval">${fmtDateBR(t.data)}</div>
+            </div>
+            <div class="mob-trans-field">
+              <div class="mob-trans-lbl">🏷 Categoria</div>
+              <div class="mob-trans-fval">${t.categoria||'—'}</div>
+            </div>
+            <div class="mob-trans-field">
+              <div class="mob-trans-lbl">💳 Tipo</div>
+              <div class="mob-trans-fval"><span class="tag ${t.tipo}" style="font-size:10px;padding:2px 7px">${t.tipo}</span></div>
+            </div>
+            <div class="mob-trans-field">
+              <div class="mob-trans-lbl">🏦 Conta</div>
+              <div class="mob-trans-fval">${t.conta||'—'}</div>
+            </div>
           </div>
-          <div class="mob-trans-bottom">
-            <span class="status-pill ${t.status}">${t.status}</span>
-            <div style="display:flex;gap:8px">
-              ${isPend?`<button class="mob-trans-pagar" data-id="${t._id}">✓ ${isRec?'Recebi':'Paguei'}</button>`:''}
+          <div class="mob-trans-footer">
+            <div class="mob-trans-status-badge ${statusKey}">${statusIcon} ${statusTxt}</div>
+            <div class="mob-trans-actions">
+              ${isPend?`<button class="mob-trans-pagar${isRec?' rec':''}" data-id="${t._id}">${isRec?'✓ Recebi':'✓ Paguei'}</button>`:''}
               <button class="mob-trans-edit" data-id="${t._id}">✎ Editar</button>
             </div>
           </div>
