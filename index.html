@@ -261,6 +261,7 @@
   }
   .inv-status-pill.Pendente{background:var(--warning-soft); color:var(--warning);}
   .inv-status-pill.Pago{background:var(--positive-soft); color:var(--positive);}
+  .inv-status-pill.Parcial{background:rgba(245,158,11,0.1); color:#B45309; border:1px solid rgba(245,158,11,0.2);}
 
   /* Pending urgency */
   .urgency-pill{font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px;}
@@ -2913,7 +2914,7 @@ function renderFaturaTotal(key){
 function renderInvoices(key){
   const grid = document.getElementById('invoiceGrid');
 
-  // Build invoice list from actual purchases (not just paid records)
+  // Build from actual purchases
   const comprasMes = getMonthCartao(key);
   const perCard = {};
   comprasMes.forEach(c => {
@@ -2922,30 +2923,45 @@ function renderInvoices(key){
     perCard[c.cartao].compras++;
   });
 
-  // Merge with any existing fatura records (for paid status)
-  const faturasPagas = DATA.faturas.filter(f => f.competencia && f.competencia.slice(0,7) === key);
-  const faturaStatusMap = {};
-  faturasPagas.forEach(f => { faturaStatusMap[f.cartao] = f; });
+  // Merge with fatura records (for paid/partial status and remaining amount)
+  const faturasMes = DATA.faturas.filter(f => f.competencia && f.competencia.slice(0,7) === key);
+  const fatMap = {};
+  faturasMes.forEach(f => { fatMap[f.cartao] = f; });
 
-  // Merge: show cartões with purchases + mark as paid if fatura exists
   let items = Object.values(perCard).map(c => {
-    const fat = faturaStatusMap[c.cartao];
+    const fat = fatMap[c.cartao];
     const cartaoObj = DATA.cartoes.find(k => k.cartao === c.cartao);
+    const totalCompras = c.total;
+    let status = 'Pendente';
+    let valorRestante = totalCompras;
+    let valorPago = 0;
+
+    if(fat){
+      if(fat.status === 'Pago' || fat.valorTotal <= 0){
+        status = 'Pago';
+        valorPago = totalCompras;
+        valorRestante = 0;
+      } else if(fat.valorTotal < totalCompras){
+        // Partial payment made
+        status = 'Parcial';
+        valorPago = Math.round((totalCompras - fat.valorTotal)*100)/100;
+        valorRestante = fat.valorTotal;
+      }
+    }
+
     return {
-      cartao: c.cartao,
-      total: c.total,
-      compras: c.compras,
-      status: fat?.status || 'Pendente',
-      _dbId: fat?._dbId,
-      competencia: key + '-01',
-      fechamento: cartaoObj?.fechamento,
-      vencimento: cartaoObj?.vencimento,
+      cartao: c.cartao, totalCompras, valorPago, valorRestante, status, compras: c.compras,
+      _dbId: fat?._dbId, competencia: key + '-01',
+      fechamento: cartaoObj?.fechamento, vencimento: cartaoObj?.vencimento,
     };
   });
 
-  // Also include paid faturas for cartões with no purchases this month (historical)
-  faturasPagas.forEach(f => {
-    if(!perCard[f.cartao]) items.push({...f, total:f.valorTotal, compras:0});
+  // Include faturas for cards with no purchases this month
+  faturasMes.forEach(f => {
+    if(!perCard[f.cartao]) items.push({
+      cartao:f.cartao, totalCompras:f.valorTotal, valorPago:0, valorRestante:f.valorTotal,
+      status:f.status||'Pendente', compras:0, _dbId:f._dbId, competencia:key+'-01'
+    });
   });
 
   if(cardFilter !== 'Todos') items = items.filter(f => f.cartao === cardFilter);
@@ -2955,26 +2971,36 @@ function renderInvoices(key){
     return;
   }
 
-  grid.innerHTML = `<div class="invoice-list" style="margin-top:0">${items.map((f,i) => `
+  grid.innerHTML = `<div class="invoice-list" style="margin-top:0">${items.map((f,i) => {
+    const isPartial = f.status === 'Parcial';
+    const isPaid = f.status === 'Pago';
+    const statusColor = isPaid ? 'var(--positive)' : isPartial ? 'var(--warning)' : 'var(--negative)';
+    const statusLabel = isPaid ? '✓ Paga' : isPartial ? 'Parcial' : 'Pendente';
+    const amountToShow = isPaid ? fmtBRL(f.totalCompras) : fmtBRL(f.valorRestante);
+    return `
     <div class="invoice-row ${f.cartao===cardFilter?'selected':''}" data-card="${f.cartao}">
       <div class="inv-row-name">
         <span class="inv-row-dot" style="background:${CAT_COLORS[i % CAT_COLORS.length]}"></span>
         ${f.cartao}
       </div>
-      <div class="inv-row-value">${fmtBRL(f.total)}</div>
+      <div>
+        <div class="inv-row-value">${amountToShow}</div>
+        ${isPartial ? `<div style="font-size:10.5px;color:var(--text-3);margin-top:2px">Pago: ${fmtBRL(f.valorPago)} · Total: ${fmtBRL(f.totalCompras)}</div>` : ''}
+      </div>
       <div class="inv-row-meta">
         ${f.fechamento?`<span>Fecha dia ${f.fechamento}</span>`:''}
         ${f.vencimento?`<span>Vence dia ${f.vencimento}</span>`:''}
         <span>${f.compras} compra${f.compras!==1?'s':''}</span>
       </div>
-      <div><span class="inv-status-pill ${f.status}" style="margin:0">${f.status}</span></div>
-      ${f.status !== 'Pago' ? `
-        <button class="invoice-pay-btn" style="width:auto;margin:0;padding:7px 14px;font-size:12px"
-          data-cartao="${f.cartao}" data-comp="${f.competencia}" data-valor="${f.total}">
+      <div><span class="inv-status-pill ${f.status}" style="color:${statusColor}">${statusLabel}</span></div>
+      ${!isPaid ? `
+        <button class="invoice-pay-btn"
+          data-cartao="${f.cartao}" data-comp="${f.competencia}" data-valor="${f.valorRestante}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
-          Pagar fatura
-        </button>` : `<div style="font-size:11.5px;color:var(--positive)">✓ Paga</div>`}
-    </div>`).join('')}</div>`;
+          ${isPartial ? 'Pagar restante' : 'Pagar fatura'}
+        </button>` : `<div style="font-size:12px;color:var(--positive);font-weight:600">✓ Paga</div>`}
+    </div>`;
+  }).join('')}</div>`;
 
   grid.querySelectorAll('.invoice-row').forEach(row => {
     row.onclick = (e) => {
