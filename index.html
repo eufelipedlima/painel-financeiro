@@ -1240,15 +1240,20 @@
   .cc-sum-bar{ height:100%; border-radius:99px; }
   .cc-sum-meta{ font-size:10.5px; color:var(--text-3); display:flex; justify-content:space-between; }
 
-  /* Cartão KPI row */
-  .cc-kpi-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
-  .cc-kpi{
-    background:var(--surface); border:1px solid var(--border-soft); border-radius:10px;
-    padding:14px 16px; box-shadow:var(--shadow-card);
+  /* Cartão KPI row — compact */
+  .cc-kpi-row{
+    display:flex; gap:0; margin-bottom:18px;
+    background:var(--surface); border:1px solid var(--border-soft);
+    border-radius:10px; box-shadow:var(--shadow-card); overflow:hidden;
   }
-  .cc-kpi-lbl{ font-size:10.5px; text-transform:uppercase; letter-spacing:.8px; color:var(--text-3); font-weight:600; margin-bottom:6px; }
-  .cc-kpi-val{ font-size:21px; font-weight:800; letter-spacing:-0.5px; font-variant-numeric:tabular-nums; }
-  .cc-kpi-sub{ font-size:11px; color:var(--text-3); margin-top:4px; display:flex; align-items:center; gap:4px; }
+  .cc-kpi{
+    flex:1; padding:10px 16px;
+    border-right:1px solid var(--border-soft);
+  }
+  .cc-kpi:last-child{ border-right:none; }
+  .cc-kpi-lbl{ font-size:10px; text-transform:uppercase; letter-spacing:.8px; color:var(--text-3); font-weight:600; margin-bottom:3px; }
+  .cc-kpi-val{ font-size:17px; font-weight:800; letter-spacing:-0.5px; font-variant-numeric:tabular-nums; line-height:1.2; }
+  .cc-kpi-sub{ font-size:10px; color:var(--text-3); margin-top:2px; display:flex; align-items:center; gap:3px; }
   .cc-kpi-up{ color:var(--negative); }
   .cc-kpi-down{ color:var(--positive); }
 
@@ -3182,25 +3187,52 @@ function renderInvoices(key){
     const amountToShow = isPaid ? fmtBRL(f.totalCompras) : fmtBRL(f.valorRestante);
     return `
     <div class="invoice-row ${f.cartao===cardFilter?'selected':''}" data-card="${f.cartao}">
-      <div class="inv-row-name">
-        <span class="inv-row-dot" style="background:${CAT_COLORS[i % CAT_COLORS.length]}"></span>
-        ${f.cartao}
+      <div class="inv-row-header">
+        <div class="inv-row-name">
+          <span class="inv-row-dot" style="background:${CAT_COLORS[i % CAT_COLORS.length]}"></span>
+          ${f.cartao}
+        </div>
+        <span class="inv-status-pill ${f.status}">${statusLabel}</span>
       </div>
-      <div class="inv-row-value-wrap">
-        <div class="inv-row-value">${amountToShow}</div>
-        ${isPartial ? `<div class="inv-row-paid-info">Pago: ${fmtBRL(f.valorPago)} · Total: ${fmtBRL(f.totalCompras)}</div>` : ''}
+      <div class="inv-row-body">
+        <div class="inv-amounts">
+          ${isPartial ? `
+            <div class="inv-amount-block">
+              <div class="inv-amount-lbl">Restante</div>
+              <div class="inv-amount-val" style="color:var(--negative)">${fmtBRL(f.valorRestante)}</div>
+            </div>
+            <div class="inv-amount-block">
+              <div class="inv-amount-lbl">Já pago</div>
+              <div class="inv-amount-val dim">${fmtBRL(f.valorPago)}</div>
+            </div>
+            <div class="inv-amount-block">
+              <div class="inv-amount-lbl">Total fatura</div>
+              <div class="inv-amount-val dim">${fmtBRL(f.totalCompras)}</div>
+            </div>
+          ` : `
+            <div class="inv-amount-block">
+              <div class="inv-amount-lbl">${isPaid ? 'Fatura paga' : 'Total da fatura'}</div>
+              <div class="inv-amount-val" style="color:${isPaid?'var(--positive)':'var(--text-1)'}">${fmtBRL(f.totalCompras)}</div>
+            </div>
+            <div class="inv-amount-block">
+              <div class="inv-amount-lbl">Compras</div>
+              <div class="inv-amount-val dim">${f.compras}</div>
+            </div>
+          `}
+        </div>
+        <div class="inv-row-footer">
+          <div class="inv-dates">
+            ${f.fechamento?`<span>Fecha <strong>dia ${f.fechamento}</strong></span>`:''}
+            ${f.vencimento?`<span>Vence <strong>dia ${f.vencimento}</strong></span>`:''}
+          </div>
+          ${!isPaid ? `
+            <button class="invoice-pay-btn" data-cartao="${f.cartao}" data-comp="${f.competencia}" data-valor="${f.valorRestante}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+              ${isPartial ? 'Pagar restante' : 'Pagar fatura'}
+            </button>
+          ` : `<span style="font-size:13px;color:var(--positive);font-weight:600">✓ Fatura quitada</span>`}
+        </div>
       </div>
-      <div class="inv-row-meta">
-        ${f.fechamento?`<span><span style="font-size:10px;opacity:.7">Fecha</span><strong style="font-size:11.5px">Dia ${f.fechamento}</strong></span>`:''}
-        ${f.vencimento?`<span><span style="font-size:10px;opacity:.7">Vence</span><strong style="font-size:11.5px">Dia ${f.vencimento}</strong></span>`:''}
-        <span><span style="font-size:10px;opacity:.7">Compras</span><strong style="font-size:11.5px">${f.compras}</strong></span>
-      </div>
-      <span class="inv-status-pill ${f.status}">${statusLabel}</span>
-      ${!isPaid ? `
-        <button class="invoice-pay-btn" data-cartao="${f.cartao}" data-comp="${f.competencia}" data-valor="${f.valorRestante}">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
-          ${isPartial ? 'Pagar restante' : 'Pagar fatura'}
-        </button>` : `<span style="font-size:12px;color:var(--positive);font-weight:600;flex-shrink:0">✓ Paga</span>`}
     </div>`;
   }).join('')}</div>`;
 
