@@ -5130,16 +5130,21 @@ function renderDividas(){
     const accentColor = quitada ? 'var(--positive)' : atrasada ? 'var(--negative)' : 'var(--warning)';
     const CARD_COLORS = ['#6366F1','#10B981','#F59E0B','#EF4444','#8B5CF6','#06B6D4'];
     const cardColor = CARD_COLORS[idx % CARD_COLORS.length];
-    const parcRows = parcelas.map(p => {
-      const isAtras = p.status==='Pendente' && parseDate(p.dataVencimento)<hoje;
-      return `<div class="parc-row">
-        <div class="parc-num">${p.numero}/${parcelas.length}</div>
-        <div class="parc-info">${fmtDateBR(p.dataVencimento)}</div>
-        <div class="parc-val">${fmtBRL(p.valorParcela)}</div>
-        <span class="parc-status-dot ${p.status}">${p.status}${isAtras?' ⚠':''}</span>
-        ${p.status!=='Pago'?`<button class="parc-pay-btn" data-did="${d._id}" data-pnum="${p.numero}">Pagar</button>`:''}
-      </div>`;
-    }).join('');
+    const parcRows = `
+      <div class="parc-header">
+        <span>Parc.</span><span>Vencimento</span><span style="text-align:right">Valor</span>
+        <span>Status</span><span></span>
+      </div>
+      ${parcelas.map(p => {
+        const isAtras = p.status==='Pendente' && parseDate(p.dataVencimento)<hoje;
+        return `<div class="parc-row">
+          <div class="parc-num">${p.numero}/${parcelas.length}</div>
+          <div class="parc-info">${fmtDateBR(p.dataVencimento)}</div>
+          <div class="parc-val">${fmtBRL(p.valorParcela)}</div>
+          <span class="parc-status-dot ${p.status}">${p.status}${isAtras?' ⚠':''}</span>
+          <div>${p.status!=='Pago'?`<button class="parc-pay-btn" data-did="${d._id}" data-pnum="${p.numero}">Pagar</button>`:''}</div>
+        </div>`;
+      }).join('')}`;
 
     return `<div class="new-divida-card" data-did="${d._id}" style="border-left:4px solid ${cardColor}">
       <!-- Header -->
@@ -6168,7 +6173,7 @@ renderAll();
 
 <!-- PARCELA PAYMENT MODAL -->
 <div class="cmodal-overlay" id="parcPayOverlay" style="display:none" onclick="closeParcPayModal()">
-  <div class="cmodal" onclick="event.stopPropagation()" style="max-width:420px">
+  <div class="cmodal" onclick="event.stopPropagation()" style="max-width:500px;width:500px">
     <div class="cmodal-title" id="parcPayTitle">Pagar parcela</div>
     <div style="font-size:13px;color:var(--text-3);margin-bottom:20px" id="parcPayDesc"></div>
     <div class="form-row">
@@ -6187,7 +6192,7 @@ renderAll();
     </div>
     <div class="cmodal-actions">
       <button class="btn btn-ghost" onclick="closeParcPayModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="confirmParcPay()">✓ Confirmar pagamento</button>
+      <button class="btn btn-primary" onclick="confirmParcPay()" style="padding:12px 28px;font-size:15px;font-weight:700">✓ Confirmar pagamento</button>
     </div>
   </div>
 </div>
