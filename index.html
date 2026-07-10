@@ -1573,7 +1573,7 @@
 
     .mob-trans-card{
       background:var(--surface); border:1px solid var(--border-soft);
-      border-radius:14px; margin-bottom:10px;
+      border-radius:12px; margin-bottom:8px;
       box-shadow:var(--shadow-card); overflow:hidden;
       border-left:4px solid var(--border);
     }
@@ -1582,17 +1582,17 @@
     .mob-trans-card.status-atrasado{ border-left-color:var(--negative); }
 
     /* Header area */
-    .mob-trans-header{ padding:14px 14px 10px; }
+    .mob-trans-header{ padding:11px 12px 8px; }
     .mob-trans-top{
       display:flex; align-items:flex-start; justify-content:space-between; gap:8px;
       margin-bottom:6px;
     }
     .mob-trans-desc{
-      font-size:15px; font-weight:700; color:var(--text-1);
+      font-size:14px; font-weight:700; color:var(--text-1);
       flex:1; line-height:1.3;
     }
     .mob-trans-val{
-      font-size:17px; font-weight:800; font-variant-numeric:tabular-nums;
+      font-size:15px; font-weight:800; font-variant-numeric:tabular-nums;
       flex-shrink:0; letter-spacing:-0.3px;
     }
     .mob-trans-val.rec{ color:var(--positive); }
@@ -1609,7 +1609,7 @@
     }
     .mob-trans-field{
       display:flex; flex-direction:column; gap:2px;
-      padding:10px 14px;
+      padding:8px 12px;
       border-bottom:1px solid var(--border-soft);
       border-right:1px solid var(--border-soft);
     }
@@ -1619,12 +1619,12 @@
       font-size:9px; text-transform:uppercase; letter-spacing:.8px;
       color:var(--text-3); font-weight:700;
     }
-    .mob-trans-fval{ font-size:13px; color:var(--text-1); font-weight:600; }
+    .mob-trans-fval{ font-size:12px; color:var(--text-1); font-weight:600; }
 
     /* Footer */
     .mob-trans-footer{
       display:flex; align-items:center; justify-content:space-between;
-      padding:10px 14px;
+      padding:8px 12px;
       background:var(--surface-2);
     }
     .mob-trans-card.status-pago .mob-trans-footer{ background:rgba(16,185,129,0.06); }
@@ -1683,6 +1683,12 @@
     .mob-filter-wrap{ display:block; flex:none; }
     #typeChips{ display:none !important; }
     .table-toolbar{ align-items:center; gap:10px; }
+  }
+
+
+  @media (max-width: 768px){
+    #pendingTable, #atrasadasTable, #cardPurchTable, #recentTable{ display:none; }
+    #mobilePendList, #mobileAtrasadasList, #mobileCardPurchList, #mobileRecentList{ display:block; }
   }
 
 </style>
@@ -1872,6 +1878,7 @@
         <div class="panel-head">
           <div><div class="panel-title">Lançamentos recentes</div><div class="panel-sub">Últimos 6 do mês selecionado</div></div>
         </div>
+        <div id="mobileRecentList" class="mobile-trans-list"></div>
         <table class="data-table" id="recentTable">
           <thead><tr><th>Data</th><th>Descrição</th><th>Tipo</th><th>Categoria</th><th style="text-align:right">Valor</th></tr></thead>
           <tbody id="recentBody"></tbody>
@@ -2032,7 +2039,8 @@
         <div class="panel-head">
           <div class="panel-title" id="cardPurchasesTitle">Compras lançadas no mês</div>
         </div>
-        <table class="data-table">
+        <div id="mobileCardPurchList" class="mobile-trans-list"></div>
+        <table class="data-table" id="cardPurchTable">
           <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Cartão</th><th>Parcela</th><th style="text-align:right">Valor</th><th></th></tr></thead>
           <tbody id="cardPurchasesBody"></tbody>
         </table>
@@ -4176,6 +4184,76 @@ function renderOvDividas(){
       <div class="ov-divida-val">${fmtBRL(d.valorRestante)}</div>
     </div>`).join('');
 }
+
+
+// ── Reusable mobile transaction card renderer ──────────────
+function renderMobileCards(rows, containerId, opts){
+  opts = opts || {};
+  const container = document.getElementById(containerId);
+  if(!container) return;
+  if(rows.length === 0){
+    container.innerHTML = opts.emptyMsg ?
+      `<div class="empty-note">${opts.emptyMsg}</div>` : '';
+    return;
+  }
+  container.innerHTML = rows.map(t => {
+    const isRec = t.tipo==='Receita';
+    const isCart = t._source==='cartaoCompras'||t.tipo==='Cartão';
+    const valClass = isRec?'rec':isCart?'cart':'desp';
+    const signal = isRec?'+':'−';
+    const isPend = t.status==='Pendente';
+    const isAtras = t.status==='Atrasado' || (isPend && t.data && parseDate(t.data) < new Date());
+    const isPaid = !isPend && !isAtras;
+    const statusKey = isPend&&!isAtras?'pendente':isAtras?'atrasado':'pago';
+    const statusIcon = statusKey==='pendente'?'⏱':statusKey==='atrasado'?'⚠':'✓';
+    const statusTxt = statusKey==='pendente'?'Pendente':statusKey==='atrasado'?'Atrasado':'Pago';
+    const descricao = t.descricao || opts.defaultDesc || '—';
+    const conta = t.conta || t.cartao || '—';
+    return `<div class="mob-trans-card status-${statusKey}">
+      <div class="mob-trans-header">
+        <div class="mob-trans-top">
+          <div class="mob-trans-desc">${descricao}</div>
+          <div class="mob-trans-val ${valClass}">${signal}${fmtBRL(t.valor)}</div>
+        </div>
+      </div>
+      <div class="mob-trans-divider"></div>
+      <div class="mob-trans-meta">
+        <div class="mob-trans-field">
+          <div class="mob-trans-lbl">📅 Data</div>
+          <div class="mob-trans-fval">${fmtDateBR(t.data)}</div>
+        </div>
+        <div class="mob-trans-field">
+          <div class="mob-trans-lbl">🏷 Categoria</div>
+          <div class="mob-trans-fval">${t.categoria||'—'}</div>
+        </div>
+        <div class="mob-trans-field">
+          <div class="mob-trans-lbl">💳 Tipo</div>
+          <div class="mob-trans-fval"><span class="tag ${t.tipo}" style="font-size:10px;padding:2px 7px">${t.tipo||'—'}</span></div>
+        </div>
+        <div class="mob-trans-field">
+          <div class="mob-trans-lbl">🏦 Conta</div>
+          <div class="mob-trans-fval">${conta}</div>
+        </div>
+      </div>
+      <div class="mob-trans-footer">
+        <div class="mob-trans-status-badge ${statusKey}">${statusIcon} ${statusTxt}</div>
+        <div class="mob-trans-actions">
+          ${(!isPaid&&opts.showPay!==false)?`<button class="mob-trans-pagar${isRec?' rec':''}" data-id="${t._id}">${isRec?'✓ Recebi':'✓ Paguei'}</button>`:''}
+          ${opts.showEdit!==false?`<button class="mob-trans-edit" data-id="${t._id}" data-src="${t._source||'transacoes'}">✎ Editar</button>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  // Wire buttons
+  container.querySelectorAll('.mob-trans-edit').forEach(btn=>{
+    btn.onclick=()=>openEditDrawer(parseInt(btn.dataset.id), btn.dataset.src||'transacoes');
+  });
+  container.querySelectorAll('.mob-trans-pagar').forEach(btn=>{
+    btn.onclick=()=>{ markEntryAsPaid(parseInt(btn.dataset.id)); };
+  });
+}
+
+function isMobile(){ return window.innerWidth <= 768; }
 
 // ===================== Master render =====================
 function renderView(view){
