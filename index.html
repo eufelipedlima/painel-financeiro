@@ -1535,22 +1535,22 @@
       <!-- Row 4: Metas + Dívidas quick view -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
         <div class="panel ov-metas-panel">
-          <div class="panel-head" style="margin-bottom:12px">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
             <div>
               <div class="panel-title">🎯 Metas</div>
               <div class="panel-sub">Progresso das metas ativas</div>
             </div>
-            <button class="btn btn-ghost" style="padding:5px 12px;font-size:12px;width:auto;flex-shrink:0" onclick="[...document.querySelectorAll('.nav-item')].find(n=>n.dataset.view==='metas')?.click()">Ver todas →</button>
+            <a href="#" style="font-size:12px;font-weight:600;color:var(--accent-2);text-decoration:none;white-space:nowrap;margin-top:2px" onclick="event.preventDefault();[...document.querySelectorAll('.nav-item')].find(n=>n.dataset.view==='metas')?.click()">Ver todas →</a>
           </div>
           <div id="ovMetasContent"><div class="empty-note">Nenhuma meta cadastrada</div></div>
         </div>
         <div class="panel ov-dividas-panel">
-          <div class="panel-head" style="margin-bottom:12px">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
             <div>
               <div class="panel-title">🔴 Dívidas</div>
               <div class="panel-sub">Status das dívidas ativas</div>
             </div>
-            <button class="btn btn-ghost" style="padding:5px 12px;font-size:12px;width:auto;flex-shrink:0" onclick="[...document.querySelectorAll('.nav-item')].find(n=>n.dataset.view==='dividas')?.click()">Ver todas →</button>
+            <a href="#" style="font-size:12px;font-weight:600;color:var(--negative);text-decoration:none;white-space:nowrap;margin-top:2px" onclick="event.preventDefault();[...document.querySelectorAll('.nav-item')].find(n=>n.dataset.view==='dividas')?.click()">Ver todas →</a>
           </div>
           <div id="ovDividasContent"><div class="empty-note">Nenhuma dívida cadastrada</div></div>
         </div>
