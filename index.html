@@ -792,20 +792,78 @@
   .divida-action-btn:hover{ background:var(--surface-3); color:var(--text-1); }
   .divida-action-btn.primary{ background:var(--accent-soft); color:var(--accent-2); border-color:var(--accent); }
   .divida-action-btn.primary:hover{ background:var(--accent); color:#fff; }
-  .divida-parcelas{ margin-top:12px; border-top:1px solid var(--border-soft); padding-top:10px; display:none; }
+  /* parcelas styles defined later in file */
+
+  /* ── Parcelas list ── */
+  .divida-parcelas{
+    display:none;
+    border-top:1px solid var(--border-soft);
+    background:var(--surface-2);
+    border-radius:0 0 12px 12px;
+  }
   .divida-parcelas.open{ display:block; }
-  .parc-row{ display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border-soft); font-size:12.5px; }
+  .parc-header{
+    display:grid;
+    grid-template-columns:52px 1fr 130px 100px 90px;
+    gap:0;
+    padding:8px 20px;
+    font-size:10px; font-weight:700; text-transform:uppercase;
+    letter-spacing:.8px; color:var(--text-3);
+    border-bottom:2px solid var(--border-soft);
+  }
+  .parc-header span:nth-child(3){ text-align:right; }
+  .parc-row{
+    display:grid;
+    grid-template-columns:52px 1fr 130px 100px 90px;
+    gap:0;
+    align-items:center;
+    padding:11px 20px;
+    border-bottom:1px solid var(--border-soft);
+    font-size:13px;
+  }
   .parc-row:last-child{ border-bottom:none; }
-  .parc-num{ font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; color:var(--text-3); width:40px; flex-shrink:0; }
-  .parc-info{ flex:1; }
-  .parc-val{ font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; font-weight:600; white-space:nowrap; }
-  .parc-status-dot::before{ content:""; width:7px; height:7px; border-radius:50%; display:inline-block; margin-right:5px; }
+  .parc-row:hover{ background:var(--surface-3); }
+  .parc-num{
+    font-size:11px; color:var(--text-3); font-weight:700;
+    background:var(--surface-3); border:1px solid var(--border-soft);
+    padding:2px 6px; border-radius:5px;
+    display:inline-block; text-align:center; width:fit-content;
+  }
+  .parc-info{ color:var(--text-2); font-size:13px; padding-left:4px; }
+  .parc-val{
+    font-variant-numeric:tabular-nums; font-weight:600; font-size:13px;
+    color:var(--text-1); text-align:right; padding-right:12px;
+  }
+  .parc-status-dot{
+    display:flex; align-items:center; gap:5px;
+    font-size:12px; font-weight:600;
+  }
+  .parc-status-dot::before{
+    content:''; width:7px; height:7px; border-radius:50%;
+    flex-shrink:0; display:inline-block;
+  }
+  .parc-status-dot.Pago{ color:var(--positive); }
   .parc-status-dot.Pago::before{ background:var(--positive); }
-  .parc-status-dot.Pendente::before{ background:var(--warning); }
-  .parc-status-dot.Atrasada::before{ background:var(--negative); }
-  .parc-pay-btn{ padding:4px 10px; border-radius:6px; font-size:11px; font-weight:600; cursor:pointer; border:none; background:var(--accent-soft); color:var(--accent-2); font-family:'Inter',sans-serif; transition:.15s ease; }
+  .parc-status-dot.Pendente{ color:var(--warning); }
+  .parc-status-dot.Pendente::before{ background:#F59E0B; }
+  .parc-pay-btn{
+    padding:5px 12px; border-radius:6px; font-size:12px; font-weight:600;
+    cursor:pointer; border:1.5px solid var(--accent-soft);
+    background:var(--accent-soft); color:var(--accent-2);
+    font-family:'Inter',sans-serif; transition:.12s ease; white-space:nowrap;
+  }
   .parc-pay-btn:hover{ background:var(--accent); color:#fff; }
 
+  @media (max-width:768px){
+    .parc-header{ display:none; }
+    .parc-row{
+      grid-template-columns:44px 1fr auto;
+      padding:10px 16px; gap:8px;
+    }
+    .parc-val{ text-align:right; padding-right:0; }
+    .parc-status-dot{ grid-column:2; font-size:11px; }
+    .parc-pay-btn{ font-size:11px; padding:5px 10px; }
+  }
 
   /* ---------- Installment calculator ---------- */
   .calc-mode-row{ display:grid; grid-template-columns:1fr 1fr; gap:6px; margin:14px 0 12px; }
