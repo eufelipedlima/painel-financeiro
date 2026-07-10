@@ -1609,6 +1609,37 @@
     }
   }
 
+
+  /* Mobile filter dropdown */
+  .mob-filter-wrap{ display:none; position:relative; }
+  .mob-filter-btn{
+    display:flex; align-items:center; gap:8px; padding:9px 16px;
+    background:var(--surface-2); border:1.5px solid var(--border-soft);
+    border-radius:10px; font-size:14px; font-weight:600; color:var(--text-1);
+    font-family:'Inter',sans-serif; cursor:pointer; white-space:nowrap;
+  }
+  .mob-filter-dropdown{
+    position:absolute; top:calc(100% + 6px); left:0; right:0; z-index:100;
+    background:var(--surface); border:1px solid var(--border-soft);
+    border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.15);
+    display:none; overflow:hidden;
+  }
+  .mob-filter-dropdown.open{ display:block; }
+  .mob-filter-opt{
+    padding:13px 16px; font-size:14px; font-weight:500; color:var(--text-2);
+    cursor:pointer; border-bottom:1px solid var(--border-soft);
+    transition:.1s ease;
+  }
+  .mob-filter-opt:last-child{ border-bottom:none; }
+  .mob-filter-opt:hover{ background:var(--surface-2); }
+  .mob-filter-opt.active{ color:var(--accent); font-weight:700; background:var(--accent-soft); }
+
+  @media (max-width: 768px){
+    .mob-filter-wrap{ display:block; flex:none; }
+    #typeChips{ display:none !important; }
+    .table-toolbar{ align-items:center; gap:10px; }
+  }
+
 </style>
 </head>
 <body>
@@ -1826,6 +1857,21 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
             <input type="text" id="searchInput" placeholder="Buscar por descrição ou categoria...">
           </div>
+          <!-- Mobile filter dropdown (shown only on mobile) -->
+          <div class="mob-filter-wrap" id="mobFilterWrap">
+            <button class="mob-filter-btn" id="mobFilterBtn">
+              <span id="mobFilterLabel">Todos</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="mob-filter-dropdown" id="mobFilterDropdown">
+              <div class="mob-filter-opt active" data-type="Todos">Todos</div>
+              <div class="mob-filter-opt" data-type="Receita">Receita</div>
+              <div class="mob-filter-opt" data-type="Despesa">Despesa</div>
+              <div class="mob-filter-opt" data-type="Transferência">Transferência</div>
+              <div class="mob-filter-opt" data-type="Cartão">Cartão</div>
+            </div>
+          </div>
+          <!-- Desktop chip row (hidden on mobile) -->
           <div class="chip-row" id="typeChips">
             <div class="chip active" data-type="Todos">Todos</div>
             <div class="chip" data-type="Receita">Receita</div>
@@ -3301,6 +3347,47 @@ function renderAllTable(){
   const despesas = rows.filter(r=>r.tipo!=='Receita'&&r.tipo!=='Transferência').reduce((s,r)=>s+r.valor,0);
   const sumEl = document.getElementById('allTableSummary');
   if(sumEl) sumEl.innerHTML = `${rows.length} lançamento${rows.length===1?'':'s'} · <strong style="color:var(--positive)">${fmtBRL(receitas)}</strong> entradas · <strong style="color:var(--negative)">${fmtBRL(despesas)}</strong> saídas`;
+
+  // ── Mobile card list ──────────────────────────────────────
+  const mobList = document.getElementById('mobileTransList');
+  if(mobList){
+    if(rows.length === 0){
+      mobList.innerHTML = '<div class="empty-note">Nenhum lançamento neste período.</div>';
+    } else {
+      mobList.innerHTML = rows.map(t => {
+        const isRec = t.tipo==='Receita';
+        const isCart = t._source==='cartaoCompras'||t.tipo==='Cartão';
+        const valClass = isRec?'rec':isCart?'cart':'desp';
+        const signal = isRec?'+':'-';
+        const isPend = t.status==='Pendente';
+        return `<div class="mob-trans-card">
+          <div class="mob-trans-top">
+            <div class="mob-trans-desc">${t.descricao||'—'}</div>
+            <div class="mob-trans-val ${valClass}">${signal}${fmtBRL(t.valor)}</div>
+          </div>
+          <div class="mob-trans-meta">
+            <div class="mob-trans-field"><div class="mob-trans-lbl">Data</div><div class="mob-trans-fval">${fmtDateBR(t.data)}</div></div>
+            <div class="mob-trans-field"><div class="mob-trans-lbl">Categoria</div><div class="mob-trans-fval">${t.categoria||'—'}</div></div>
+            <div class="mob-trans-field"><div class="mob-trans-lbl">Tipo</div><div class="mob-trans-fval"><span class="tag ${t.tipo}" style="font-size:10px;padding:2px 7px">${t.tipo}</span></div></div>
+            <div class="mob-trans-field"><div class="mob-trans-lbl">Conta</div><div class="mob-trans-fval">${t.conta||'—'}</div></div>
+          </div>
+          <div class="mob-trans-bottom">
+            <span class="status-pill ${t.status}">${t.status}</span>
+            <div style="display:flex;gap:8px">
+              ${isPend?`<button class="mob-trans-pagar" data-id="${t._id}">✓ ${isRec?'Recebi':'Paguei'}</button>`:''}
+              <button class="mob-trans-edit" data-id="${t._id}">✎ Editar</button>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+      mobList.querySelectorAll('.mob-trans-edit').forEach(btn=>{
+        btn.onclick=()=>openEditDrawer(parseInt(btn.dataset.id),'transacoes');
+      });
+      mobList.querySelectorAll('.mob-trans-pagar').forEach(btn=>{
+        btn.onclick=()=>{ markEntryAsPaid(parseInt(btn.dataset.id)); };
+      });
+    }
+  }
 }
 document.getElementById('searchInput').addEventListener('input', renderAllTable);
 
@@ -3343,6 +3430,31 @@ document.getElementById('searchInput').addEventListener('input', renderAllTable)
   document.querySelectorAll('.nav-item[data-view]').forEach(item=>{
     item.addEventListener('click', ()=> updateMobNav(item.dataset.view));
   });
+
+  // Mobile filter dropdown
+  const mobFilterBtn = document.getElementById('mobFilterBtn');
+  const mobFilterDrop = document.getElementById('mobFilterDropdown');
+  if(mobFilterBtn){
+    mobFilterBtn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      mobFilterDrop.classList.toggle('open');
+    });
+    document.addEventListener('click', ()=> mobFilterDrop?.classList.remove('open'));
+    document.querySelectorAll('.mob-filter-opt').forEach(opt=>{
+      opt.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        const type = opt.dataset.type;
+        // Sync with desktop chips
+        typeFilter = type;
+        document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('active', c.dataset.type===type));
+        document.querySelectorAll('.mob-filter-opt').forEach(o=>o.classList.toggle('active', o.dataset.type===type));
+        document.getElementById('mobFilterLabel').textContent = type;
+        mobFilterDrop.classList.remove('open');
+        renderAllTable();
+      });
+    });
+  }
+
   } // end initMobileNav
   if(document.readyState === 'loading'){
     document.addEventListener('DOMContentLoaded', initMobileNav);
