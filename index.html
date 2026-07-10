@@ -1392,6 +1392,153 @@
     box-shadow: 0 0 0 1px rgba(220,38,38,0.15), 0 2px 8px rgba(220,38,38,0.06) !important;
   }
 
+
+  /* ═══════════════════════════════════════════════════════
+     MOBILE STYLES (max-width: 768px)
+  ═══════════════════════════════════════════════════════ */
+
+  /* Bottom nav — hidden on desktop */
+  .mobile-bottom-nav{ display:none; }
+  .mob-more-overlay{ display:none; }
+  .mob-more-drawer{ display:none; }
+
+  @media (max-width: 768px){
+    /* ── Layout ── */
+    .sidebar{ display:none !important; }
+    .app-shell{ flex-direction:column; }
+    main.main{
+      padding:16px 14px 90px;
+      overflow-x:hidden;
+    }
+
+    /* ── Bottom nav ── */
+    .mobile-bottom-nav{
+      display:flex; position:fixed; bottom:0; left:0; right:0; z-index:200;
+      background:var(--surface); border-top:1px solid var(--border-soft);
+      padding:6px 0 max(6px, env(safe-area-inset-bottom));
+      box-shadow:0 -2px 12px rgba(0,0,0,0.1);
+    }
+    .mob-nav-item{
+      flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
+      padding:6px 2px; color:var(--text-3); text-decoration:none; cursor:pointer;
+      transition:.12s ease; border:none; background:none; font-family:'Inter',sans-serif;
+    }
+    .mob-nav-item svg{ width:22px; height:22px; stroke-width:1.8; }
+    .mob-nav-item span{ font-size:10px; font-weight:600; letter-spacing:.2px; }
+    .mob-nav-item.active{ color:var(--accent); }
+    .mob-nav-item.active svg{ stroke:var(--accent); }
+
+    /* ── More drawer ── */
+    .mob-more-overlay{
+      position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:300;
+      display:none; backdrop-filter:blur(2px);
+    }
+    .mob-more-overlay.open{ display:block; }
+    .mob-more-drawer{
+      position:fixed; bottom:0; left:0; right:0; z-index:301;
+      background:var(--surface); border-radius:20px 20px 0 0;
+      padding:16px 20px max(20px, env(safe-area-inset-bottom));
+      box-shadow:0 -4px 24px rgba(0,0,0,0.2);
+      transform:translateY(100%); transition:transform .25s cubic-bezier(.2,.8,.3,1);
+    }
+    .mob-more-drawer.open{ transform:translateY(0); }
+    .mob-more-title{
+      font-size:13px; font-weight:700; color:var(--text-3); text-transform:uppercase;
+      letter-spacing:.8px; margin-bottom:14px; padding-bottom:12px;
+      border-bottom:1px solid var(--border-soft);
+    }
+    .mob-more-item{
+      display:flex; align-items:center; gap:14px; padding:14px 0;
+      border-bottom:1px solid var(--border-soft); color:var(--text-1);
+      text-decoration:none; font-size:15px; font-weight:500; cursor:pointer;
+    }
+    .mob-more-item:last-child{ border-bottom:none; }
+    .mob-more-item svg{ width:20px; height:20px; color:var(--accent-2); flex-shrink:0; }
+
+    /* ── Page title ── */
+    .page-title{ font-size:20px; }
+    .topbar{ margin-bottom:14px; flex-wrap:wrap; gap:8px; }
+    .topbar > div:first-child{ flex:1; }
+
+    /* ── Month picker compact ── */
+    .mp-btn{ min-width:120px; font-size:12.5px; padding:6px 12px; }
+    .month-nav-arrow{ width:32px; height:32px; }
+
+    /* ── KPI grid: 2x2 on mobile ── */
+    .kpi-grid{ grid-template-columns:1fr 1fr !important; gap:10px; margin-bottom:12px; }
+    .kpi-card{ padding:12px 14px; }
+    .kpi-value{ font-size:18px; }
+    .kpi-label{ font-size:10px; }
+    .kpi-delta{ font-size:11px; }
+    .kpi-icon{ width:30px; height:30px; border-radius:8px; }
+
+    /* ── All grids → single column ── */
+    .grid-2, .grid-2b,
+    div[style*="grid-template-columns:1fr 2fr"],
+    div[style*="grid-template-columns:2fr 3fr"],
+    div[style*="grid-template-columns:1fr 1fr"],
+    div[style*="grid-template-columns:2fr 1fr"]{
+      grid-template-columns:1fr !important;
+    }
+
+    /* ── Overview insights row ── */
+    .ov-insights-row{ grid-template-columns:1fr !important; gap:10px; }
+    .ov-insight-block{ padding:14px 16px; }
+
+    /* ── CC card visuals ── */
+    .cc-cards-row{ gap:10px; }
+    .cc-card-visual{ width:220px; padding:16px 18px; }
+    .cc-card-spent{ font-size:22px; }
+    .cc-card-todos{ width:160px; }
+    .cc-kpi-row{ flex-direction:column; border-radius:10px; }
+    .cc-kpi{ border-right:none !important; border-bottom:1px solid var(--border-soft); padding:10px 14px; }
+    .cc-kpi:last-child{ border-bottom:none; }
+
+    /* ── Tables: horizontal scroll ── */
+    .data-table{ font-size:12px; }
+    .data-table th, .data-table td{ padding:9px 10px; }
+    .panel{ overflow-x:auto; }
+
+    /* ── FAB ── */
+    .fab{
+      bottom:72px; right:16px;
+      padding:11px 18px; font-size:13px;
+    }
+    .fab svg{ width:16px; height:16px; }
+
+    /* ── Drawer ── */
+    .drawer{
+      width:100% !important; max-width:100%;
+      border-radius:20px 20px 0 0 !important;
+      max-height:90vh; overflow-y:auto;
+      top:auto !important; bottom:0;
+    }
+    .drawer.open{ transform:translateX(0) !important; }
+
+    /* ── Auth/login ── */
+    .login-box{ padding:28px 22px; }
+
+    /* ── Donut wrap ── */
+    .donut-wrap{ flex-direction:column; }
+    .donut-legend{ max-height:none; }
+
+    /* ── Budget grid ── */
+    .budget-cat-grid{ grid-template-columns:1fr !important; }
+
+    /* ── Subtab bar ── */
+    .subtab-bar{ flex-wrap:wrap; }
+    .subtab{ font-size:12px; padding:5px 10px; }
+
+    /* ── Metas/Dividas cards ── */
+    .meta-cards-grid, .divida-cards-grid{ grid-template-columns:1fr !important; }
+  }
+
+  @media (max-width: 420px){
+    main.main{ padding:12px 12px 90px; }
+    .kpi-value{ font-size:16px; }
+    .cc-card-visual{ width:200px; }
+  }
+
 </style>
 </head>
 <body>
@@ -3084,6 +3231,44 @@ function renderAllTable(){
 document.getElementById('searchInput').addEventListener('input', renderAllTable);
 
 // Filter is handled by global month picker
+
+// ── Mobile navigation ──────────────────────────────────────
+(function(){
+  function updateMobNav(view){
+    document.querySelectorAll('.mob-nav-item[data-view]').forEach(item=>{
+      item.classList.toggle('active', item.dataset.view === view);
+    });
+  }
+
+  document.querySelectorAll('.mob-nav-item[data-view]').forEach(item=>{
+    item.addEventListener('click', ()=>{
+      navigate(item.dataset.view);
+      updateMobNav(item.dataset.view);
+    });
+  });
+
+  document.querySelectorAll('.mob-more-item[data-view]').forEach(item=>{
+    item.addEventListener('click', ()=>{
+      navigate(item.dataset.view);
+      updateMobNav(item.dataset.view);
+      closeMobMore();
+    });
+  });
+
+  const moreBtn = document.getElementById('mobMoreBtn');
+  const overlay = document.getElementById('mobMoreOverlay');
+  const drawer  = document.getElementById('mobMoreDrawer');
+  function openMobMore(){ overlay.classList.add('open'); drawer.classList.add('open'); }
+  function closeMobMore(){ overlay.classList.remove('open'); drawer.classList.remove('open'); }
+  if(moreBtn) moreBtn.addEventListener('click', openMobMore);
+  if(overlay) overlay.addEventListener('click', closeMobMore);
+
+  // Keep mobile nav in sync with desktop nav clicks
+  document.querySelectorAll('.nav-item[data-view]').forEach(item=>{
+    item.addEventListener('click', ()=> updateMobNav(item.dataset.view));
+  });
+})();
+
 document.querySelectorAll('#typeChips .chip').forEach(chip => {
   chip.onclick = () => {
     document.querySelectorAll('#typeChips .chip').forEach(c=>c.classList.remove('active'));
@@ -5359,5 +5544,48 @@ renderAll();
     </div>
   </div>
 </div>
+
+  <!-- Mobile bottom navigation -->
+  <nav class="mobile-bottom-nav" id="mobileNav">
+    <a class="mob-nav-item active" data-view="overview">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>Início</span>
+    </a>
+    <a class="mob-nav-item" data-view="transacoes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+      <span>Transações</span>
+    </a>
+    <a class="mob-nav-item" data-view="cartao">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      <span>Cartão</span>
+    </a>
+    <a class="mob-nav-item" data-view="metas">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+      <span>Metas</span>
+    </a>
+    <a class="mob-nav-item" id="mobMoreBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+      <span>Mais</span>
+    </a>
+  </nav>
+
+  <!-- Mobile "Mais" drawer -->
+  <div class="mob-more-overlay" id="mobMoreOverlay"></div>
+  <div class="mob-more-drawer" id="mobMoreDrawer">
+    <div class="mob-more-title">Mais opções</div>
+    <a class="mob-more-item" data-view="orcamento">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      Orçamento
+    </a>
+    <a class="mob-more-item" data-view="dividas">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+      Dívidas
+    </a>
+    <a class="mob-more-item" data-view="configuracoes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      Configurações
+    </a>
+  </div>
+
 </body>
 </html>
