@@ -1441,7 +1441,7 @@
       box-shadow:0 -4px 24px rgba(0,0,0,0.2);
       transform:translateY(100%); transition:transform .25s cubic-bezier(.2,.8,.3,1);
     }
-    .mob-more-drawer.open{ transform:translateY(0); }
+    .mob-more-drawer.open{ display:block; transform:translateY(0); }
     .mob-more-title{
       font-size:13px; font-weight:700; color:var(--text-3); text-transform:uppercase;
       letter-spacing:.8px; margin-bottom:14px; padding-bottom:12px;
@@ -1689,6 +1689,20 @@
   @media (max-width: 768px){
     #pendingTable, #atrasadasTable, #cardPurchTable, #recentTable{ display:none; }
     #mobilePendList, #mobileAtrasadasList, #mobileCardPurchList, #mobileRecentList{ display:block; }
+  }
+
+
+  @media (max-width: 768px){
+    .drawer{
+      padding-bottom: max(80px, calc(env(safe-area-inset-bottom) + 70px)) !important;
+    }
+    /* Overlay also needs higher z-index than nav */
+    .overlay{ z-index:299 !important; }
+    /* Modal overlay too */
+    .cmodal-overlay{ z-index:400 !important; }
+    .cmodal{ z-index:401 !important; }
+    /* Pay modal */
+    #payModalOverlay{ z-index:400 !important; }
   }
 
 </style>
@@ -3493,12 +3507,28 @@ document.getElementById('searchInput').addEventListener('input', renderAllTable)
   });
 
   const moreBtn = document.getElementById('mobMoreBtn');
-  const overlay = document.getElementById('mobMoreOverlay');
-  const drawer  = document.getElementById('mobMoreDrawer');
-  function openMobMore(){ overlay.classList.add('open'); drawer.classList.add('open'); }
-  function closeMobMore(){ overlay.classList.remove('open'); drawer.classList.remove('open'); }
+  const moreOverlay = document.getElementById('mobMoreOverlay');
+  const moreDrawer  = document.getElementById('mobMoreDrawer');
+  function openMobMore(){
+    if(!moreOverlay||!moreDrawer) return;
+    moreOverlay.style.display='block';
+    moreDrawer.style.display='block';
+    requestAnimationFrame(()=>{
+      moreOverlay.classList.add('open');
+      moreDrawer.classList.add('open');
+    });
+  }
+  function closeMobMore(){
+    if(!moreOverlay||!moreDrawer) return;
+    moreOverlay.classList.remove('open');
+    moreDrawer.classList.remove('open');
+    setTimeout(()=>{
+      moreOverlay.style.display='none';
+      moreDrawer.style.display='none';
+    }, 280);
+  }
   if(moreBtn) moreBtn.addEventListener('click', openMobMore);
-  if(overlay) overlay.addEventListener('click', closeMobMore);
+  if(moreOverlay) moreOverlay.addEventListener('click', closeMobMore);
 
   // Keep mobile nav in sync with desktop nav clicks
   document.querySelectorAll('.nav-item[data-view]').forEach(item=>{
