@@ -43,7 +43,7 @@
   }
   ::selection{background: var(--accent-soft);}
   a,button{font-family:inherit;}
-  .num, .mono{font-family:'IBM Plex Mono',monospace; font-variant-numeric:tabular-nums;}
+  .num, .mono{font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; font-variant-numeric:tabular-nums;}
   .display{font-family:'Inter',sans-serif;}
 
   /* ---------------- App shell ---------------- */
@@ -84,7 +84,7 @@
   .acct-bar{position:absolute; left:0; top:0; bottom:0; background:linear-gradient(90deg, rgba(108,99,255,0.16), rgba(108,99,255,0.05)); border-radius:8px; transition:width .5s cubic-bezier(.2,.8,.3,1);}
   .acct-content{position:relative; display:flex; justify-content:space-between; align-items:center;}
   .acct-name{color:var(--text-2);}
-  .acct-val{font-family:'IBM Plex Mono',monospace; color:var(--text-1); font-weight:500;}
+  .acct-val{font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; color:var(--text-1); font-weight:500;}
   .sidebar-total{
     margin-top:auto; padding:14px 14px; background:var(--surface-2); border-radius:var(--radius-sm);
     border:1px solid var(--border-soft);
@@ -180,7 +180,7 @@
   .dl-name{color:var(--text-1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:120px;}
   .dl-bar-track{flex:1; height:5px; border-radius:3px; background:var(--surface-3); overflow:hidden;}
   .dl-bar-fill{height:100%; border-radius:3px;}
-  .dl-val{font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--text-2); white-space:nowrap;}
+  .dl-val{font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; font-size:11.5px; color:var(--text-2); white-space:nowrap;}
   .empty-note{font-size:12.5px; color:var(--text-3); padding:30px 10px; text-align:center;}
 
   /* Budget */
@@ -189,7 +189,7 @@
   .budget-row:last-child{border-bottom:none;}
   .b-top{display:flex; justify-content:space-between; font-size:13px; margin-bottom:8px;}
   .b-cat{font-weight:500;}
-  .b-val{font-family:'IBM Plex Mono',monospace; color:var(--text-2); font-size:12px;}
+  .b-val{font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; color:var(--text-2); font-size:12px;}
   .bar-track{height:7px; border-radius:4px; background:var(--surface-3); overflow:hidden;}
   .bar-fill{height:100%; border-radius:4px; background:var(--accent); transition:width .6s cubic-bezier(.2,.8,.3,1);}
   .bar-fill.over{background:var(--negative);}
@@ -232,7 +232,7 @@
   table.data-table tbody tr{transition:background .12s ease;}
   table.data-table tbody tr:hover{background:var(--surface-2);}
   table.data-table tbody tr:last-child td{border-bottom:none;}
-  .val-cell{font-family:'IBM Plex Mono',monospace; text-align:right; white-space:nowrap;}
+  .val-cell{font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap;}
   .tag{font-size:10.5px; padding:3px 9px; border-radius:20px; font-weight:600; text-transform:uppercase; letter-spacing:0.3px; white-space:nowrap;}
   .tag.Receita{background:var(--positive-soft); color:var(--positive);}
   .tag.Despesa{background:var(--negative-soft); color:var(--negative);}
@@ -254,7 +254,7 @@
   .inv-name{font-size:12px; color:var(--text-2); font-weight:500;}
   .inv-value{font-family:'Inter',sans-serif; font-weight:600; font-size:22px; margin-bottom:12px;}
   .inv-meta-row{display:flex; justify-content:space-between; font-size:11.5px; color:var(--text-3); padding:4px 0;}
-  .inv-meta-row span:last-child{color:var(--text-2); font-family:'IBM Plex Mono',monospace;}
+  .inv-meta-row span:last-child{color:var(--text-2); font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums;}
   .inv-status-pill{
     display:inline-block; margin-top:12px; font-size:10.5px; font-weight:600; text-transform:uppercase;
     letter-spacing:0.5px; padding:4px 10px; border-radius:20px;
@@ -299,7 +299,7 @@
   .fatura-chip.active{border-color:var(--accent); background:var(--accent-soft);}
   .fatura-chip .fc-name{font-size:11px; color:var(--text-2); margin-bottom:5px; display:flex; align-items:center; gap:6px;}
   .fatura-chip .fc-dot{width:7px; height:7px; border-radius:50%;}
-  .fatura-chip .fc-val{font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:14.5px; color:var(--text-1);}
+  .fatura-chip .fc-val{font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; font-weight:600; font-size:14.5px; color:var(--text-1);}
   .invoice-card.selected{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent) inset;}
 
   /* ---------- FAB ---------- */
@@ -466,17 +466,17 @@
     --warning-soft: rgba(180,83,9,0.07);
     --shadow-card: 0 1px 2px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.05);
   }
-  html.light .brand-mark{ background:#4F46E5; }
-  html.light .fab{ background:#4F46E5; box-shadow:0 4px 12px rgba(79,70,229,0.3); }
-  html.light .btn-primary{ background:#4F46E5; }
-  html.light .btn-primary:hover{ background:#4338CA; }
+  html.light .brand-mark{ background:#2563EB; }
+  html.light .fab{ background:#2563EB; box-shadow:0 4px 12px rgba(37,99,235,0.3); }
+  html.light .btn-primary{ background:#2563EB; }
+  html.light .btn-primary:hover{ background:#1D4ED8; }
   html.light .kpi-card:hover{ border-color:#DDE0E6; }
   html.light .kpi-card{ box-shadow:0 1px 2px rgba(0,0,0,0.04); }
   html.light .panel:hover{ border-color:#D8DCE8; }
   html.light ::-webkit-scrollbar-thumb{ background:#CBD2DB; }
   html.light .data-table tr:hover td{ background:#F8F9FB; }
   html.light .sidebar{ background:#FFFFFF; border-right:1px solid #EAECF0; }
-  html.light .nav-item.active{ background:rgba(79,70,229,0.08); }
+  html.light .nav-item.active{ background:rgba(37,99,235,0.08); }
   html.light .acct-item:hover{ background:#F3F4F6; }
   html.light .sidebar-saldo-block{ border-color:#E8EBF0; }
   html.light .sidebar-saldo-block .val{ color:#111827; }
@@ -555,7 +555,7 @@
     font-size:12.5px;
   }
   .remaining-info .ri-lbl{ color:var(--text-2); }
-  .remaining-info .ri-val{ font-family:'IBM Plex Mono',monospace; font-weight:600; color:var(--warning); }
+  .remaining-info .ri-val{ font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; font-weight:600; color:var(--warning); }
   .remainder-opts{ display:flex; flex-direction:column; gap:8px; margin:14px 0 0; }
   .remainder-opt{
     display:flex; align-items:center; gap:10px; padding:11px 14px; border-radius:9px;
@@ -618,7 +618,7 @@
   .budget-edit-input{
     width:110px; background:var(--surface-3); border:1.5px solid var(--accent);
     color:var(--text-1); border-radius:7px; padding:5px 9px; font-size:12.5px;
-    font-family:'IBM Plex Mono',monospace; outline:none;
+    font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; outline:none;
     transition: box-shadow .12s ease;
   }
   .budget-edit-input:focus{ box-shadow: 0 0 0 3px rgba(108,99,255,0.18); }
@@ -668,7 +668,7 @@
   .bcat-card:hover{ border-color:#3A3F52; background:var(--surface-3); }
   .bcat-top{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; }
   .bcat-name{ font-weight:600; font-size:13.5px; }
-  .bcat-pct{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; font-weight:600; }
+  .bcat-pct{ font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; font-size:11.5px; font-weight:600; }
   .bcat-pct.ok{ color:var(--positive); }
   .bcat-pct.warn{ color:var(--warning); }
   .bcat-pct.over{ color:var(--negative); }
@@ -680,7 +680,7 @@
   .bcat-bar-fill.over{ background:var(--negative); }
   .bcat-bar-fill.free{ background:var(--text-3); opacity:.4; }
   .bcat-amounts{ display:flex; justify-content:space-between; font-size:12px; color:var(--text-2); }
-  .bcat-amounts .spent{ font-family:'IBM Plex Mono',monospace; font-weight:600; color:var(--text-1); }
+  .bcat-amounts .spent{ font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; font-weight:600; color:var(--text-1); }
   .bcat-amounts .limit{ color:var(--text-3); }
   .bcat-status{ margin-top:7px; font-size:11.5px; font-weight:500; }
   .bcat-status.ok{ color:var(--positive); }
@@ -711,7 +711,7 @@
   .meta-ring-info .pct{ font-family:'Inter',sans-serif; font-weight:700; font-size:20px; }
   .meta-ring-info .sub{ font-size:11.5px; color:var(--text-2); margin-top:2px; }
   .meta-amounts{ display:flex; justify-content:space-between; font-size:12px; color:var(--text-2); margin-bottom:4px; }
-  .meta-amounts .current{ font-family:'IBM Plex Mono',monospace; font-weight:600; color:var(--text-1); }
+  .meta-amounts .current{ font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; font-weight:600; color:var(--text-1); }
   .meta-date{ font-size:11.5px; color:var(--text-3); margin-bottom:14px; }
   .meta-actions{ display:flex; gap:8px; margin-top:auto; }
   .meta-action-btn{
@@ -750,8 +750,8 @@
   .meta-extrato.open{ display:block; }
   .extrato-row{ display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid var(--border-soft); font-size:12.5px; }
   .extrato-row:last-child{ border-bottom:none; }
-  .extrato-val.in{ font-family:'IBM Plex Mono',monospace; color:var(--positive); font-weight:600; }
-  .extrato-val.out{ font-family:'IBM Plex Mono',monospace; color:var(--negative); font-weight:600; }
+  .extrato-val.in{ font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; color:var(--positive); font-weight:600; }
+  .extrato-val.out{ font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; color:var(--negative); font-weight:600; }
 
   /* ---------- Dívidas (compact cards) ---------- */
   .dividas-list{ display:flex; flex-direction:column; gap:10px; margin-top:16px; }
@@ -778,9 +778,9 @@
   .dc-bar{ flex:1; height:7px; border-radius:4px; background:var(--surface-3); overflow:hidden; }
   .dc-bar-fill{ height:100%; border-radius:4px; background:var(--positive); transition:width .5s ease; }
   .dc-bar-fill.atrasada{ background:var(--negative); }
-  .dc-pct{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--text-2); white-space:nowrap; }
+  .dc-pct{ font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; font-size:11px; color:var(--text-2); white-space:nowrap; }
   .dc-stats{ display:flex; gap:16px; font-size:12px; color:var(--text-2); flex-wrap:wrap; margin-bottom:10px; }
-  .dc-stats .val{ font-family:'IBM Plex Mono',monospace; font-weight:600; color:var(--text-1); }
+  .dc-stats .val{ font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; font-weight:600; color:var(--text-1); }
   .dc-stats .sep{ color:var(--border); }
   .dc-actions{ display:flex; gap:7px; flex-wrap:wrap; }
   .divida-action-btn{
@@ -795,9 +795,9 @@
   .divida-parcelas.open{ display:block; }
   .parc-row{ display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border-soft); font-size:12.5px; }
   .parc-row:last-child{ border-bottom:none; }
-  .parc-num{ font-family:'IBM Plex Mono',monospace; color:var(--text-3); width:40px; flex-shrink:0; }
+  .parc-num{ font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; color:var(--text-3); width:40px; flex-shrink:0; }
   .parc-info{ flex:1; }
-  .parc-val{ font-family:'IBM Plex Mono',monospace; font-weight:600; white-space:nowrap; }
+  .parc-val{ font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; font-weight:600; white-space:nowrap; }
   .parc-status-dot::before{ content:""; width:7px; height:7px; border-radius:50%; display:inline-block; margin-right:5px; }
   .parc-status-dot.Pago::before{ background:var(--positive); }
   .parc-status-dot.Pendente::before{ background:var(--warning); }
@@ -820,7 +820,7 @@
   .calc-result-field{
     width:100%; background:var(--surface-3); border:1.5px solid var(--border-soft);
     color:var(--text-2); border-radius:9px; padding:10px 13px; font-size:13.5px;
-    font-family:'IBM Plex Mono',monospace; font-weight:600;
+    font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; font-weight:600;
   }
 
   /* Divida mode selector */
@@ -858,7 +858,7 @@
 
   /* ---------- Table result summary ---------- */
   .table-summary{ font-size:12px; color:var(--text-3); padding:10px 2px 0; display:flex; justify-content:space-between; }
-  .table-summary strong{ color:var(--text-2); font-family:'IBM Plex Mono',monospace; }
+  .table-summary strong{ color:var(--text-2); font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; }
 
   /* ---------- Mobile bottom nav ---------- */
   .mobile-nav{
@@ -1126,7 +1126,7 @@
   .acct-item-dot{ width:7px; height:7px; border-radius:50%; flex-shrink:0; }
   .acct-item-info{ flex:1; min-width:0; }
   .acct-item-name{ font-size:12.5px; font-weight:500; color:var(--text-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .acct-item-val{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; font-weight:600; white-space:nowrap; flex-shrink:0; color:var(--text-2); }
+  .acct-item-val{ font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; font-size:11.5px; font-weight:600; white-space:nowrap; flex-shrink:0; color:var(--text-2); }
 
   /* ── Sidebar saldo block ── */
   .sidebar-saldo-block{
@@ -2706,7 +2706,7 @@ function renderFluxoChart(key){
       interaction:{intersect:false, mode:'index'},
       plugins:{ legend:{display:false}, tooltip:{
         backgroundColor:cc.tooltipBg, borderColor:cc.tooltipBorder, borderWidth:1, padding:10,
-        titleFont:{family:'Inter', size:11}, bodyFont:{family:'IBM Plex Mono', size:12},
+        titleFont:{family:'Inter', size:11}, bodyFont:{family:'Inter', size:12},
         titleColor: document.documentElement.classList.contains('light') ? '#4A5568' : '#9BA1B0',
         bodyColor:  document.documentElement.classList.contains('light') ? '#0F1117' : '#F2F3F6',
         callbacks:{ title:(c)=>'Dia '+c[0].label, label:(c)=>fmtBRL(c.raw) }
@@ -2743,7 +2743,7 @@ function renderDonut(canvasId, legendId, centerElId, entries, existingChart){
       cutout:'72%', responsive:true, maintainAspectRatio:false, aspectRatio:1,
       plugins:{ legend:{display:false}, tooltip:(()=>{const cc2=chartColors(); return {
         backgroundColor:cc2.tooltipBg, borderColor:cc2.tooltipBorder, borderWidth:1, padding:10,
-        titleFont:{family:'Inter',size:11}, bodyFont:{family:'IBM Plex Mono',size:12},
+        titleFont:{family:'Inter',size:11}, bodyFont:{family:'Inter',size:12},
         titleColor: document.documentElement.classList.contains('light') ? '#4A5568' : '#9BA1B0',
         bodyColor:  document.documentElement.classList.contains('light') ? '#0F1117' : '#F2F3F6',
         callbacks:{ label:(c)=> c.label+': '+fmtBRL(c.raw) }
@@ -4627,9 +4627,10 @@ function confirmPayment(){
   }
   const remaining = Math.round((payTarget.valor - amountPaid) * 100) / 100;
 
-  // 1. Payment transaction
+  // 1. Create payment transaction
   const entry = {
-    data, descricao: 'Pagamento fatura ' + payTarget.cartao + (payMode==='parcial' ? ' (parcial)':''),
+    _id: _nextId++, data,
+    descricao: 'Pagamento fatura ' + payTarget.cartao + (payMode==='parcial' ? ' (parcial)':''),
     tipo:'Despesa', categoria:'Pagamento Fatura Cartão',
     conta, contaDestino:null, formaPagamento:forma,
     status:'Pago', valor:amountPaid, obs,
@@ -4638,57 +4639,77 @@ function confirmPayment(){
   DATA.transacoes.push(entry);
   pendingSync.push(entry);
 
-  // 2. Update balance
+  // 2. Update account balance
   const contaObj = DATA.contas.find(c => c.conta === conta);
   if(contaObj){
     contaObj.saldoAtual = Math.round((contaObj.saldoAtual - amountPaid)*100)/100;
     DATA.saldoTotal = Math.round((DATA.saldoTotal - amountPaid)*100)/100;
   }
 
-  // 3. Fatura status
-  const fat = DATA.faturas.find(f =>
-    f.cartao === payTarget.cartao && f.competencia && f.competencia.slice(0,7) === payTarget.competencia.slice(0,7)
+  // 3. Find or CREATE fatura record
+  const compKey = payTarget.competencia.slice(0,7);
+  let fat = DATA.faturas.find(f =>
+    f.cartao === payTarget.cartao && f.competencia && f.competencia.slice(0,7) === compKey
   );
-  if(remaining === 0){
-    if(fat){ fat.status = 'Pago'; fat.valorTotal = 0; }
-    // Mark purchases as paid
-    const mk = payTarget.competencia.slice(0,7);
+  if(!fat){
+    // Create new fatura record since it doesn't exist yet
+    fat = {
+      _id: _nextId++, cartao: payTarget.cartao,
+      competencia: compKey + '-01',
+      valorTotal: payTarget.valor, status: 'Pendente',
+      _new: true
+    };
+    DATA.faturas.push(fat);
+  }
+
+  // 4. Update fatura status and amounts
+  if(remaining <= 0){
+    fat.status = 'Pago';
+    fat.valorTotal = 0;
+    // Mark all purchases for this card/month as conferido
     DATA.cartaoCompras.forEach(t => {
-      if(t.cartao === payTarget.cartao && monthKey(parseDate(t.data)) === mk) t.conferido = 'Sim';
+      if(t.cartao === payTarget.cartao && getCartaoFaturaMonth(t) === compKey) t.conferido = 'Sim';
     });
-    showToast('Fatura ' + payTarget.cartao + ' paga integralmente.');
+    showToast('Fatura ' + payTarget.cartao + ' paga integralmente!');
   } else {
-    if(fat) fat.valorTotal = remaining;
+    fat.valorTotal = remaining;
+    fat.status = 'Pendente';
     if(payMode === 'parcial' && remainderMode === 'parcelar'){
-      // Create installment entries
       const inst = calcInstallment();
       if(inst){
         for(let i=1; i<=inst.n; i++){
           const futDate = addDateMonths(data, i);
           const futEntry = {
-            data: futDate,
-            descricao: `Parcela ${i}/${inst.n} fatura ${payTarget.cartao}`,
+            _id:_nextId++, data:futDate,
+            descricao:`Parcela ${i}/${inst.n} fatura ${payTarget.cartao}`,
             tipo:'Despesa', categoria:'Pagamento Fatura Cartão',
             conta, contaDestino:null, formaPagamento:'Boleto',
-            status:'Pendente', valor: Math.round(inst.pmt*100)/100, obs:null,
+            status:'Pendente', valor:Math.round(inst.pmt*100)/100, obs:null,
             _source:'transacoes', _new:true
           };
           DATA.transacoes.push(futEntry);
           pendingSync.push(futEntry);
-          // Add to future month's data so it appears in Pendências
-          const futMonth = monthKey(parseDate(futDate));
-          if(!months.includes(futMonth)){ months.push(futMonth); months.sort(); }
+          dbSaveTransaction(futEntry);
         }
-        showToast(`Pagamento parcial + ${inst.n} parcelas geradas.`);
+        showToast(`Pagamento parcial + ${inst.n} parcelas criadas.`);
       }
     } else {
-      showToast(`Pagamento parcial. Saldo restante: ${fmtBRL(remaining)}`);
+      showToast(`Pago ${fmtBRL(amountPaid)}. Restante: ${fmtBRL(remaining)}`);
     }
   }
 
   updateSyncBar();
+  // Save transaction to Supabase
   dbSaveTransaction(entry);
-  if(fat) dbUpdateFatura(fat);
+  // Save/update fatura to Supabase
+  if(fat._new){
+    const fatRow = { user_id:currentUser?.id, cartao:fat.cartao, competencia:fat.competencia, valor_total:fat.valorTotal, status:fat.status };
+    db.from('faturas_cartao').insert(fatRow).select().single().then(({data:fd})=>{
+      if(fd){ fat._dbId=fd.id; delete fat._new; }
+    });
+  } else if(fat._dbId){
+    db.from('faturas_cartao').update({status:fat.status, valor_total:fat.valorTotal}).eq('id',fat._dbId);
+  }
   closePayModal();
   renderAll();
 }
