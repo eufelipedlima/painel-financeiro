@@ -1326,11 +1326,11 @@
 
   /* Overview compact insights row */
   .ov-insights-row{
-    display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:14px;
+    display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:14px;
   }
   .ov-insight-block{
     background:var(--surface); border:1px solid var(--border-soft); border-radius:10px;
-    padding:14px 16px; box-shadow:var(--shadow-card);
+    padding:18px 20px; box-shadow:var(--shadow-card);
   }
   .ov-insight-lbl{ font-size:10px; text-transform:uppercase; letter-spacing:.8px; color:var(--text-3); font-weight:600; margin-bottom:6px; }
   .ov-insight-val{ font-size:19px; font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:-0.5px; }
@@ -1364,6 +1364,33 @@
   .ov-fatura-chip:last-child{ border-bottom:none; }
   .ov-fatura-chip-name{ display:flex; align-items:center; gap:6px; color:var(--text-2); font-weight:500; }
   .ov-fatura-chip-val{ font-weight:700; font-variant-numeric:tabular-nums; }
+
+
+  /* Metas - golden accent */
+  .ov-metas-panel{
+    border-color: rgba(212,160,23,0.35) !important;
+    box-shadow: 0 0 0 1px rgba(212,160,23,0.15), var(--shadow-card) !important;
+    background: var(--surface) !important;
+  }
+  html.light .ov-metas-panel{
+    border-color: rgba(180,130,0,0.3) !important;
+    background: linear-gradient(180deg, #FFFDF5 0%, #FFFFFF 60%) !important;
+    box-shadow: 0 0 0 1px rgba(212,160,23,0.2), 0 2px 8px rgba(212,160,23,0.08) !important;
+  }
+  .ov-metas-panel .ov-meta-fill{ background: linear-gradient(90deg,#D4A017,#F0C030); }
+  .ov-metas-panel .ov-meta-pct{ color:#B8860B; }
+
+  /* Dívidas - red accent */
+  .ov-dividas-panel{
+    border-color: rgba(248,113,113,0.3) !important;
+    box-shadow: 0 0 0 1px rgba(248,113,113,0.12), var(--shadow-card) !important;
+    background: var(--surface) !important;
+  }
+  html.light .ov-dividas-panel{
+    border-color: rgba(220,38,38,0.25) !important;
+    background: linear-gradient(180deg, #FFF8F8 0%, #FFFFFF 60%) !important;
+    box-shadow: 0 0 0 1px rgba(220,38,38,0.15), 0 2px 8px rgba(220,38,38,0.06) !important;
+  }
 
 </style>
 </head>
@@ -1507,17 +1534,23 @@
 
       <!-- Row 4: Metas + Dívidas quick view -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
-        <div class="panel">
-          <div class="panel-head">
-            <div><div class="panel-title">Metas</div><div class="panel-sub">Progresso das metas ativas</div></div>
-            <button class="btn btn-ghost" style="padding:5px 12px;font-size:12px" onclick="[...document.querySelectorAll('.nav-item')].find(n=>n.dataset.view==='metas')?.click()">Ver todas →</button>
+        <div class="panel ov-metas-panel">
+          <div class="panel-head" style="margin-bottom:12px">
+            <div>
+              <div class="panel-title">🎯 Metas</div>
+              <div class="panel-sub">Progresso das metas ativas</div>
+            </div>
+            <button class="btn btn-ghost" style="padding:5px 12px;font-size:12px;width:auto;flex-shrink:0" onclick="[...document.querySelectorAll('.nav-item')].find(n=>n.dataset.view==='metas')?.click()">Ver todas →</button>
           </div>
           <div id="ovMetasContent"><div class="empty-note">Nenhuma meta cadastrada</div></div>
         </div>
-        <div class="panel">
-          <div class="panel-head">
-            <div><div class="panel-title">Dívidas</div><div class="panel-sub">Status das dívidas ativas</div></div>
-            <button class="btn btn-ghost" style="padding:5px 12px;font-size:12px" onclick="[...document.querySelectorAll('.nav-item')].find(n=>n.dataset.view==='dividas')?.click()">Ver todas →</button>
+        <div class="panel ov-dividas-panel">
+          <div class="panel-head" style="margin-bottom:12px">
+            <div>
+              <div class="panel-title">🔴 Dívidas</div>
+              <div class="panel-sub">Status das dívidas ativas</div>
+            </div>
+            <button class="btn btn-ghost" style="padding:5px 12px;font-size:12px;width:auto;flex-shrink:0" onclick="[...document.querySelectorAll('.nav-item')].find(n=>n.dataset.view==='dividas')?.click()">Ver todas →</button>
           </div>
           <div id="ovDividasContent"><div class="empty-note">Nenhuma dívida cadastrada</div></div>
         </div>
@@ -3606,30 +3639,25 @@ function renderInsights(key){
 
   row.innerHTML = `
     <div class="ov-insight-block">
-      <div class="ov-insight-lbl">Taxa de economia</div>
+      <div class="ov-insight-lbl">💰 Taxa de economia</div>
       <div class="ov-insight-val" style="color:${savingsRate>=20?'var(--positive)':savingsRate>=0?'var(--warning)':'var(--negative)'}">${savingsRate.toFixed(0)}%</div>
-      <div class="ov-insight-sub">${savingsMsg}</div>
+      <div class="ov-insight-sub" style="margin-top:6px">${savingsMsg}</div>
     </div>
     <div class="ov-insight-block">
-      <div class="ov-insight-lbl">Maior despesa</div>
+      <div class="ov-insight-lbl">📉 Maior despesa</div>
       ${top ? `
-        <div class="ov-cat-pill" style="background:${CAT_COLORS[0]}22;color:${CAT_COLORS[0]}">${top[0]}</div>
+        <div class="ov-cat-pill" style="background:${CAT_COLORS[0]}22;color:${CAT_COLORS[0]};margin-bottom:4px">${top[0]}</div>
         <div class="ov-insight-val">${fmtBRL(top[1])}</div>
-        <div class="ov-insight-sub">${totalDesp>0?((top[1]/totalDesp)*100).toFixed(0)+'% das despesas':''}</div>
-      ` : '<div class="ov-insight-sub">Sem despesas</div>'}
+        <div class="ov-insight-sub" style="margin-top:6px">${totalDesp>0?((top[1]/totalDesp)*100).toFixed(0)+'% das despesas este mês':''}</div>
+      ` : '<div class="ov-insight-sub">Sem despesas neste mês</div>'}
     </div>
     <div class="ov-insight-block">
-      <div class="ov-insight-lbl">Maior receita</div>
+      <div class="ov-insight-lbl">📈 Maior receita</div>
       ${topRec ? `
-        <div class="ov-cat-pill" style="background:${CAT_COLORS[2]}22;color:${CAT_COLORS[2]}">${topRec[0]}</div>
+        <div class="ov-cat-pill" style="background:${CAT_COLORS[2]}22;color:${CAT_COLORS[2]};margin-bottom:4px">${topRec[0]}</div>
         <div class="ov-insight-val" style="color:var(--positive)">${fmtBRL(topRec[1])}</div>
-        <div class="ov-insight-sub">${recCats.reduce((s,[,v])=>s+v,0)>0?((topRec[1]/recCats.reduce((s,[,v])=>s+v,0))*100).toFixed(0)+'% das receitas':''}</div>
-      ` : '<div class="ov-insight-sub">Sem receitas</div>'}
-    </div>
-    <div class="ov-insight-block">
-      <div class="ov-insight-lbl">Fatura cartão</div>
-      <div class="ov-insight-val" style="color:${totalFatura>0?'var(--negative)':'var(--text-1)'}">${fmtBRL(totalFatura)}</div>
-      <div class="ov-insight-sub">${DATA.cartoes.length} cartão${DATA.cartoes.length!==1?'es':''} · ${DATA.cartaoCompras.filter(t=>getCartaoFaturaMonth(t)===key).length} compra${DATA.cartaoCompras.filter(t=>getCartaoFaturaMonth(t)===key).length!==1?'s':''}</div>
+        <div class="ov-insight-sub" style="margin-top:6px">${recCats.reduce((s,[,v])=>s+v,0)>0?((topRec[1]/recCats.reduce((s,[,v])=>s+v,0))*100).toFixed(0)+'% das receitas este mês':''}</div>
+      ` : '<div class="ov-insight-sub">Sem receitas neste mês</div>'}
     </div>`;
 
   requestAnimationFrame(() => {
