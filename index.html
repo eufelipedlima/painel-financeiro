@@ -1710,6 +1710,7 @@
     .fab{
       bottom: 76px !important;
       right: 14px !important;
+      z-index: 250 !important;
       padding: 10px 18px !important;
       font-size: 13px !important;
       box-shadow: 0 4px 16px rgba(79,70,229,0.35), 0 2px 8px rgba(0,0,0,0.15) !important;
@@ -3494,22 +3495,23 @@ document.getElementById('searchInput').addEventListener('input', renderAllTable)
 
 // Filter is handled by global month picker
 
+
+// ── Global mobile navigation function ──────────────────────
+function mobileNavigate(view){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const desktopItem = document.querySelector('.nav-item[data-view="'+view+'"]');
+  if(desktopItem) desktopItem.classList.add('active');
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  currentView = view;
+  const viewEl = document.getElementById('view-'+view);
+  if(viewEl) viewEl.classList.add('active');
+  try{ renderView(view); } catch(e){ console.error('renderView error:', e); }
+}
+
 // ── Mobile navigation ──────────────────────────────────────
 (function(){
   // Run after DOM is fully parsed (nav HTML is after script tag)
   function initMobileNav(){
-
-  function mobileNavigate(view){
-    // Use same logic as desktop nav items
-    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-    const desktopItem = document.querySelector('.nav-item[data-view="'+view+'"]');
-    if(desktopItem) desktopItem.classList.add('active');
-    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-    currentView = view;
-    const viewEl = document.getElementById('view-'+view);
-    if(viewEl) viewEl.classList.add('active');
-    renderView(view);
-  }
   function updateMobNav(view){
     document.querySelectorAll('.mob-nav-item[data-view]').forEach(item=>{
       item.classList.toggle('active', item.dataset.view === view);
@@ -5962,19 +5964,19 @@ renderAll();
 
   <!-- Mobile bottom navigation -->
   <nav class="mobile-bottom-nav" id="mobileNav">
-    <a class="mob-nav-item active" data-view="overview">
+    <a class="mob-nav-item active" data-view="overview" onclick="mobileNavigate('overview')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
       <span>Início</span>
     </a>
-    <a class="mob-nav-item" data-view="transacoes">
+    <a class="mob-nav-item" data-view="transacoes" onclick="mobileNavigate('transacoes')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
       <span>Transações</span>
     </a>
-    <a class="mob-nav-item" data-view="cartao">
+    <a class="mob-nav-item" data-view="cartao" onclick="mobileNavigate('cartao')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
       <span>Cartão</span>
     </a>
-    <a class="mob-nav-item" data-view="metas">
+    <a class="mob-nav-item" data-view="metas" onclick="mobileNavigate('metas')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
       <span>Metas</span>
     </a>
@@ -5988,15 +5990,15 @@ renderAll();
   <div class="mob-more-overlay" id="mobMoreOverlay"></div>
   <div class="mob-more-drawer" id="mobMoreDrawer">
     <div class="mob-more-title">Mais opções</div>
-    <a class="mob-more-item" data-view="orcamento">
+    <a class="mob-more-item" onclick="mobileNavigate('orcamento');document.getElementById('mobMoreOverlay').classList.remove('open');document.getElementById('mobMoreDrawer').classList.remove('open');">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 3"/></svg>
       Orçamento
     </a>
-    <a class="mob-more-item" data-view="dividas">
+    <a class="mob-more-item" onclick="mobileNavigate('dividas');document.getElementById('mobMoreOverlay').classList.remove('open');document.getElementById('mobMoreDrawer').classList.remove('open');">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/><path d="M14 15l1.5 1.5L18 13"/></svg>
       Dívidas
     </a>
-    <a class="mob-more-item" data-view="configuracoes">
+    <a class="mob-more-item" onclick="mobileNavigate('configuracoes');document.getElementById('mobMoreOverlay').classList.remove('open');document.getElementById('mobMoreDrawer').classList.remove('open');">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
       Configurações
     </a>
