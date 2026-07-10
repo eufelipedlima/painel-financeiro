@@ -1204,6 +1204,63 @@
   html.light .acct-item-name{ color:#374151; }
   html.light .acct-item-val{ color:#1F2937; }
 
+
+  /* ── Credit card visual ── */
+  .cc-cards-row{ display:flex; gap:14px; overflow-x:auto; margin-bottom:20px; padding-bottom:4px; }
+  .cc-card-visual{
+    flex-shrink:0; width:260px; border-radius:16px; padding:20px 22px;
+    color:#fff; position:relative; overflow:hidden; cursor:pointer;
+    transition: transform .15s ease, box-shadow .15s ease;
+    box-shadow:0 4px 20px rgba(0,0,0,0.2);
+  }
+  .cc-card-visual:hover{ transform:translateY(-2px); box-shadow:0 8px 28px rgba(0,0,0,0.28); }
+  .cc-card-visual.selected{ transform:translateY(-2px); box-shadow:0 8px 32px rgba(0,0,0,0.32); }
+  .cc-card-visual::before{ content:''; position:absolute; inset:0; background:rgba(255,255,255,0.04); border-radius:16px; }
+  .cc-card-name{ font-size:13px; font-weight:600; opacity:.85; margin-bottom:14px; }
+  .cc-card-spent{ font-size:26px; font-weight:800; letter-spacing:-0.5px; margin-bottom:2px; font-variant-numeric:tabular-nums; }
+  .cc-card-spent-lbl{ font-size:10.5px; opacity:.7; margin-bottom:14px; font-weight:500; }
+  .cc-card-bar-wrap{ height:4px; background:rgba(255,255,255,0.25); border-radius:99px; margin-bottom:6px; }
+  .cc-card-bar-fill{ height:100%; border-radius:99px; background:#fff; transition:width .5s ease; }
+  .cc-card-pct{ font-size:10.5px; opacity:.8; font-weight:600; margin-bottom:14px; }
+  .cc-card-bottom{ display:flex; justify-content:space-between; font-size:10.5px; opacity:.8; border-top:1px solid rgba(255,255,255,0.15); padding-top:10px; }
+  .cc-card-bottom span{ display:flex; flex-direction:column; gap:2px; }
+  .cc-card-bottom strong{ font-size:12.5px; opacity:1; font-weight:700; }
+
+  /* Cartão todos summary cards */
+  .cc-summary-card{
+    background:var(--surface); border:1px solid var(--border-soft); border-radius:12px;
+    padding:16px 18px; box-shadow:var(--shadow-card); flex-shrink:0; min-width:200px;
+    cursor:pointer; transition:.12s ease;
+  }
+  .cc-summary-card:hover{ border-color:var(--border); }
+  .cc-summary-card.selected{ border-color:var(--accent); background:var(--accent-soft); }
+  .cc-sum-name{ font-size:12px; font-weight:600; color:var(--text-2); margin-bottom:8px; }
+  .cc-sum-spent{ font-size:20px; font-weight:800; letter-spacing:-0.5px; font-variant-numeric:tabular-nums; margin-bottom:6px; }
+  .cc-sum-bar-wrap{ height:3px; background:var(--surface-3); border-radius:99px; margin-bottom:6px; }
+  .cc-sum-bar{ height:100%; border-radius:99px; }
+  .cc-sum-meta{ font-size:10.5px; color:var(--text-3); display:flex; justify-content:space-between; }
+
+  /* Cartão KPI row */
+  .cc-kpi-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+  .cc-kpi{
+    background:var(--surface); border:1px solid var(--border-soft); border-radius:10px;
+    padding:14px 16px; box-shadow:var(--shadow-card);
+  }
+  .cc-kpi-lbl{ font-size:10.5px; text-transform:uppercase; letter-spacing:.8px; color:var(--text-3); font-weight:600; margin-bottom:6px; }
+  .cc-kpi-val{ font-size:21px; font-weight:800; letter-spacing:-0.5px; font-variant-numeric:tabular-nums; }
+  .cc-kpi-sub{ font-size:11px; color:var(--text-3); margin-top:4px; display:flex; align-items:center; gap:4px; }
+  .cc-kpi-up{ color:var(--negative); }
+  .cc-kpi-down{ color:var(--positive); }
+
+  /* Recent purchases mini-list */
+  .cc-recent-item{ display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--border-soft); }
+  .cc-recent-item:last-child{ border-bottom:none; }
+  .cc-recent-icon{ width:34px; height:34px; border-radius:9px; background:var(--surface-2); display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+  .cc-recent-info{ flex:1; min-width:0; }
+  .cc-recent-name{ font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .cc-recent-cat{ font-size:11px; color:var(--text-3); margin-top:1px; }
+  .cc-recent-val{ font-size:13.5px; font-weight:700; font-variant-numeric:tabular-nums; flex-shrink:0; }
+
 </style>
 </head>
 <body>
@@ -2876,6 +2933,140 @@ document.querySelectorAll('#allTable th').forEach(th => {
 });
 
 // ===================== Cartao view =====================
+
+// ===================== Cartão Page (full redesign) =====================
+const CC_GRADIENTS = [
+  'linear-gradient(135deg,#4F46E5,#2563EB)',
+  'linear-gradient(135deg,#0D9488,#0891B2)',
+  'linear-gradient(135deg,#7C3AED,#4F46E5)',
+  'linear-gradient(135deg,#059669,#0D9488)',
+  'linear-gradient(135deg,#DC2626,#DB2777)',
+  'linear-gradient(135deg,#92400E,#B45309)',
+];
+let chartCartaoCatInst = null;
+
+function renderCartaoPage(key){
+  const comprasMes = getMonthCartao(key);
+  const prevKey = shiftMonth(key, -1);
+  const comprasPrev = getMonthCartao(prevKey);
+  const todayDay = new Date().getDate();
+
+  // ── Card visuals row ──────────────────────────────────────
+  const row = document.getElementById('ccCardsRow');
+  if(row){
+    if(DATA.cartoes.length === 0){
+      row.innerHTML = `<div style="padding:20px;color:var(--text-3);font-size:13px">Nenhum cartão cadastrado. <a href="#" onclick="[...document.querySelectorAll('.nav-item')].find(n=>n.dataset.view==='configuracoes').click();showConfigTab('cartoes');return false;" style="color:var(--accent)">Adicionar em Configurações</a></div>`;
+    } else {
+      row.innerHTML = DATA.cartoes.map((c,i) => {
+        const gasto = comprasMes.filter(t=>t.cartao===c.cartao).reduce((s,t)=>s+t.valor,0);
+        const limite = c.limite || 0;
+        const pct = limite > 0 ? Math.min((gasto/limite)*100, 100) : 0;
+        const disponivel = Math.max(limite - gasto, 0);
+        const grad = CC_GRADIENTS[i % CC_GRADIENTS.length];
+        const daysToClose = c.fechamento ? (c.fechamento >= todayDay ? c.fechamento - todayDay : 31 - todayDay + c.fechamento) : null;
+        return `<div class="cc-card-visual${cardFilter===c.cartao?' selected':''}" data-card="${c.cartao}" style="background:${grad}">
+          <div class="cc-card-name">${c.cartao}${c.banco?' · '+c.banco:''}</div>
+          <div class="cc-card-spent">${fmtBRL(gasto)}</div>
+          <div class="cc-card-spent-lbl">Gasto em ${monthLabel(key)}</div>
+          ${limite>0?`<div class="cc-card-bar-wrap"><div class="cc-card-bar-fill" style="width:${pct}%"></div></div>
+          <div class="cc-card-pct">${pct.toFixed(0)}% do limite · ${fmtBRL(disponivel)} disponível</div>`:'<div style="height:24px"></div>'}
+          <div class="cc-card-bottom">
+            ${c.fechamento?`<span><span style="opacity:.7">Fecha</span><strong>Dia ${c.fechamento}</strong></span>`:''}
+            ${c.vencimento?`<span><span style="opacity:.7">Vence</span><strong>Dia ${c.vencimento}</strong></span>`:''}
+            ${limite>0?`<span><span style="opacity:.7">Limite</span><strong>${fmtBRL(limite)}</strong></span>`:''}
+          </div>
+        </div>`;
+      }).join('');
+      row.querySelectorAll('.cc-card-visual').forEach(el=>{
+        el.onclick=()=>{ cardFilter = cardFilter===el.dataset.card?'Todos':el.dataset.card; renderCartaoPage(currentMonth); };
+      });
+    }
+  }
+
+  // ── KPIs ─────────────────────────────────────────────────
+  const kpiRow = document.getElementById('ccKpiRow');
+  if(kpiRow){
+    const filtered = cardFilter==='Todos' ? comprasMes : comprasMes.filter(t=>t.cartao===cardFilter);
+    const filteredPrev = cardFilter==='Todos' ? comprasPrev : comprasPrev.filter(t=>t.cartao===cardFilter);
+    const totalMes = filtered.reduce((s,t)=>s+t.valor,0);
+    const totalPrev = filteredPrev.reduce((s,t)=>s+t.valor,0);
+    const pctVsPrev = totalPrev > 0 ? ((totalMes-totalPrev)/totalPrev*100) : 0;
+    const numCompras = filtered.length;
+    // Future installments: parcelas com "/" no campo parcela que ainda não venceram
+    const futuras = DATA.cartaoCompras.filter(t=>{
+      if(cardFilter!=='Todos' && t.cartao!==cardFilter) return false;
+      if(!t.parcela || !t.parcela.includes('/')) return false;
+      const [cur,tot] = t.parcela.split('/').map(Number);
+      return cur < tot;
+    });
+    const totalFuturasEst = futuras.reduce((s,t)=>s+t.valor,0) * 1; // rough estimate
+    // Available limit
+    const cartoesFiltrados = cardFilter==='Todos' ? DATA.cartoes : DATA.cartoes.filter(c=>c.cartao===cardFilter);
+    const limiteTotal = cartoesFiltrados.reduce((s,c)=>s+(c.limite||0),0);
+    const limiteDisp = Math.max(limiteTotal - totalMes, 0);
+    const pctClass = pctVsPrev > 0 ? 'cc-kpi-up' : 'cc-kpi-down';
+    const pctArrow = pctVsPrev > 0 ? '↑' : '↓';
+    kpiRow.innerHTML = `
+      <div class="cc-kpi">
+        <div class="cc-kpi-lbl">Fatura atual</div>
+        <div class="cc-kpi-val">${fmtBRL(totalMes)}</div>
+        <div class="cc-kpi-sub">${totalPrev>0?`<span class="${pctClass}">${pctArrow} ${Math.abs(pctVsPrev).toFixed(0)}%</span> vs mês anterior`:'Primeiro mês'}</div>
+      </div>
+      <div class="cc-kpi">
+        <div class="cc-kpi-lbl">Compras no mês</div>
+        <div class="cc-kpi-val">${numCompras}</div>
+        <div class="cc-kpi-sub">lançamentos</div>
+      </div>
+      <div class="cc-kpi">
+        <div class="cc-kpi-lbl">Parcelamentos ativos</div>
+        <div class="cc-kpi-val">${futuras.length}</div>
+        <div class="cc-kpi-sub">compras parceladas em aberto</div>
+      </div>
+      <div class="cc-kpi">
+        <div class="cc-kpi-lbl">Limite disponível</div>
+        <div class="cc-kpi-val" style="color:${limiteDisp<limiteTotal*0.2?'var(--negative)':limiteDisp<limiteTotal*0.5?'var(--warning)':'var(--positive)'}">${fmtBRL(limiteDisp)}</div>
+        <div class="cc-kpi-sub">${limiteTotal>0?'de '+fmtBRL(limiteTotal)+' total':'Limite não cadastrado'}</div>
+      </div>`;
+  }
+
+  // ── Category chart ────────────────────────────────────────
+  const catCtx = document.getElementById('chartCartaoCat');
+  const catLegend = document.getElementById('ccCatLegend');
+  if(catCtx && catLegend){
+    const filteredForCat = cardFilter==='Todos' ? comprasMes : comprasMes.filter(t=>t.cartao===cardFilter);
+    const catMap = {};
+    filteredForCat.forEach(t=>{ const c=t.categoria||'Outros'; catMap[c]=(catMap[c]||0)+t.valor; });
+    const cats = Object.entries(catMap).sort((a,b)=>b[1]-a[1]).slice(0,6);
+    const total = cats.reduce((s,[,v])=>s+v,0);
+    if(chartCartaoCatInst){ try{chartCartaoCatInst.destroy();}catch(e){} chartCartaoCatInst=null; }
+    if(cats.length > 0){
+      try {
+        chartCartaoCatInst = new Chart(catCtx.getContext('2d'),{
+          type:'doughnut',
+          data:{
+            labels: cats.map(([c])=>c),
+            datasets:[{data:cats.map(([,v])=>v), backgroundColor:CAT_COLORS.slice(0,cats.length), borderWidth:2, borderColor:'transparent', hoverOffset:4}]
+          },
+          options:{responsive:true,maintainAspectRatio:false,cutout:'70%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.label+': '+fmtBRL(c.raw)}}}}
+        });
+      } catch(e){}
+      catLegend.innerHTML = cats.map(([c,v],i)=>`
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border-soft);font-size:12.5px">
+          <div style="display:flex;align-items:center;gap:7px"><span style="width:9px;height:9px;border-radius:50%;background:${CAT_COLORS[i]};flex-shrink:0"></span><span>${c}</span></div>
+          <div style="display:flex;align-items:center;gap:10px"><span style="color:var(--text-3)">${total>0?(v/total*100).toFixed(0)+'%':''}</span><strong style="font-variant-numeric:tabular-nums">${fmtBRL(v)}</strong></div>
+        </div>`).join('');
+    } else {
+      catLegend.innerHTML = '<div class="empty-note">Sem compras neste mês.</div>';
+    }
+  }
+
+  // ── Invoice info + pay button ────────────────────────────
+  renderInvoices(key);
+
+  // ── Purchases table ───────────────────────────────────────
+  renderCardPurchases(key);
+}
+
 function renderFaturaTotal(key){
   const cartao = getMonthCartao(key);
   const total = cartao.reduce((s,t)=>s+t.valor,0);
@@ -3280,9 +3471,7 @@ function renderView(view){
   } else if(view === 'transacoes'){
     showSubtab(transSubtab || 'todas');
   } else if(view === 'cartao'){
-    renderFaturaTotal(currentMonth);
-    renderInvoices(currentMonth);
-    renderCardPurchases(currentMonth);
+    renderCartaoPage(currentMonth);
   } else if(view === 'orcamento'){
     renderBudget(currentMonth);
   } else if(view === 'metas'){
