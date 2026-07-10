@@ -1848,6 +1848,40 @@
     .ndc-name{ font-size:15px; }
   }
 
+
+  /* Transaction status pills */
+  .tx-status{
+    display:inline-flex; align-items:center; gap:5px;
+    padding:4px 10px; border-radius:20px;
+    font-size:11.5px; font-weight:600; white-space:nowrap;
+  }
+  .tx-status::before{
+    content:''; width:6px; height:6px; border-radius:50%; flex-shrink:0;
+  }
+  .tx-status.Pago{
+    background:var(--positive-soft); color:var(--positive);
+  }
+  .tx-status.Pago::before{ background:var(--positive); }
+  .tx-status.Pendente{
+    background:var(--warning-soft); color:#B45309;
+  }
+  .tx-status.Pendente::before{ background:#F59E0B; }
+  .tx-status.Atrasado{
+    background:var(--negative-soft); color:var(--negative);
+  }
+  .tx-status.Atrasado::before{ background:var(--negative); }
+
+  /* Pay button in table */
+  .tbl-pay-btn{
+    padding:4px 10px; border-radius:6px; font-size:11.5px; font-weight:600;
+    cursor:pointer; border:1.5px solid var(--positive-soft);
+    background:var(--positive-soft); color:var(--positive);
+    font-family:'Inter',sans-serif; transition:.12s ease; white-space:nowrap;
+    margin-left:4px;
+  }
+  .tbl-pay-btn:hover{ background:var(--positive); color:#fff; border-color:var(--positive); }
+  html.light .tbl-pay-btn{ border-color:rgba(5,150,105,0.2); }
+
 </style>
 </head>
 <body>
@@ -3541,19 +3575,29 @@ function renderAllTable(){
   const empty = document.getElementById('allTableEmpty');
   if(rows.length === 0){ body.innerHTML=''; empty.style.display='block'; document.getElementById('allTableSummary').textContent=''; return; }
   empty.style.display = 'none';
-  body.innerHTML = rows.map(r => `
-    <tr>
+  body.innerHTML = rows.map(r => {
+    const isPend = r.status === 'Pendente';
+    const isRec = r.tipo === 'Receita';
+    const statusLabel = r.status === 'Pago' ? '✓ Pago' : r.status === 'Pendente' ? '⏱ Pendente' : '⚠ ' + r.status;
+    return `<tr>
       <td class="mono">${fmtDateBR(r.data)}</td>
       <td>${r.descricao||''}</td>
       <td><span class="tag ${r.tipo}">${r.tipo}</span></td>
       <td>${r.categoria||''}${r.subcategoria?`<div style="font-size:10.5px;color:var(--text-3);margin-top:2px">${r.subcategoria}</div>`:''}</td>
       <td>${r.conta||''}</td>
-      <td><span class="status-dot ${r.status}">${r.status}</span></td>
+      <td><span class="tx-status ${r.status}">${statusLabel}</span></td>
       <td class="val-cell">${fmtBRL(r.valor)}</td>
-      <td class="tbl-action-cell"><button class="tbl-edit-btn" data-id="${r._id}" data-src="${r._source}" title="Editar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button></td>
-    </tr>`).join('');
+      <td class="tbl-action-cell" style="white-space:nowrap;width:auto">
+        ${isPend ? `<button class="tbl-pay-btn" data-id="${r._id}" data-rec="${isRec}" title="${isRec?'Confirmar recebimento':'Confirmar pagamento'}">${isRec?'Recebi':'Paguei'}</button>` : ''}
+        <button class="tbl-edit-btn" data-id="${r._id}" data-src="${r._source}" title="Editar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+      </td>
+    </tr>`;
+  }).join('');
   body.querySelectorAll('.tbl-edit-btn').forEach(btn => {
     btn.onclick = (e) => { e.stopPropagation(); openEditDrawer(parseInt(btn.dataset.id), btn.dataset.src); };
+  });
+  body.querySelectorAll('.tbl-pay-btn').forEach(btn => {
+    btn.onclick = (e) => { e.stopPropagation(); openTxPayModal(parseInt(btn.dataset.id)); };
   });
   const receitas = rows.filter(r=>r.tipo==='Receita').reduce((s,r)=>s+r.valor,0);
   const despesas = rows.filter(r=>r.tipo!=='Receita'&&r.tipo!=='Transferência').reduce((s,r)=>s+r.valor,0);
@@ -5268,6 +5312,71 @@ function renderDividas(){
 }
 
 
+
+// ── Transaction quick pay modal ────────────────────────────
+let _txPayId = null;
+
+function openTxPayModal(entryId){
+  const entry = DATA.transacoes.find(e=>e._id===entryId);
+  if(!entry) return;
+  _txPayId = entryId;
+  const isRec = entry.tipo === 'Receita';
+  document.getElementById('txPayTitle').textContent = isRec ? 'Confirmar recebimento' : 'Confirmar pagamento';
+  document.getElementById('txPayDesc').textContent = `${entry.descricao} · ${fmtBRL(entry.valor)}`;
+  document.getElementById('txPayData').value = new Date().toISOString().split('T')[0];
+  document.getElementById('txPayValor').value = entry.valor.toFixed(2);
+  document.getElementById('txPayConta').innerHTML =
+    DATA.contas.filter(c=>!c.arquivado).map(c=>`<option value="${c.conta}">${c.conta} (${fmtBRL(c.saldoAtual)})</option>`).join('');
+  if(entry.conta) document.getElementById('txPayConta').value = entry.conta;
+  const overlay = document.getElementById('txPayOverlay');
+  overlay.style.display = 'flex';
+  requestAnimationFrame(()=>overlay.classList.add('open'));
+}
+function closeTxPayModal(){
+  const overlay = document.getElementById('txPayOverlay');
+  overlay.classList.remove('open');
+  setTimeout(()=>{ overlay.style.display='none'; }, 250);
+  _txPayId = null;
+}
+function confirmTxPay(){
+  if(_txPayId===null) return;
+  const entry = DATA.transacoes.find(e=>e._id===_txPayId);
+  if(!entry) return;
+  const conta = document.getElementById('txPayConta').value;
+  const data  = document.getElementById('txPayData').value;
+  const valor = parseFloat(document.getElementById('txPayValor').value)||0;
+  // Update entry
+  entry.status = 'Pago';
+  entry.data   = data;
+  entry.conta  = conta;
+  // Update balance
+  const contaObj = DATA.contas.find(c=>c.conta===conta);
+  if(contaObj){
+    const delta = entry.tipo==='Receita' ? valor : -valor;
+    contaObj.saldoAtual = Math.round((contaObj.saldoAtual+delta)*100)/100;
+    DATA.saldoTotal = Math.round((DATA.saldoTotal+delta)*100)/100;
+  }
+  // Sync with debt installment if linked
+  const divMatch = (entry.obs||'').match(/DIV:([^|]+)\|PARC:(\d+)/);
+  if(divMatch){
+    const [,divDbId,parcNumStr]=divMatch;
+    const divida=DATA.dividas.find(dv=>dv._dbId===divDbId);
+    if(divida){
+      const p=(divida.parcelas||[]).find(x=>x.numero===parseInt(parcNumStr));
+      if(p&&p.status!=='Pago'){
+        p.status='Pago';
+        divida.valorRestante=Math.max(0,Math.round((divida.valorRestante-p.valorParcela)*100)/100);
+        if(divida.valorRestante<=0) divida.status='Quitada';
+        dbUpdateParcela(p); dbUpdateDividaRestante(divida);
+      }
+    }
+  }
+  dbUpdateEntryStatus(entry,'Pago');
+  showToast(`"${entry.descricao}" marcado como pago!`);
+  closeTxPayModal();
+  renderAll();
+}
+
 // ── Parcela payment modal ──────────────────────────────────
 let _parcPayDivId = null;
 let _parcPayNum = null;
@@ -6228,6 +6337,33 @@ renderAll();
     </a>
   </div>
 
+
+
+<!-- TRANSACTION PAY MODAL -->
+<div class="cmodal-overlay" id="txPayOverlay" style="display:none" onclick="closeTxPayModal()">
+  <div class="cmodal" onclick="event.stopPropagation()" style="max-width:440px">
+    <div class="cmodal-title" id="txPayTitle">Confirmar pagamento</div>
+    <div style="font-size:13px;color:var(--text-3);margin-bottom:20px" id="txPayDesc"></div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Data</label>
+        <input type="date" class="form-input" id="txPayData">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Valor</label>
+        <input type="number" class="form-input" id="txPayValor" step="0.01">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Conta</label>
+      <select class="form-select" id="txPayConta"></select>
+    </div>
+    <div class="cmodal-actions">
+      <button class="btn btn-ghost" onclick="closeTxPayModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmTxPay()" style="padding:10px 24px;font-size:14px;font-weight:700">✓ Confirmar</button>
+    </div>
+  </div>
+</div>
 
 <!-- PARCELA PAYMENT MODAL -->
 <div class="cmodal-overlay" id="parcPayOverlay" style="display:none" onclick="closeParcPayModal()">
