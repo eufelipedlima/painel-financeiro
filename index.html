@@ -1539,6 +1539,76 @@
     .cc-card-visual{ width:200px; }
   }
 
+
+  @media (max-width: 768px){
+    /* Filter chips - single scrollable row */
+    .chip-row{
+      flex-wrap:nowrap !important;
+      overflow-x:auto;
+      -webkit-overflow-scrolling:touch;
+      padding-bottom:4px;
+      gap:6px;
+    }
+    .chip{ flex-shrink:0; font-size:12px; padding:5px 12px; }
+    .table-toolbar{ flex-wrap:nowrap; gap:8px; }
+    .search-wrap{ min-width:0; flex:1; }
+    .search-input{ font-size:14px; } /* prevent iOS zoom */
+
+    /* Subtab bar scrollable */
+    .subtab-bar{ flex-wrap:nowrap !important; overflow-x:auto; }
+    .subtab{ flex-shrink:0; }
+
+    /* Page subtitle smaller */
+    .page-sub{ font-size:11.5px; }
+  }
+
+
+  /* Mobile transaction cards */
+  .mobile-trans-list{ display:none; }
+
+  @media (max-width: 768px){
+    .mobile-trans-list{ display:block; }
+    #allTable{ display:none; }
+    .table-summary{ font-size:11px; }
+
+    .mob-trans-card{
+      background:var(--surface); border:1px solid var(--border-soft);
+      border-radius:12px; padding:14px 16px; margin-bottom:10px;
+      box-shadow:var(--shadow-card);
+    }
+    .mob-trans-top{
+      display:flex; align-items:flex-start; justify-content:space-between;
+      margin-bottom:8px;
+    }
+    .mob-trans-desc{ font-size:14px; font-weight:700; color:var(--text-1); flex:1; margin-right:8px; line-height:1.3; }
+    .mob-trans-val{ font-size:16px; font-weight:800; font-variant-numeric:tabular-nums; flex-shrink:0; }
+    .mob-trans-val.rec{ color:var(--positive); }
+    .mob-trans-val.desp{ color:var(--negative); }
+    .mob-trans-val.cart{ color:var(--accent-2); }
+    .mob-trans-meta{
+      display:grid; grid-template-columns:1fr 1fr; gap:6px 10px;
+      margin-bottom:10px;
+    }
+    .mob-trans-field{ display:flex; flex-direction:column; gap:1px; }
+    .mob-trans-lbl{ font-size:9.5px; text-transform:uppercase; letter-spacing:.6px; color:var(--text-3); font-weight:700; }
+    .mob-trans-fval{ font-size:12.5px; color:var(--text-2); font-weight:500; }
+    .mob-trans-bottom{
+      display:flex; align-items:center; justify-content:space-between;
+      padding-top:10px; border-top:1px solid var(--border-soft);
+    }
+    .mob-trans-status{ display:flex; align-items:center; }
+    .mob-trans-edit{
+      padding:6px 12px; border-radius:7px; background:var(--surface-2);
+      border:1px solid var(--border-soft); font-size:12px; font-weight:600;
+      color:var(--text-2); cursor:pointer; font-family:'Inter',sans-serif;
+    }
+    .mob-trans-pagar{
+      padding:6px 14px; border-radius:7px; background:var(--accent);
+      border:none; font-size:12px; font-weight:600;
+      color:#fff; cursor:pointer; font-family:'Inter',sans-serif;
+    }
+  }
+
 </style>
 </head>
 <body>
@@ -1764,6 +1834,10 @@
             <div class="chip" data-type="Cartão">Cartão</div>
           </div>
         </div>
+        <!-- Mobile card list (shown only on mobile) -->
+        <div id="mobileTransList" class="mobile-trans-list"></div>
+
+        <!-- Desktop table (hidden on mobile) -->
         <table class="data-table" id="allTable">
           <thead><tr>
             <th data-key="data">Data <span class="sort-arrow">▾</span></th>
@@ -3234,6 +3308,8 @@ document.getElementById('searchInput').addEventListener('input', renderAllTable)
 
 // ── Mobile navigation ──────────────────────────────────────
 (function(){
+  // Run after DOM is fully parsed (nav HTML is after script tag)
+  function initMobileNav(){
   function updateMobNav(view){
     document.querySelectorAll('.mob-nav-item[data-view]').forEach(item=>{
       item.classList.toggle('active', item.dataset.view === view);
@@ -3267,6 +3343,12 @@ document.getElementById('searchInput').addEventListener('input', renderAllTable)
   document.querySelectorAll('.nav-item[data-view]').forEach(item=>{
     item.addEventListener('click', ()=> updateMobNav(item.dataset.view));
   });
+  } // end initMobileNav
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', initMobileNav);
+  } else {
+    setTimeout(initMobileNav, 0);
+  }
 })();
 
 document.querySelectorAll('#typeChips .chip').forEach(chip => {
