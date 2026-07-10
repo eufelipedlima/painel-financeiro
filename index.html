@@ -593,7 +593,7 @@
   .inv-row-meta span{ display:block; }
 
   /* ---------- Table action buttons ---------- */
-  .tbl-action-cell{ width:60px; text-align:center; white-space:nowrap; }
+  .tbl-action-cell{ width:120px; text-align:right; white-space:nowrap; }
   .tbl-edit-btn{
     width:30px; height:30px; border-radius:7px; border:1px solid var(--border);
     background:var(--surface-2); color:var(--text-3); cursor:pointer;
@@ -3587,9 +3587,11 @@ function renderAllTable(){
       <td>${r.conta||''}</td>
       <td><span class="tx-status ${r.status}">${statusLabel}</span></td>
       <td class="val-cell">${fmtBRL(r.valor)}</td>
-      <td class="tbl-action-cell" style="white-space:nowrap;width:auto">
-        ${isPend ? `<button class="tbl-pay-btn" data-id="${r._id}" data-rec="${isRec}" title="${isRec?'Confirmar recebimento':'Confirmar pagamento'}">${isRec?'Recebi':'Paguei'}</button>` : ''}
-        <button class="tbl-edit-btn" data-id="${r._id}" data-src="${r._source}" title="Editar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+      <td class="tbl-action-cell" style="white-space:nowrap;width:120px">
+        <div style="display:flex;align-items:center;justify-content:flex-end;gap:5px">
+          ${isPend ? `<button class="tbl-pay-btn" data-id="${r._id}" data-rec="${isRec}" title="${isRec?'Confirmar recebimento':'Confirmar pagamento'}">${isRec?'Recebi':'Paguei'}</button>` : ''}
+          <button class="tbl-edit-btn" data-id="${r._id}" data-src="${r._source}" title="Editar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+        </div>
       </td>
     </tr>`;
   }).join('');
