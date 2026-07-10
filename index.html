@@ -1957,7 +1957,8 @@
       <div id="subtabPendentes" style="display:none">
         <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px" id="pendingKpis"></div>
         <div class="panel">
-          <table class="data-table">
+          <div id="mobilePendList" class="mobile-trans-list"></div>
+          <table class="data-table" id="pendingTable">
             <thead><tr><th>Vencimento</th><th>Descrição</th><th>Tipo</th><th>Categoria</th><th>Urgência</th><th style="text-align:right;">Valor</th><th></th></tr></thead>
             <tbody id="pendingBody"></tbody>
           </table>
@@ -1969,8 +1970,8 @@
       <div id="subtabAtrasadas" style="display:none">
         <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px" id="atrasadasKpis"></div>
         <div class="panel">
-          <div style="font-size:13px;color:var(--negative);padding:10px 0 16px;font-weight:500">Todas as transações com data vencida e ainda não pagas — de qualquer mês</div>
-          <table class="data-table">
+          <div id="mobileAtrasadasList" class="mobile-trans-list"></div>
+          <table class="data-table" id="atrasadasTable">
             <thead><tr><th>Vencimento</th><th>Descrição</th><th>Tipo</th><th>Categoria</th><th>Atraso</th><th style="text-align:right;">Valor</th><th></th></tr></thead>
             <tbody id="atrasadasBody"></tbody>
           </table>
@@ -3331,6 +3332,7 @@ function renderRecent(key){
       <td>${t.categoria||''}</td>
       <td class="val-cell">${fmtBRL(t.valor)}</td>
     </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-3);padding:24px;">Nenhum lançamento neste mês.</td></tr>';
+  if(isMobile()) renderMobileCards(all,'mobileRecentList',{showPay:false,showEdit:false,emptyMsg:'Nenhum lançamento recente.'});
 }
 
 // ===================== Transacoes view (combined table) =====================
@@ -3897,6 +3899,10 @@ function renderCardPurchases(key){
   body.querySelectorAll('.tbl-edit-btn').forEach(btn => {
     btn.onclick = (e) => { e.stopPropagation(); openEditDrawer(parseInt(btn.dataset.id), btn.dataset.src); };
   });
+  if(isMobile()){
+    const mobRows = rows.map(t=>({...t,_source:'cartaoCompras',tipo:'Cartão',status:t.conferido==='Sim'?'Pago':'Pendente'}));
+    renderMobileCards(mobRows,'mobileCardPurchList',{showPay:false,showEdit:true,emptyMsg:'Sem compras neste mês.'});
+  }
 }
 
 // ===================== Orcamento view =====================
@@ -4066,6 +4072,7 @@ function renderPending(){
   body.querySelectorAll('.pend-confirm-btn').forEach(btn => {
     btn.onclick = () => markEntryAsPaid(parseInt(btn.dataset.id));
   });
+  if(isMobile()) renderMobileCards(pend,'mobilePendList',{emptyMsg:'Nenhuma pendência neste mês.'});
 }
 
 // ===================== Insights (savings rate + top category) =====================
@@ -4768,6 +4775,7 @@ function renderAtrasadas(){
   body.querySelectorAll('.pend-confirm-btn').forEach(btn => {
     btn.onclick = () => markEntryAsPaid(parseInt(btn.dataset.id));
   });
+  if(isMobile()) renderMobileCards([...rows].sort((a,b)=>parseDate(a.data)-parseDate(b.data)),'mobileAtrasadasList',{emptyMsg:'Nenhuma transação atrasada.'});
 }
 
 // Wire sub-tab buttons (deferred since they're in a view that may render late)
