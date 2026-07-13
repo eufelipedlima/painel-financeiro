@@ -5063,7 +5063,7 @@ async function saveConfigItem(){
       showToast('Conta atualizada.');
     } else {
       const saldo = parseFloat(document.getElementById('configModalSaldo').value)||0;
-      const {data} = await db.from('contas').insert({user_id:uid, nome, tipo, saldo_inicial:saldo}).select().single();
+      const {data} = await db.from('contas').insert({user_id:uid, nome, tipo, saldo_inicial:saldo, saldo_atual:saldo}).select().single();
       if(data) DATA.contas.push({_dbId:data.id, conta:nome, tipo, saldoInicial:saldo, saldoAtual:saldo});
       DATA.saldoTotal += saldo;
       showToast(`Conta "${nome}" adicionada.`);
@@ -5711,6 +5711,77 @@ function applyImpact(entry){
   }
 }
 
+
+
+// ── Adjust balance ─────────────────────────────────────────
+let _adjustBalConta = null;
+
+function openAdjustBal(contaObj){
+  _adjustBalConta = contaObj;
+  document.getElementById('adjustBalContaName').textContent = contaObj.conta;
+  document.getElementById('adjustBalAtual').textContent = fmtBRL(contaObj.saldoAtual);
+  document.getElementById('adjustBalNovo').value = '';
+  document.getElementById('adjustBalPreview').style.display = 'none';
+  const overlay = document.getElementById('adjustBalOverlay');
+  overlay.style.display='flex';
+  requestAnimationFrame(()=>overlay.classList.add('open'));
+  setTimeout(()=>document.getElementById('adjustBalNovo').focus(), 200);
+}
+function closeAdjustBal(){
+  const overlay = document.getElementById('adjustBalOverlay');
+  overlay.classList.remove('open');
+  setTimeout(()=>overlay.style.display='none', 250);
+  _adjustBalConta = null;
+}
+function updateAdjustPreview(){
+  if(!_adjustBalConta) return;
+  const novoSaldo = parseFloat(document.getElementById('adjustBalNovo').value);
+  const prev = document.getElementById('adjustBalPreview');
+  if(isNaN(novoSaldo)){ prev.style.display='none'; return; }
+  const diff = Math.round((novoSaldo - _adjustBalConta.saldoAtual)*100)/100;
+  if(diff === 0){ prev.style.display='block'; prev.style.background='var(--surface-3)'; prev.style.color='var(--text-3)'; prev.textContent='Saldo já está correto.'; return; }
+  const isPos = diff > 0;
+  prev.style.display='block';
+  prev.style.background = isPos ? 'var(--positive-soft)' : 'var(--negative-soft)';
+  prev.style.color = isPos ? 'var(--positive)' : 'var(--negative)';
+  prev.textContent = `Será criado um lançamento de ${isPos?'Receita':'Despesa'} de ${fmtBRL(Math.abs(diff))} com o nome "Ajuste de saldo".`;
+}
+async function confirmAdjustBal(){
+  if(!_adjustBalConta) return;
+  const novoSaldo = parseFloat(document.getElementById('adjustBalNovo').value);
+  if(isNaN(novoSaldo)){ showToast('Informe o saldo real.'); return; }
+  const diff = Math.round((novoSaldo - _adjustBalConta.saldoAtual)*100)/100;
+  if(diff === 0){ closeAdjustBal(); return; }
+
+  const isPos = diff > 0;
+  const today = localDateStr();
+  // Create adjustment transaction
+  const entry = {
+    _id: _nextId++, data: today,
+    descricao: 'Ajuste de saldo',
+    tipo: isPos ? 'Receita' : 'Despesa',
+    categoria: isPos ? 'Outras Receitas' : 'Outras Despesas',
+    conta: _adjustBalConta.conta,
+    contaDestino: null, formaPagamento: 'Ajuste',
+    status: 'Pago', valor: Math.abs(diff), obs: null,
+    recorrente: false, recorrenciaId: null, recorrenciaFreq: null,
+    _source: 'transacoes', _new: true
+  };
+  DATA.transacoes.push(entry);
+  pendingSync.push(entry); updateSyncBar();
+  dbSaveTransaction(entry);
+
+  // Update account balance in memory and DB
+  _adjustBalConta.saldoAtual = Math.round(novoSaldo*100)/100;
+  DATA.saldoTotal = DATA.contas.reduce((s,c)=>s+c.saldoAtual, 0);
+  if(_adjustBalConta._dbId){
+    await db.from('contas').update({saldo_atual: _adjustBalConta.saldoAtual}).eq('id', _adjustBalConta._dbId);
+  }
+
+  closeAdjustBal();
+  showToast(`Saldo de "${_adjustBalConta.conta}" ajustado para ${fmtBRL(novoSaldo)}.`);
+  renderAll();
+}
 
 // ── Installment (parcelamento) logic ───────────────────────
 let _parcelada = false;
@@ -7164,6 +7235,28 @@ renderAll();
 
 
 
+
+
+<!-- ADJUST BALANCE MODAL -->
+<div class="cmodal-overlay" id="adjustBalOverlay" style="display:none" onclick="closeAdjustBal()">
+  <div class="cmodal" onclick="event.stopPropagation()" style="max-width:420px">
+    <div class="cmodal-title">⚖️ Ajustar saldo</div>
+    <div id="adjustBalContaName" style="font-size:13.5px;font-weight:700;color:var(--text-1);margin-bottom:4px"></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px;padding:10px 14px;background:var(--surface-2);border-radius:8px">
+      <span style="font-size:12px;color:var(--text-3)">Saldo atual:</span>
+      <span id="adjustBalAtual" style="font-size:15px;font-weight:700;font-variant-numeric:tabular-nums"></span>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Saldo real agora (R$)</label>
+      <input type="number" class="form-input" id="adjustBalNovo" step="0.01" placeholder="0,00" oninput="updateAdjustPreview()">
+    </div>
+    <div id="adjustBalPreview" style="display:none;margin:12px 0;padding:12px 14px;border-radius:9px;font-size:13px;font-weight:600"></div>
+    <div class="cmodal-actions">
+      <button class="btn btn-ghost" onclick="closeAdjustBal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmAdjustBal()" style="padding:10px 24px">✓ Ajustar saldo</button>
+    </div>
+  </div>
+</div>
 
 <!-- EDIT RECURRING MODAL -->
 <div class="cmodal-overlay" id="editRecModal" style="display:none" onclick="closeEditRecModal()">
