@@ -3171,7 +3171,11 @@ async function loadAllData() {
     DATA.categorias = (catDb||[]).map(r => ({ _dbId:r.id, categoria:r.nome, tipo:r.tipo, limite:+r.limite_mensal||0, considerar:r.considerar_total, arquivado:r.arquivado||false }));
     DATA.subcategorias = (subDb||[]).map(r => ({ _dbId:r.id, categoriaNome:r.categoria_nome, nome:r.nome, arquivado:r.arquivado||false }));
     DATA.transacoes = (trDb||[]).map(r => ({ _dbId:r.id, _id:nextId++, _source:'transacoes', data:r.data, descricao:r.descricao, tipo:r.tipo, categoria:r.categoria, subcategoria:r.subcategoria||null, conta:r.conta, contaDestino:r.conta_destino, formaPagamento:r.forma_pagamento, status:r.status, valor:+r.valor||0, obs:r.observacoes, recorrente:r.recorrente||false, recorrenciaId:r.recorrencia_id||null, recorrenciaFreq:r.recorrencia_freq||null }));
-    DATA.cartaoCompras = (ccDb||[]).map(r => ({ _dbId:r.id, _id:nextId++, _source:'cartaoCompras', data:r.data, descricao:r.descricao, categoria:r.categoria, subcategoria:r.subcategoria||null, cartao:r.cartao, parcela:r.parcela, valor:+r.valor||0, conferido:r.conferido, obs:r.observacoes }));
+    DATA.cartaoCompras = (ccDb||[]).map(r => {
+      const obs = r.observacoes||'';
+      const pgMatch = obs.match(/PARC:[^ |]+/);
+      return { _dbId:r.id, _id:nextId++, _source:'cartaoCompras', data:r.data, descricao:r.descricao, categoria:r.categoria, subcategoria:r.subcategoria||null, cartao:r.cartao, parcela:r.parcela, valor:+r.valor||0, conferido:r.conferido, obs, parcGroupId: pgMatch?pgMatch[0]:null };
+    });
     DATA.faturas = (fatDb||[]).map(r => ({ _dbId:r.id, cartao:r.cartao, competencia:r.competencia, valorTotal:+r.valor_total||0, fechamento:r.data_fechamento, vencimento:r.data_vencimento, status:r.status }));
     const movMap = {};
     (mmDb||[]).forEach(r => { if(!movMap[r.meta_id]) movMap[r.meta_id]=[]; movMap[r.meta_id].push({ _dbId:r.id, data:r.data, tipo:r.tipo, valor:+r.valor||0, conta:r.conta, obs:r.observacoes }); });
@@ -5723,7 +5727,16 @@ function toggleParcelada(){
   if(opts){ opts.style.display = _parcelada ? 'block' : 'none'; }
   // Hide main valor field when parcelada (value is set by calcParcela)
   if(valGrp){ valGrp.style.display = _parcelada ? 'none' : 'block'; }
-  if(!_parcelada){ document.getElementById('parcelaPreview').style.display='none'; document.getElementById('fValor').value=''; }
+  if(_parcelada){
+    // Transfer valor already typed to parcelaValorInput
+    const existing = document.getElementById('fValor').value;
+    if(existing && parseFloat(existing) > 0){
+      document.getElementById('parcelaValorInput').value = existing;
+    }
+  } else {
+    document.getElementById('parcelaPreview').style.display='none';
+    document.getElementById('fValor').value='';
+  }
   calcParcela();
 }
 
@@ -5834,13 +5847,22 @@ function gerarDatasFuturas(dataBase, freq){
 let _deleteTarget = null;
 function openDeleteConfirm(entry){
   _deleteTarget = entry;
+  // Check recurring (transacoes)
   if(entry.recorrenciaId){
-    // Count future entries with same recurrenciaId
     const allRec = DATA.transacoes.filter(t=>t.recorrenciaId===entry.recorrenciaId && parseDate(t.data) >= parseDate(entry.data));
-    const futuras = allRec.length - 1; // exclude current
+    const futuras = allRec.length - 1;
     const modal = document.getElementById('deleteRecModal');
     document.getElementById('deleteRecDesc').textContent = `"${entry.descricao}" — ${fmtBRL(entry.valor)}`;
     document.getElementById('deleteRecFuturas').textContent = futuras > 0 ? `Existem ${futuras} lançamentos futuros desta recorrência.` : 'Este é o último da recorrência.';
+    document.getElementById('deleteRecBtnFuturas').style.display = futuras > 0 ? 'inline-flex' : 'none';
+    modal.style.display='flex'; requestAnimationFrame(()=>modal.classList.add('open'));
+  // Check installment group (cartaoCompras)
+  } else if(entry.parcGroupId){
+    const allParc = DATA.cartaoCompras.filter(t=>t.parcGroupId===entry.parcGroupId && parseDate(t.data) >= parseDate(entry.data));
+    const futuras = allParc.length - 1;
+    const modal = document.getElementById('deleteRecModal');
+    document.getElementById('deleteRecDesc').textContent = `"${entry.descricao}" — ${fmtBRL(entry.valor)}`;
+    document.getElementById('deleteRecFuturas').textContent = futuras > 0 ? `Existem ${futuras} parcelas futuras deste parcelamento.` : 'Esta é a última parcela.';
     document.getElementById('deleteRecBtnFuturas').style.display = futuras > 0 ? 'inline-flex' : 'none';
     modal.style.display='flex'; requestAnimationFrame(()=>modal.classList.add('open'));
   } else {
@@ -5859,12 +5881,18 @@ function confirmDeleteSingle(){
 }
 function confirmDeleteFutures(){
   if(!_deleteTarget) return;
-  const id = _deleteTarget.recorrenciaId;
-  const dataBase = _deleteTarget.data;
-  const toDelete = DATA.transacoes.filter(t=>t.recorrenciaId===id && parseDate(t.data) >= parseDate(dataBase));
+  let toDelete = [];
+  if(_deleteTarget.recorrenciaId){
+    const id = _deleteTarget.recorrenciaId;
+    toDelete = DATA.transacoes.filter(t=>t.recorrenciaId===id && parseDate(t.data) >= parseDate(_deleteTarget.data));
+  } else if(_deleteTarget.parcGroupId){
+    const id = _deleteTarget.parcGroupId;
+    toDelete = DATA.cartaoCompras.filter(t=>t.parcGroupId===id && parseDate(t.data) >= parseDate(_deleteTarget.data));
+  }
+  const count = toDelete.length;
   toDelete.forEach(t=>deleteEntry(t));
   closeDeleteRecModal();
-  showToast(`${toDelete.length} lançamento(s) excluído(s).`);
+  showToast(`${count} parcela(s)/lançamento(s) excluído(s).`);
 }
 function deleteEntry(entry){
   if(entry._source === 'cartaoCompras'){
@@ -6485,10 +6513,12 @@ function saveEntry(){
         ? Math.round(vInput/n*100)/100
         : vInput;
 
+      const parcGroupId = 'PARC:' + Date.now() + '-' + Math.random().toString(36).slice(2,7);
       for(let i=0; i<n; i++){
         const baseDate = parseDate(data);
         const futDate = new Date(baseDate.getFullYear(), baseDate.getMonth() + i, baseDate.getDate());
         const parcelaLabel = `${i+1}/${n}`;
+        const parcObs = [obs, parcGroupId].filter(Boolean).join(' | ');
         const futEntry = {
           _id: _nextId++,
           data: localDateStr(futDate),
@@ -6498,7 +6528,8 @@ function saveEntry(){
           parcela: parcelaLabel,
           valor: vParcela,
           conferido: 'Não',
-          obs,
+          obs: parcObs,
+          parcGroupId,
           _source: 'cartaoCompras',
           _new: true
         };
