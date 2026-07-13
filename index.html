@@ -5079,9 +5079,11 @@ function renderConfiguracoes(){
           <div class="cc-item-sub">${c.banco||'Sem banco'} · Fecha dia ${c.fechamento||'?'} · Vence dia ${c.vencimento||'?'} · Limite ${fmtBRL(c.limite)}</div>
         </div>
         <div class="cc-item-actions">
+          <button class="cat-action-btn cfg-edit-cartao" data-id="${c._dbId}" title="Editar">${EDIT_SVG}</button>
           <button class="cat-action-btn danger cfg-arch" data-type="cartao" data-id="${c._dbId}" data-archived="false" data-nome="${c.cartao}" title="Remover">${TRASH_SVG}</button>
         </div>
       </div>`).join('') : '<div class="empty-note">Nenhum cartão. Clique em + Adicionar cartão.</div>';
+    cartoesEl.querySelectorAll('.cfg-edit-cartao').forEach(btn => btn.addEventListener('click', () => editConfigCartao(btn.dataset.id)));
     cartoesEl.querySelectorAll('.cfg-arch').forEach(btn=>btn.addEventListener('click',()=>archiveConfigItem(btn.dataset.type,btn.dataset.id,false,btn.dataset.nome)));
   }
 
