@@ -3367,34 +3367,80 @@ async function loadAllData() {
 // ── Sync write functions ─────────────────────────────
 async function dbSaveTransaction(entry) {
   if(!currentUser) return;
+  // Base row (always works — original columns only)
+  const baseRow = {
+    user_id:currentUser.id, data:entry.data, descricao:entry.descricao,
+    tipo:entry.tipo, categoria:entry.categoria||null,
+    subcategoria:entry.subcategoria||null, conta:entry.conta||null,
+    conta_destino:entry.contaDestino||null,
+    forma_pagamento:entry.formaPagamento||null,
+    status:entry.status, valor:entry.valor, observacoes:entry.obs||null
+  };
+  // Extended row (with recorrencia columns — requires SQL migration)
+  const extRow = { ...baseRow,
+    recorrente:entry.recorrente||false,
+    recorrencia_id:entry.recorrenciaId||null,
+    recorrencia_freq:entry.recorrenciaFreq||null
+  };
+
   try {
-    const row = { user_id:currentUser.id, data:entry.data, descricao:entry.descricao, tipo:entry.tipo, categoria:entry.categoria||null, subcategoria:entry.subcategoria||null, conta:entry.conta||null, conta_destino:entry.contaDestino||null, forma_pagamento:entry.formaPagamento||null, status:entry.status, valor:entry.valor, observacoes:entry.obs||null, recorrente:entry.recorrente||false, recorrencia_id:entry.recorrenciaId||null, recorrencia_freq:entry.recorrenciaFreq||null };
+    let result;
     if(entry._dbId) {
-      await db.from('transacoes').update(row).eq('id',entry._dbId);
+      result = await db.from('transacoes').update(extRow).eq('id',entry._dbId);
+      if(result.error) result = await db.from('transacoes').update(baseRow).eq('id',entry._dbId);
     } else {
-      const {data} = await db.from('transacoes').insert(row).select().single();
-      if(data) entry._dbId=data.id;
+      result = await db.from('transacoes').insert(extRow).select().single();
+      if(result.error) result = await db.from('transacoes').insert(baseRow).select().single();
+      if(result.data) entry._dbId = result.data.id;
     }
-    // Remove from pendingSync after confirmed save
+    if(result.error) {
+      console.error('SAVE ERROR (transacoes):', result.error);
+      showSaveError();
+      return;
+    }
     const idx = pendingSync.indexOf(entry);
-    if(idx > -1){ pendingSync.splice(idx, 1); updateSyncBar(); }
+    if(idx > -1){ pendingSync.splice(idx,1); updateSyncBar(); }
   } catch(e) {
-    console.error('tx sync',e);
+    console.error('tx sync exception:', e);
+    showSaveError();
   }
 }
+
+function showSaveError(){
+  // Show persistent warning if saves are failing
+  let el = document.getElementById('saveErrorBanner');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'saveErrorBanner';
+    el.style.cssText = 'position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:#DC2626;color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:999;box-shadow:0 4px 16px rgba(0,0,0,0.3);cursor:pointer;text-align:center';
+    el.innerHTML = '⚠️ Erro ao salvar. Verifique sua conexão e tente novamente.<br><small>Clique para dispensar</small>';
+    el.onclick = () => el.remove();
+    document.body.appendChild(el);
+    setTimeout(()=>{ if(el.parentNode) el.remove(); }, 8000);
+  }
+}
+
 async function dbSaveCartaoCompra(entry) {
   if(!currentUser) return;
+  const row = {
+    user_id:currentUser.id, data:entry.data, descricao:entry.descricao,
+    categoria:entry.categoria||null, subcategoria:entry.subcategoria||null,
+    cartao:entry.cartao, parcela:entry.parcela||null,
+    valor:entry.valor, conferido:entry.conferido||'Não',
+    observacoes:entry.obs||null
+  };
   try {
-    const row = { user_id:currentUser.id, data:entry.data, descricao:entry.descricao, categoria:entry.categoria||null, subcategoria:entry.subcategoria||null, cartao:entry.cartao, parcela:entry.parcela||null, valor:entry.valor, conferido:entry.conferido||'Não', observacoes:entry.obs||null };
+    let result;
     if(entry._dbId) {
-      await db.from('cartao_compras').update(row).eq('id',entry._dbId);
+      result = await db.from('cartao_compras').update(row).eq('id',entry._dbId);
     } else {
-      const {data} = await db.from('cartao_compras').insert(row).select().single();
-      if(data) entry._dbId=data.id;
+      result = await db.from('cartao_compras').insert(row).select().single();
+      if(result.data) entry._dbId = result.data.id;
     }
+    if(result.error){ console.error('SAVE ERROR (cartao_compras):', result.error); showSaveError(); return; }
     const idx = pendingSync.indexOf(entry);
-    if(idx > -1){ pendingSync.splice(idx, 1); updateSyncBar(); }
-  } catch(e) { console.error('cc sync',e); }
+    if(idx > -1){ pendingSync.splice(idx,1); updateSyncBar(); }
+  } catch(e) { console.error('cc sync exception:', e); showSaveError(); }
 }
 async function dbSaveMeta(meta) {
   if(!currentUser) return;
