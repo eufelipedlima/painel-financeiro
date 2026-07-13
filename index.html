@@ -1896,6 +1896,12 @@
     border-right:1px solid var(--border-soft);
     position:sticky; top:0; z-index:2;
   }
+  .budget-table th.col-even, .budget-table td.col-even{
+    background:var(--surface-3);
+  }
+  .budget-table th.col-even.month-header{ background:var(--surface-3); }
+  .budget-table tr.group-header td.col-even{ background:var(--surface-3); }
+  html.light .budget-table th.col-even, html.light .budget-table td.col-even{ background:#F3F4F8; }
   .budget-table th.cat-col{
     text-align:left; min-width:180px; position:sticky;
     left:0; z-index:3; background:var(--surface-2);
@@ -3152,16 +3158,31 @@ async function dbSaveTransaction(entry) {
   if(!currentUser) return;
   try {
     const row = { user_id:currentUser.id, data:entry.data, descricao:entry.descricao, tipo:entry.tipo, categoria:entry.categoria||null, subcategoria:entry.subcategoria||null, conta:entry.conta||null, conta_destino:entry.contaDestino||null, forma_pagamento:entry.formaPagamento||null, status:entry.status, valor:entry.valor, observacoes:entry.obs||null };
-    if(entry._dbId) { await db.from('transacoes').update(row).eq('id',entry._dbId); }
-    else { const {data} = await db.from('transacoes').insert(row).select().single(); if(data) entry._dbId=data.id; }
-  } catch(e) { console.error('tx sync',e); }
+    if(entry._dbId) {
+      await db.from('transacoes').update(row).eq('id',entry._dbId);
+    } else {
+      const {data} = await db.from('transacoes').insert(row).select().single();
+      if(data) entry._dbId=data.id;
+    }
+    // Remove from pendingSync after confirmed save
+    const idx = pendingSync.indexOf(entry);
+    if(idx > -1){ pendingSync.splice(idx, 1); updateSyncBar(); }
+  } catch(e) {
+    console.error('tx sync',e);
+  }
 }
 async function dbSaveCartaoCompra(entry) {
   if(!currentUser) return;
   try {
     const row = { user_id:currentUser.id, data:entry.data, descricao:entry.descricao, categoria:entry.categoria||null, subcategoria:entry.subcategoria||null, cartao:entry.cartao, parcela:entry.parcela||null, valor:entry.valor, conferido:entry.conferido||'Não', observacoes:entry.obs||null };
-    if(entry._dbId) { await db.from('cartao_compras').update(row).eq('id',entry._dbId); }
-    else { const {data} = await db.from('cartao_compras').insert(row).select().single(); if(data) entry._dbId=data.id; }
+    if(entry._dbId) {
+      await db.from('cartao_compras').update(row).eq('id',entry._dbId);
+    } else {
+      const {data} = await db.from('cartao_compras').insert(row).select().single();
+      if(data) entry._dbId=data.id;
+    }
+    const idx = pendingSync.indexOf(entry);
+    if(idx > -1){ pendingSync.splice(idx, 1); updateSyncBar(); }
   } catch(e) { console.error('cc sync',e); }
 }
 async function dbSaveMeta(meta) {
@@ -4332,16 +4353,27 @@ function renderBudget(key){
 
   // Header: category col + month groups
   thead.innerHTML = `<tr>
-    <th class="cat-col" rowspan="2">Categoria</th>
-    ${months.map((m,i)=>`<th class="month-header" colspan="4" style="border-left:2px solid var(--border);${m===nowKey?'background:var(--accent-soft);color:var(--accent-2)':''}">${monthNames[i]}${m===nowKey?' ●':''}</th>`).join('')}
+    <th class="cat-col" rowspan="2">
+      Categoria
+      <button onclick="showBudgetEditModal()" style="margin-left:8px;padding:3px 8px;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text-2);font-family:Inter,sans-serif">✎ Editar</button>
+    </th>
+    ${months.map((m,i)=>{
+      const even = i%2===1;
+      const isCur = m===nowKey;
+      const bg = isCur ? 'background:var(--accent-soft);color:var(--accent-2)' : (even?'background:var(--surface-3)':'');
+      return `<th class="month-header${even?' col-even':''}" colspan="4" style="border-left:2px solid var(--border);${bg}">${monthNames[i]}${isCur?' ●':''}</th>`;
+    }).join('')}
   </tr>
   <tr>
-    ${months.map(m=>`
-      <th style="border-left:2px solid var(--border)${m===nowKey?';background:var(--accent-soft);':''}" title="Planejado">Planejado</th>
-      <th title="Realizado">Realizado</th>
-      <th title="Diferença">Diferença</th>
-      <th title="% Atingimento">%</th>
-    `).join('')}
+    ${months.map((m,i)=>{
+      const even=i%2===1; const isCur=m===nowKey;
+      const bg=isCur?';background:var(--accent-soft);':'';
+      const ec=even?' col-even':'';
+      return `<th class="${ec}" style="border-left:2px solid var(--border)${bg}" title="Planejado (duplo clique para editar)">Planejado</th>
+        <th class="${ec}" title="Realizado">Realizado</th>
+        <th class="${ec}" title="Diferença">Diferença</th>
+        <th class="${ec}" title="% Atingimento">%</th>`;
+    }).join('')}
   </tr>`;
 
   // Helper to render 4 cells per month
@@ -4354,14 +4386,17 @@ function renderBudget(key){
     const pctCls = pct===null?'bpct-none':pct>=100?(isRecMonth?'bpct-ok':'bpct-over'):pct>=75?'bpct-warn':'bpct-ok';
     const diffCls = diff>=0?'bdiff-pos':'bdiff-neg';
     const isCurrent = m===nowKey;
+    const even = idx%2===1;
+    const ec = even?' col-even':'';
     const bg = isCurrent?'background:var(--accent-soft);':'';
+    const leftBorder = isCurrent?'border-left:2px solid var(--accent)':'border-left:2px solid var(--border)';
     return `
-      <td class="planned-cell" style="${bg}${isCurrent?'border-left:2px solid var(--accent)':'border-left:2px solid var(--border)'}" data-cat="${name}" data-month="${m}">
+      <td class="planned-cell${ec}" style="${bg}${leftBorder}" data-cat="${name}" data-month="${m}">
         ${plan>0?fmtBRL(plan):'<span style="color:var(--text-3)">—</span>'}
       </td>
-      <td class="actual-cell" style="${bg};color:${real>0?(isRecMonth?'var(--positive)':'var(--negative)'):'var(--text-3)'}">${real>0?fmtBRL(real):'—'}</td>
-      <td class="diff-cell" style="${bg}"><span class="${diffCls}">${plan>0||real>0?(diff>=0?'+':'')+fmtBRL(Math.abs(diff)):'—'}</span></td>
-      <td class="pct-cell" style="${bg}"><span class="${pctCls}">${pct!==null?pct.toFixed(0)+'%':'—'}</span></td>`;
+      <td class="actual-cell${ec}" style="${bg};color:${real>0?(isRecMonth?'var(--positive)':'var(--negative)'):'var(--text-3)'}">${real>0?fmtBRL(real):'—'}</td>
+      <td class="diff-cell${ec}" style="${bg}"><span class="${diffCls}">${plan>0||real>0?(diff>=0?'+':'')+fmtBRL(Math.abs(diff)):'—'}</span></td>
+      <td class="pct-cell${ec}" style="${bg}"><span class="${pctCls}">${pct!==null?pct.toFixed(0)+'%':'—'}</span></td>`;
   }
 
   // Build rows by group
@@ -5516,6 +5551,56 @@ function renderDividas(){
 
 
 
+
+// ── Budget edit limits modal ────────────────────────────────
+function showBudgetEditModal(){
+  const list = document.getElementById('budgetEditList');
+  const groups = {};
+  DATA.categorias.filter(c=>c.categoria!=='Pagamento Fatura Cartão'&&c.categoria!=='Transferência entre Contas').forEach(c=>{
+    const grp = catGroup(c.categoria, c.tipo);
+    if(!groups[grp]) groups[grp]=[];
+    groups[grp].push(c);
+  });
+  const groupOrder = ['Receitas','Essencial','Estilo de Vida','Investimentos e Dívidas','Outros'];
+  list.innerHTML = groupOrder.filter(g=>groups[g]?.length).map(grp=>`
+    <div style="margin-bottom:16px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:${BUDGET_GROUP_COLORS[grp]||'var(--text-3)'};margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border-soft)">${grp}</div>
+      ${groups[grp].map(c=>`
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border-soft)">
+          <span style="font-size:13px;color:var(--text-1)">${c.categoria}</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:11.5px;color:var(--text-3)">R$</span>
+            <input type="number" min="0" step="10" value="${c.limite||0}"
+              data-cat="${c.categoria}"
+              style="width:110px;background:var(--surface-2);border:1.5px solid var(--border-soft);border-radius:7px;padding:6px 10px;font-size:13px;font-family:Inter,sans-serif;text-align:right;color:var(--text-1);outline:none"
+              onfocus="this.style.borderColor='var(--accent)'"
+              onblur="this.style.borderColor='var(--border-soft)'">
+          </div>
+        </div>`).join('')}
+    </div>`).join('');
+  const overlay = document.getElementById('budgetEditOverlay');
+  overlay.style.display='flex';
+  requestAnimationFrame(()=>overlay.classList.add('open'));
+}
+function closeBudgetEditModal(){
+  const overlay = document.getElementById('budgetEditOverlay');
+  overlay.classList.remove('open');
+  setTimeout(()=>overlay.style.display='none', 250);
+}
+function saveBudgetLimits(){
+  document.querySelectorAll('#budgetEditList input[data-cat]').forEach(inp=>{
+    const cat = DATA.categorias.find(c=>c.categoria===inp.dataset.cat);
+    if(cat){
+      const val = parseFloat(inp.value)||0;
+      cat.limite = val;
+      if(currentUser && cat._dbId) db.from('categorias').update({limite_mensal:val}).eq('id',cat._dbId);
+    }
+  });
+  showToast('Limites salvos com sucesso!');
+  closeBudgetEditModal();
+  renderBudget(currentMonth);
+}
+
 // ── Transaction quick pay modal ────────────────────────────
 let _txPayId = null;
 
@@ -6541,6 +6626,20 @@ renderAll();
   </div>
 
 
+
+
+<!-- BUDGET EDIT LIMITS MODAL -->
+<div class="cmodal-overlay" id="budgetEditOverlay" style="display:none" onclick="closeBudgetEditModal()">
+  <div class="cmodal" onclick="event.stopPropagation()" style="max-width:560px;max-height:80vh;overflow-y:auto">
+    <div class="cmodal-title">✎ Editar limites de orçamento</div>
+    <div style="font-size:12.5px;color:var(--text-3);margin-bottom:16px">Defina o limite mensal para cada categoria. Deixe 0 para sem limite.</div>
+    <div id="budgetEditList"></div>
+    <div class="cmodal-actions">
+      <button class="btn btn-ghost" onclick="closeBudgetEditModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveBudgetLimits()">Salvar limites</button>
+    </div>
+  </div>
+</div>
 
 <!-- TRANSACTION PAY MODAL -->
 <div class="cmodal-overlay" id="txPayOverlay" style="display:none" onclick="closeTxPayModal()">
