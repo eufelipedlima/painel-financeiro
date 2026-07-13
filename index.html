@@ -5867,16 +5867,22 @@ function confirmDeleteFutures(){
   showToast(`${toDelete.length} lançamento(s) excluído(s).`);
 }
 function deleteEntry(entry){
-  const idx = DATA.transacoes.findIndex(t=>t._id===entry._id);
-  if(idx>-1) DATA.transacoes.splice(idx,1);
-  // Reverse balance
-  const contaObj = DATA.contas.find(c=>c.conta===entry.conta);
-  if(contaObj && entry.status==='Pago'){
-    const delta = entry.tipo==='Receita' ? -entry.valor : entry.valor;
-    contaObj.saldoAtual = Math.round((contaObj.saldoAtual+delta)*100)/100;
-    DATA.saldoTotal = Math.round((DATA.saldoTotal+delta)*100)/100;
+  if(entry._source === 'cartaoCompras'){
+    const idx = DATA.cartaoCompras.findIndex(t=>t._id===entry._id);
+    if(idx>-1) DATA.cartaoCompras.splice(idx,1);
+    if(entry._dbId) db.from('cartao_compras').delete().eq('id',entry._dbId);
+  } else {
+    const idx = DATA.transacoes.findIndex(t=>t._id===entry._id);
+    if(idx>-1) DATA.transacoes.splice(idx,1);
+    // Reverse balance if paid
+    const contaObj = DATA.contas.find(c=>c.conta===entry.conta);
+    if(contaObj && entry.status==='Pago'){
+      const delta = entry.tipo==='Receita' ? -entry.valor : entry.valor;
+      contaObj.saldoAtual = Math.round((contaObj.saldoAtual+delta)*100)/100;
+      DATA.saldoTotal = Math.round((DATA.saldoTotal+delta)*100)/100;
+    }
+    if(entry._dbId) db.from('transacoes').delete().eq('id',entry._dbId);
   }
-  if(entry._dbId) db.from('transacoes').delete().eq('id',entry._dbId);
   renderAll();
 }
 
@@ -6468,11 +6474,55 @@ function saveEntry(){
 
   let entry;
   if(formType === 'Cartão'){
+    const cartaoNome = document.getElementById('fCartao').value;
+    const catVal = document.getElementById('fCategoria').value;
+
+    // Parcelamento: generate all installments
+    if(_parcelada){
+      const n = parseInt(document.getElementById('parcelaNInput').value)||1;
+      const vInput = parseFloat(document.getElementById('parcelaValorInput').value)||valor;
+      const vParcela = _parcelaMode === 'total'
+        ? Math.round(vInput/n*100)/100
+        : vInput;
+
+      for(let i=0; i<n; i++){
+        const baseDate = parseDate(data);
+        const futDate = new Date(baseDate.getFullYear(), baseDate.getMonth() + i, baseDate.getDate());
+        const parcelaLabel = `${i+1}/${n}`;
+        const futEntry = {
+          _id: _nextId++,
+          data: localDateStr(futDate),
+          descricao: `${descricao} (${parcelaLabel})`,
+          categoria: catVal,
+          cartao: cartaoNome,
+          parcela: parcelaLabel,
+          valor: vParcela,
+          conferido: 'Não',
+          obs,
+          _source: 'cartaoCompras',
+          _new: true
+        };
+        DATA.cartaoCompras.push(futEntry);
+        pendingSync.push(futEntry);
+        dbSaveCartaoCompra(futEntry);
+        const fm = `${futDate.getFullYear()}-${String(futDate.getMonth()+1).padStart(2,'0')}`;
+        if(!months.includes(fm)){ months.push(fm); months.sort(); }
+      }
+      updateSyncBar();
+      showToast(`${n}x de ${fmtBRL(vParcela)} lançadas no cartão!`);
+      resetParcelada();
+      closeDrawer();
+      renderAll();
+      return;
+    }
+
+    // À vista (sem parcelamento)
     entry = {
+      _id: _nextId++,
       data, descricao,
-      categoria: document.getElementById('fCategoria').value,
-      cartao: document.getElementById('fCartao').value,
-      parcela: document.getElementById('fParcela').value.trim() || null,
+      categoria: catVal,
+      cartao: cartaoNome,
+      parcela: null,
       valor, conferido: 'Não', obs,
       _source: 'cartaoCompras', _new: true
     };
