@@ -3832,6 +3832,13 @@ document.getElementById('searchInput').addEventListener('input', renderAllTable)
 // Filter is handled by global month picker
 
 
+
+// Local date helper (avoids UTC offset bug)
+function localDateStr(d){ 
+  d = d || new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
 // ── Global mobile navigation function ──────────────────────
 function mobileNavigate(view){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -4440,7 +4447,7 @@ function renderBudget(key){
   }
 
   // Build rows by group
-  const allCatObjs = DATA.categorias.filter(c=>c.categoria!=='Pagamento Fatura Cartão'&&c.categoria!=='Transferência entre Contas');
+  const allCatObjs = DATA.categorias.filter(c=>c.categoria!=='Pagamento Fatura Cartão'&&c.categoria!=='Transferência entre Contas').sort((a,b)=>a.categoria.localeCompare(b.categoria,'pt-BR'));
   const groups = {};
   allCatObjs.forEach(c=>{
     const grp = catGroup(c.categoria, c.tipo);
@@ -5403,7 +5410,7 @@ function saveMeta(){
     showToast('Meta atualizada.');
   } else {
     const valorAtual = parseFloat(document.getElementById('mValorAtual').value)||0;
-    DATA.metas.push({ _id:_nextId++, nome, status:document.getElementById('mStatus').value, dataAlvo:document.getElementById('mDataAlvo').value||null, valorMeta, valorAtual, descricao:document.getElementById('mDescricao').value.trim()||null, criadaEm:new Date().toISOString().split('T')[0], movimentacoes:[] });
+    DATA.metas.push({ _id:_nextId++, nome, status:document.getElementById('mStatus').value, dataAlvo:document.getElementById('mDataAlvo').value||null, valorMeta, valorAtual, descricao:document.getElementById('mDescricao').value.trim()||null, criadaEm:localDateStr(), movimentacoes:[] });
     showToast(`Meta "${nome}" criada.`);
   }
   dbSaveMeta(metaEditTarget || DATA.metas[DATA.metas.length-1]);
@@ -5414,7 +5421,7 @@ function openMovModal(metaId, tipo){
   movMetaId = metaId; movTipo = tipo;
   const meta = DATA.metas.find(m=>m._id===metaId);
   document.getElementById('movModalTitle').textContent = tipo==='deposito' ? `Depositar em "${meta?.nome}"` : `Retirar de "${meta?.nome}"`;
-  document.getElementById('movData').value = new Date().toISOString().split('T')[0];
+  document.getElementById('movData').value = localDateStr();
   document.getElementById('movValor').value = '';
   document.getElementById('movObs').value = '';
   document.getElementById('movConta').innerHTML = DATA.contas.map(c=>`<option value="${c.conta}">${c.conta} (${fmtBRL(c.saldoAtual)})</option>`).join('');
@@ -5714,7 +5721,7 @@ function gerarDatasFuturas(dataBase, freq){
     else if(freq==='trimestral') next.setMonth(d.getMonth() + 3*i);
     else if(freq==='semestral')  next.setMonth(d.getMonth() + 6*i);
     else if(freq==='anual')   next.setFullYear(d.getFullYear() + i);
-    dates.push(next.toISOString().split('T')[0]);
+    dates.push(localDateStr(next));
   }
   return dates;
 }
@@ -5828,7 +5835,7 @@ function openTxPayModal(entryId){
   const isRec = entry.tipo === 'Receita';
   document.getElementById('txPayTitle').textContent = isRec ? 'Confirmar recebimento' : 'Confirmar pagamento';
   document.getElementById('txPayDesc').textContent = `${entry.descricao} · ${fmtBRL(entry.valor)}`;
-  document.getElementById('txPayData').value = new Date().toISOString().split('T')[0];
+  document.getElementById('txPayData').value = localDateStr();
   document.getElementById('txPayValor').value = entry.valor.toFixed(2);
   document.getElementById('txPayConta').innerHTML =
     DATA.contas.filter(c=>!c.arquivado).map(c=>`<option value="${c.conta}">${c.conta} (${fmtBRL(c.saldoAtual)})</option>`).join('');
@@ -5894,7 +5901,7 @@ function openParcPayModal(dividaId, parcNum){
   if(!d||!p) return;
   document.getElementById('parcPayTitle').textContent = `Pagar parcela ${parcNum}/${d.parcelas.length}`;
   document.getElementById('parcPayDesc').textContent = `${d.nome} · ${fmtBRL(p.valorParcela)}`;
-  document.getElementById('parcPayData').value = new Date().toISOString().split('T')[0];
+  document.getElementById('parcPayData').value = localDateStr();
   document.getElementById('parcPayValor').value = p.valorParcela.toFixed(2);
   document.getElementById('parcPayConta').innerHTML =
     DATA.contas.filter(c=>!c.arquivado).map(c=>`<option value="${c.conta}">${c.conta} (${fmtBRL(c.saldoAtual)})</option>`).join('');
@@ -5945,7 +5952,7 @@ function addDateByFreq(isoDate, freq){
   else if(freq==='quinzenal') d.setDate(d.getDate()+15);
   else if(freq==='semanal') d.setDate(d.getDate()+7);
   else if(freq==='anual') d.setFullYear(d.getFullYear()+1);
-  return d.toISOString().split('T')[0];
+  return localDateStr(d);
 }
 
 function pagarParcela(dividaId, parcNum){
@@ -5967,7 +5974,7 @@ function pagarParcela(dividaId, parcNum){
     if(contaObj){ contaObj.saldoAtual-=p.valorParcela; DATA.saldoTotal-=p.valorParcela; }
   } else {
     // Fallback: create new paid transaction if pending one doesn't exist
-    const entry = { _id:_nextId++, data:new Date().toISOString().split('T')[0], descricao:`${d.nome} — Parcela ${parcNum}/${d.parcelas.length}`, tipo:'Despesa', categoria:d.categoria||'Outros (Despesa)', conta:d.conta||DATA.contas[0]?.conta, contaDestino:null, formaPagamento:'Boleto', status:'Pago', valor:p.valorParcela, obs:txMarker, _source:'transacoes', _new:true };
+    const entry = { _id:_nextId++, data:localDateStr(), descricao:`${d.nome} — Parcela ${parcNum}/${d.parcelas.length}`, tipo:'Despesa', categoria:d.categoria||'Outros (Despesa)', conta:d.conta||DATA.contas[0]?.conta, contaDestino:null, formaPagamento:'Boleto', status:'Pago', valor:p.valorParcela, obs:txMarker, _source:'transacoes', _new:true };
     DATA.transacoes.push(entry);
     const contaObj = DATA.contas.find(c=>c.conta===entry.conta);
     if(contaObj){ contaObj.saldoAtual-=p.valorParcela; DATA.saldoTotal-=p.valorParcela; }
@@ -5990,7 +5997,7 @@ function openDividaModal(id=null){
   document.getElementById('dEntrada').value = dividaEditTarget?.valorEntrada||'';
   document.getElementById('dNumParcelas').value = dividaEditTarget?.numParcelas||'';
   document.getElementById('dFrequencia').value = dividaEditTarget?.frequencia||'mensal';
-  document.getElementById('dDataInicio').value = dividaEditTarget?.dataInicio||new Date().toISOString().split('T')[0];
+  document.getElementById('dDataInicio').value = dividaEditTarget?.dataInicio||localDateStr();
   document.getElementById('dStatus').value = dividaEditTarget?.status||'Ativa';
   document.getElementById('dTaxa').value = dividaEditTarget?.taxa||0;
   document.getElementById('dConta').innerHTML = DATA.contas.map(c=>`<option value="${c.conta}">${c.conta}</option>`).join('');
@@ -6206,7 +6213,7 @@ let formType = 'Receita';
 
 function openDrawer(){
   editTarget = null;
-  const today = new Date().toISOString().split('T')[0];
+  const today = localDateStr();
   document.getElementById('fData').value = today;
   document.getElementById('fValor').value = '';
   document.getElementById('fDescricao').value = '';
@@ -6504,7 +6511,7 @@ function openPayModal(cartao, competencia, valor){
   payTarget = {cartao, competencia, valor};
   payMode = 'total';
   remainderMode = 'aberto';
-  const today = new Date().toISOString().split('T')[0];
+  const today = localDateStr();
   document.getElementById('payModalSub').textContent = cartao + ' · ' + monthLabel(competencia.slice(0,7));
   document.getElementById('payModalAmount').textContent = fmtBRL(valor);
   document.getElementById('payModalData').value = today;
@@ -6596,7 +6603,7 @@ document.getElementById('payJuros').addEventListener('input', calcInstallment);
 function addDateMonths(isoDate, n){
   const d = new Date(isoDate + 'T00:00:00');
   d.setMonth(d.getMonth() + n);
-  return d.toISOString().split('T')[0];
+  return localDateStr(d);
 }
 
 function confirmPayment(){
