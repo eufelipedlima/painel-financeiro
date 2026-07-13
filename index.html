@@ -6106,6 +6106,9 @@ function openEditDrawer(id, source){
   // Update drawer header to show edit mode
   document.querySelector('.drawer-title').innerHTML = 'Editar Lançamento <span class="drawer-mode-badge">✎ editando</span>';
   document.getElementById('drawerSaveBtn').innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg> Salvar alterações`;
+  // Hide recurring toggle when editing
+  const recRowEdit = document.getElementById('rowRecorrente');
+  if(recRowEdit) recRowEdit.style.display = 'none';
   document.getElementById('drawer').classList.add('open');
   document.getElementById('drawerOverlay').classList.add('open');
   document.getElementById('fabBtn').classList.add('open');
@@ -6128,6 +6131,20 @@ function openDrawer(){
   setFormType(formType);
   document.querySelector('.drawer-title').textContent = 'Novo Lançamento';
   document.getElementById('drawerSaveBtn').innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Salvar lançamento`;
+  // Reset recurring toggle
+  _recorrente = false;
+  _recorrenciaFreq = 'mensal';
+  const tog = document.getElementById('recorrenteToggle');
+  const thumb = document.getElementById('recorrenteThumb');
+  const opts = document.getElementById('recorrenteOptions');
+  const row = document.getElementById('rowRecorrente');
+  if(tog){ tog.style.background='var(--surface-3)'; }
+  if(thumb){ thumb.style.left='1px'; thumb.style.background='var(--text-3)'; }
+  if(opts) opts.style.display='none';
+  if(row) row.style.display='block';
+  document.querySelectorAll('.freq-btn').forEach(b=>b.classList.toggle('active', b.dataset.freq==='mensal'));
+  const prev = document.getElementById('recorrentePreview');
+  if(prev) prev.textContent='';
   document.getElementById('drawer').classList.add('open');
   document.getElementById('drawerOverlay').classList.add('open');
   document.getElementById('fabBtn').classList.add('open');
@@ -6273,8 +6290,12 @@ function saveEntry(){
       formaPagamento: isTransf ? 'Transferência' : document.getElementById('fFormaPagto').value,
       status: isTransf ? document.getElementById('fStatusTransf').value : document.getElementById('fStatus').value,
       subcategoria: isTransf ? null : subcategoria,
-      valor, obs, _source: 'transacoes', _new: true
+      valor, obs, _source: 'transacoes', _new: true,
+      recorrente: _recorrente,
+      recorrenciaId: _recorrente ? ('rec-' + Date.now() + '-' + Math.random().toString(36).slice(2)) : null,
+      recorrenciaFreq: _recorrente ? _recorrenciaFreq : null
     };
+    entry._id = _nextId++;
     DATA.transacoes.push(entry);
   }
   pendingSync.push(entry);
@@ -6297,14 +6318,43 @@ function saveEntry(){
       const destObj = DATA.contas.find(c => c.conta === entry.contaDestino);
       if(contaObj) contaObj.saldoAtual = Math.round((contaObj.saldoAtual - entry.valor) * 100) / 100;
       if(destObj)  destObj.saldoAtual  = Math.round((destObj.saldoAtual  + entry.valor) * 100) / 100;
-      // saldoTotal não muda em transferência (dinheiro só muda de conta)
     }
   }
+
+  // Generate future recurring transactions
+  if(_recorrente && entry._source === 'transacoes'){
+    const recId = entry.recorrenciaId;
+    const datas = gerarDatasFuturas(entry.data, _recorrenciaFreq);
+    datas.forEach(dt => {
+      const fut = {
+        _id: _nextId++, data: dt, descricao: entry.descricao, tipo: entry.tipo,
+        categoria: entry.categoria, subcategoria: entry.subcategoria,
+        conta: entry.conta, contaDestino: entry.contaDestino,
+        formaPagamento: entry.formaPagamento, status: 'Pendente',
+        valor: entry.valor, obs: entry.obs,
+        recorrente: true, recorrenciaId: recId, recorrenciaFreq: _recorrenciaFreq,
+        _source: 'transacoes', _new: true
+      };
+      DATA.transacoes.push(fut);
+      pendingSync.push(fut);
+      dbSaveTransaction(fut);
+      const fm = monthKey(parseDate(dt));
+      if(!months.includes(fm)){ months.push(fm); months.sort(); }
+    });
+    updateSyncBar();
+    showToast(`Lançamento fixo criado com ${datas.length} repetições futuras!`);
+  }
+
   const newMonth = monthKey(parseDate(data));
   if(!months.includes(newMonth)){ months.push(newMonth); months.sort(); }
   currentMonth = newMonth;
+
+  // Reset recurring state
+  _recorrente = false;
+  _recorrenciaFreq = 'mensal';
+
   closeDrawer();
-  showToast(`"${descricao}" adicionado com sucesso.`);
+  if(!_recorrente) showToast(`"${descricao}" adicionado com sucesso.`);
   renderAll();
 }
 document.getElementById('syncExportBtn').onclick = () => {
