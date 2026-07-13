@@ -3603,20 +3603,42 @@ function refreshMonthPickers(){
 function inMonth(dateStr, key){ return monthKey(parseDate(dateStr)) === key; }
 function getMonthTransacoes(key){ return DATA.transacoes.filter(t => inMonth(t.data, key)); }
 function getCartaoFaturaMonth(compra){
-  // Convention: the invoice is named by the month you PAY, not when you spend.
-  // With close=29:
-  //   June 12 (≤29) → July invoice  (+1 month)
-  //   June 29 (≤29) → July invoice  (+1 month)
-  //   June 30 (>29) → August invoice (+2 months)
+  // The invoice month = when you PAY (vencimento month).
+  // 1. Find which closing date covers the purchase.
+  // 2. If vencimento > fechamento: payment is in the SAME month as closing.
+  //    If vencimento < fechamento: payment is the NEXT month after closing.
+  //
+  // Examples:
+  //   close=4,  due=10: July 7  → closes Aug 4  → pay Aug 10  → "August"
+  //   close=29, due=10: June 12 → closes June 29 → pay July 10 → "July"
+  //   close=4,  due=10: July 3  → closes July 4  → pay July 10 → "July"
   const cartaoObj = DATA.cartoes.find(c => c.cartao === compra.cartao);
   const d = parseDate(compra.data);
-  if(!cartaoObj || !cartaoObj.fechamento){
-    return monthKey(d);
+  if(!cartaoObj || !cartaoObj.fechamento){ return monthKey(d); }
+
+  const dia        = d.getDate();
+  const fechamento = cartaoObj.fechamento;
+  const vencimento = cartaoObj.vencimento || (fechamento + 6); // fallback
+
+  // Step 1: which month does this purchase close in?
+  let closeM = d.getMonth();
+  let closeY = d.getFullYear();
+  if(dia > fechamento){
+    // Purchase is after this month's closing → next closing
+    closeM++;
+    if(closeM > 11){ closeM = 0; closeY++; }
   }
-  const dia = d.getDate();
-  const monthsAhead = dia <= cartaoObj.fechamento ? 1 : 2;
-  const invoice = new Date(d.getFullYear(), d.getMonth() + monthsAhead, 1);
-  return monthKey(invoice);
+
+  // Step 2: invoice month = closing month, unless vencimento < fechamento
+  // (meaning payment wraps to next month)
+  let invoiceM = closeM;
+  let invoiceY = closeY;
+  if(vencimento < fechamento){
+    invoiceM++;
+    if(invoiceM > 11){ invoiceM = 0; invoiceY++; }
+  }
+
+  return `${invoiceY}-${String(invoiceM + 1).padStart(2,'0')}`;
 }
 function getMonthCartao(key){ return DATA.cartaoCompras.filter(t => getCartaoFaturaMonth(t) === key); }
 
@@ -5988,6 +6010,69 @@ function dismissOnboarding(){
   if(b){ b.style.opacity='0'; b.style.transition='opacity .3s'; setTimeout(()=>b.style.display='none',300); }
 }
 
+
+// ── Edit cartão ────────────────────────────────────────────
+let _editCartaoTarget = null;
+
+function editConfigCartao(dbId){
+  const c = DATA.cartoes.find(x => x._dbId === dbId);
+  if(!c) return;
+  _editCartaoTarget = c;
+  document.getElementById('ecNome').value = c.cartao || '';
+  document.getElementById('ecBanco').value = c.banco || '';
+  document.getElementById('ecFechamento').value = c.fechamento || '';
+  document.getElementById('ecVencimento').value = c.vencimento || '';
+  document.getElementById('ecLimite').value = c.limite || 0;
+  // Reset border colors
+  ['ecFechamento','ecVencimento'].forEach(id => document.getElementById(id).style.borderColor='');
+  const overlay = document.getElementById('editCartaoOverlay');
+  overlay.style.display='flex';
+  requestAnimationFrame(()=>overlay.classList.add('open'));
+}
+function closeEditCartaoModal(){
+  const overlay = document.getElementById('editCartaoOverlay');
+  overlay.classList.remove('open');
+  setTimeout(()=>overlay.style.display='none', 250);
+  _editCartaoTarget = null;
+}
+async function saveEditCartao(){
+  if(!_editCartaoTarget) return;
+  const nome      = document.getElementById('ecNome').value.trim();
+  const banco     = document.getElementById('ecBanco').value.trim()||null;
+  const fechamento = parseInt(document.getElementById('ecFechamento').value)||null;
+  const vencimento = parseInt(document.getElementById('ecVencimento').value)||null;
+  const limite    = parseFloat(document.getElementById('ecLimite').value)||0;
+
+  if(!nome){ showToast('Informe o nome do cartão.'); return; }
+  if(!fechamento || fechamento<1||fechamento>31){
+    document.getElementById('ecFechamento').style.borderColor='var(--negative)';
+    showToast('⚠️ Informe o dia de fechamento (1-31).'); return;
+  }
+  if(!vencimento || vencimento<1||vencimento>31){
+    document.getElementById('ecVencimento').style.borderColor='var(--negative)';
+    showToast('⚠️ Informe o dia de vencimento (1-31).'); return;
+  }
+
+  // Update in memory
+  _editCartaoTarget.cartao     = nome;
+  _editCartaoTarget.banco      = banco;
+  _editCartaoTarget.fechamento = fechamento;
+  _editCartaoTarget.vencimento = vencimento;
+  _editCartaoTarget.limite     = limite;
+
+  // Update in DB
+  if(_editCartaoTarget._dbId){
+    await db.from('cartoes').update({
+      nome, banco, dia_fechamento:fechamento, dia_vencimento:vencimento, limite
+    }).eq('id', _editCartaoTarget._dbId);
+  }
+
+  showToast(`Cartão "${nome}" atualizado.`);
+  closeEditCartaoModal();
+  renderConfiguracoes();
+  renderAll();
+}
+
 // ── Adjust balance ─────────────────────────────────────────
 let _adjustBalConta = null;
 
@@ -7526,6 +7611,41 @@ renderAll();
 
 
 
+
+
+<!-- EDIT CARTAO MODAL -->
+<div class="cmodal-overlay" id="editCartaoOverlay" style="display:none" onclick="closeEditCartaoModal()">
+  <div class="cmodal" onclick="event.stopPropagation()" style="max-width:440px">
+    <div class="cmodal-title">✎ Editar cartão</div>
+    <div style="font-size:12.5px;color:var(--text-3);margin-bottom:16px">Alterações no fechamento e vencimento valem apenas para faturas futuras.</div>
+    <div class="form-group">
+      <label class="form-label">Nome do cartão</label>
+      <input type="text" class="form-input" id="ecNome" placeholder="Ex: Nubank">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Banco / Operadora</label>
+      <input type="text" class="form-input" id="ecBanco" placeholder="Ex: Nubank">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Dia de fechamento <span style="color:var(--negative)">*</span></label>
+        <input type="number" min="1" max="31" class="form-input" id="ecFechamento" placeholder="Ex: 4">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Dia de vencimento <span style="color:var(--negative)">*</span></label>
+        <input type="number" min="1" max="31" class="form-input" id="ecVencimento" placeholder="Ex: 10">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Limite (R$)</label>
+      <input type="number" min="0" step="50" class="form-input" id="ecLimite" placeholder="0,00">
+    </div>
+    <div class="cmodal-actions">
+      <button class="btn btn-ghost" onclick="closeEditCartaoModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveEditCartao()">Salvar alterações</button>
+    </div>
+  </div>
+</div>
 
 <!-- ADJUST BALANCE MODAL -->
 <div class="cmodal-overlay" id="adjustBalOverlay" style="display:none" onclick="closeAdjustBal()">
