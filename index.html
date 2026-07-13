@@ -3493,10 +3493,33 @@ async function dbUpdateEntryStatus(entry, status) {
 async function dbUpdateFatura(fatura) {
   if(!currentUser) return;
   try {
-    const row = { user_id:currentUser.id, cartao:fatura.cartao, competencia:fatura.competencia, valor_total:fatura.valorTotal, data_fechamento:fatura.fechamento||null, data_vencimento:fatura.vencimento||null, status:fatura.status };
-    if(fatura._dbId) { await db.from('faturas_cartao').update({status:fatura.status, valor_total:fatura.valorTotal}).eq('id',fatura._dbId); }
-    else { const {data} = await db.from('faturas_cartao').insert(row).select().single(); if(data) fatura._dbId=data.id; }
-  } catch(e) { console.error('fatura sync',e); }
+    const row = {
+      user_id: currentUser.id,
+      cartao: fatura.cartao,
+      competencia: fatura.competencia,
+      valor_total: fatura.valorTotal,
+      status: fatura.status
+    };
+    let result;
+    if(fatura._dbId) {
+      result = await db.from('faturas_cartao')
+        .update({ status: fatura.status, valor_total: fatura.valorTotal })
+        .eq('id', fatura._dbId);
+    } else {
+      result = await db.from('faturas_cartao').insert(row).select().single();
+      if(result.data) {
+        fatura._dbId = result.data.id;
+        delete fatura._new;
+      }
+    }
+    if(result.error) {
+      console.error('FATURA SAVE ERROR:', result.error);
+      showSaveError();
+    }
+  } catch(e) {
+    console.error('fatura sync exception:', e);
+    showSaveError();
+  }
 }
 
 // ── Auth state listener ──────────────────────────────
@@ -6485,7 +6508,7 @@ function closeTxPayModal(){
   setTimeout(()=>{ overlay.style.display='none'; }, 250);
   _txPayId = null;
 }
-function confirmTxPay(){
+async function confirmTxPay(){
   if(_txPayId===null) return;
   const entry = DATA.transacoes.find(e=>e._id===_txPayId);
   if(!entry) return;
@@ -6518,7 +6541,7 @@ function confirmTxPay(){
       }
     }
   }
-  dbUpdateEntryStatus(entry,'Pago');
+  await dbSaveTransaction(entry);
   showToast(`"${entry.descricao}" marcado como pago!`);
   closeTxPayModal();
   renderAll();
@@ -6552,7 +6575,7 @@ function closeParcPayModal(){
   setTimeout(()=>{ overlay.style.display='none'; },250);
   _parcPayDivId=null; _parcPayNum=null;
 }
-function confirmParcPay(){
+async function confirmParcPay(){
   if(_parcPayDivId===null||_parcPayNum===null) return;
   const conta = document.getElementById('parcPayConta').value;
   const data = document.getElementById('parcPayData').value;
@@ -7352,7 +7375,7 @@ function addDateMonths(isoDate, n){
   return localDateStr(d);
 }
 
-function confirmPayment(){
+async function confirmPayment(){
   if(!payTarget) return;
   const conta = document.getElementById('payModalConta').value;
   const data = document.getElementById('payModalData').value;
@@ -7441,16 +7464,9 @@ function confirmPayment(){
 
   updateSyncBar();
   // Save transaction to Supabase
-  dbSaveTransaction(entry);
-  // Save/update fatura to Supabase
-  if(fat._new){
-    const fatRow = { user_id:currentUser?.id, cartao:fat.cartao, competencia:fat.competencia, valor_total:fat.valorTotal, status:fat.status };
-    db.from('faturas_cartao').insert(fatRow).select().single().then(({data:fd})=>{
-      if(fd){ fat._dbId=fd.id; delete fat._new; }
-    });
-  } else if(fat._dbId){
-    db.from('faturas_cartao').update({status:fat.status, valor_total:fat.valorTotal}).eq('id',fat._dbId);
-  }
+  await dbSaveTransaction(entry);
+  // Save/update fatura to Supabase (using proper function with await)
+  await dbUpdateFatura(fat);
   closePayModal();
   renderAll();
 }
