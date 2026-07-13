@@ -5974,12 +5974,12 @@ function confirmEditFutures(){
   toEdit.forEach(t => {
     reverseImpact(t);
     const entryChanges = {...changes};
-    // Keep original date for each future entry (only update non-date fields)
     entryChanges.data = t.data;
     applyEditToEntry(t, entryChanges);
     applyImpact(t);
     if(!pendingSync.includes(t)) pendingSync.push(t);
-    dbSaveTransaction(t);
+    if(t._source === 'cartaoCompras') dbSaveCartaoCompra(t);
+    else dbSaveTransaction(t);
   });
   updateSyncBar();
   closeEditRecModal();
@@ -7016,7 +7016,12 @@ function saveEntry(){
     editTarget._new = true;
     if(!pendingSync.includes(editTarget)) pendingSync.push(editTarget);
     updateSyncBar();
-    dbSaveTransaction(editTarget);
+    // Use the correct save function based on the entry source
+    if(editTarget._source === 'cartaoCompras') {
+      dbSaveCartaoCompra(editTarget);
+    } else {
+      dbSaveTransaction(editTarget);
+    }
     const currMonth = monthKey(parseDate(data));
     if(!months.includes(currMonth)){ months.push(currMonth); months.sort(); }
     currentMonth = currMonth;
