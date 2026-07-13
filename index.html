@@ -1882,6 +1882,85 @@
   .tbl-pay-btn:hover{ background:var(--positive); color:#fff; border-color:var(--positive); }
   html.light .tbl-pay-btn{ border-color:rgba(5,150,105,0.2); }
 
+
+  /* ── Budget multi-month table ── */
+  .budget-table{
+    width:100%; border-collapse:collapse; font-size:12.5px;
+    white-space:nowrap;
+  }
+  .budget-table th{
+    background:var(--surface-2); color:var(--text-3);
+    font-size:10px; font-weight:700; text-transform:uppercase;
+    letter-spacing:.6px; padding:8px 12px; text-align:center;
+    border-bottom:2px solid var(--border-soft);
+    border-right:1px solid var(--border-soft);
+    position:sticky; top:0; z-index:2;
+  }
+  .budget-table th.cat-col{
+    text-align:left; min-width:180px; position:sticky;
+    left:0; z-index:3; background:var(--surface-2);
+  }
+  .budget-table th.month-header{
+    background:var(--surface-3); color:var(--text-2);
+    font-size:12px; font-weight:700; text-transform:none;
+    letter-spacing:0; border-left:2px solid var(--border);
+  }
+  .budget-table td{
+    padding:9px 12px; border-bottom:1px solid var(--border-soft);
+    border-right:1px solid var(--border-soft); text-align:center;
+    vertical-align:middle;
+  }
+  .budget-table td.cat-name-cell{
+    text-align:left; font-weight:600; font-size:13px;
+    color:var(--text-1); position:sticky; left:0;
+    background:var(--surface); z-index:1;
+    border-right:2px solid var(--border-soft);
+  }
+  .budget-table td.cat-name-cell.sub{
+    font-weight:500; font-size:12px; color:var(--text-2);
+    padding-left:28px;
+  }
+  .budget-table td.planned-cell{
+    border-left:2px solid var(--border);
+    font-variant-numeric:tabular-nums; color:var(--text-2);
+  }
+  .budget-table td.planned-cell input{
+    width:80px; background:var(--surface-2); border:1px solid var(--accent);
+    border-radius:5px; padding:3px 6px; font-size:12px;
+    font-family:'Inter',sans-serif; text-align:right; color:var(--text-1);
+    font-variant-numeric:tabular-nums; outline:none;
+  }
+  .budget-table td.actual-cell{ font-variant-numeric:tabular-nums; font-weight:600; }
+  .budget-table td.diff-cell{ font-variant-numeric:tabular-nums; font-size:12px; }
+  .budget-table td.pct-cell{ font-size:11.5px; font-weight:700; min-width:52px; }
+  .budget-table tr.group-header td{
+    background:var(--surface-2); font-size:11px; font-weight:700;
+    text-transform:uppercase; letter-spacing:.8px; color:var(--text-3);
+    padding:7px 12px; border-top:2px solid var(--border-soft);
+  }
+  .budget-table tr.group-header td.cat-name-cell{
+    background:var(--surface-2); color:var(--text-2);
+    font-size:12px; text-transform:none; letter-spacing:0;
+    cursor:pointer;
+  }
+  .budget-table tr:hover td:not(.cat-name-cell){ background:var(--surface-2); }
+  .budget-table tr.group-header:hover td{ background:var(--surface-3); }
+  .budget-table .total-row td{
+    background:var(--surface-2); font-weight:700; border-top:2px solid var(--border);
+  }
+  .bpct-ok{ color:var(--positive); }
+  .bpct-warn{ color:var(--warning); }
+  .bpct-over{ color:var(--negative); }
+  .bpct-none{ color:var(--text-3); }
+  .bdiff-pos{ color:var(--positive); }
+  .bdiff-neg{ color:var(--negative); }
+
+  @media(max-width:768px){
+    .budget-table{ font-size:11px; }
+    .budget-table td, .budget-table th{ padding:7px 8px; }
+    .budget-table td.cat-name-cell{ min-width:120px; font-size:11.5px; }
+  }
+
 </style>
 </head>
 <body>
@@ -2245,19 +2324,28 @@
       <div class="topbar">
         <div>
           <div class="page-title">Orçamento</div>
-          <div class="page-sub">Planejamento mensal por categoria</div>
+          <div class="page-sub">Planejado × realizado por mês e categoria</div>
         </div>
         <div style="display:flex;gap:10px;align-items:center">
-          <button class="btn btn-ghost" id="budgetEditToggle" style="padding:9px 16px;font-size:13px;flex:none">Editar limites</button>
-          <div class="month-picker" id="monthPickerRoot4"></div>
+          <button class="btn btn-ghost" id="budgetYearPrev" style="padding:7px 12px">‹</button>
+          <span id="budgetYearLabel" style="font-size:15px;font-weight:700;min-width:48px;text-align:center"></span>
+          <button class="btn btn-ghost" id="budgetYearNext" style="padding:7px 12px">›</button>
         </div>
       </div>
-      <div class="budget-kpi-row" id="budgetKpiRow"></div>
-      <div class="budget-cat-grid" id="budgetList"></div>
-      <div class="panel" style="margin-top:16px">
-        <div class="panel-head"><div class="panel-title">Planejado × Realizado por categoria</div></div>
-        <div style="height:280px;"><canvas id="chartBudget"></canvas></div>
+      <!-- Summary KPIs -->
+      <div class="kpi-grid" id="budgetKpiRow" style="margin-bottom:16px"></div>
+      <!-- Multi-month table -->
+      <div class="panel" style="padding:0;overflow:hidden">
+        <div style="overflow-x:auto">
+          <table class="budget-table" id="budgetTable">
+            <thead id="budgetTableHead"></thead>
+            <tbody id="budgetTableBody"></tbody>
+          </table>
+        </div>
       </div>
+      <!-- Hidden chart canvas kept for compatibility -->
+      <canvas id="chartBudget" style="display:none"></canvas>
+      <div class="budget-cat-grid" id="budgetList" style="display:none"></div>
     </div>
 
 
@@ -4168,102 +4256,202 @@ function renderCardPurchases(key){
 // ===================== Orcamento view =====================
 let chartBudgetInst = null;
 let budgetEditMode = false;
-function renderBudget(key){
-  const trans = getMonthTransacoes(key);
-  const cartao = getMonthCartao(key);
-  const despesaCats = DATA.categorias.filter(c => c.tipo === 'Despesa' && c.categoria !== 'Pagamento Fatura Cartão');
-  const allCats = despesaCats;
-  const all = despesaCats.map(c => {
-    const gastoConta = trans.filter(t=>t.tipo==='Despesa' && t.categoria===c.categoria).reduce((s,t)=>s+t.valor,0);
+// ── Budget year/month tracking ──────────────────────────────
+let budgetYear = new Date().getFullYear();
+
+// Category group mapping
+const BUDGET_GROUPS = {
+  'Receitas': ['Salário','Empréstimos','Investimentos','Freelance','Vendas','Outras Receitas'],
+  'Essencial': ['Alimentação','Contas','Educação','Moradia','Pets','Saúde e Bem-estar','Transporte'],
+  'Estilo de Vida': ['Assinaturas','Compras','Lazer','Presentes e Doações','Trabalho / Profissional'],
+  'Investimentos e Dívidas': ['Financeiro','Financiamento','Impostos','Investimentos (Saída)'],
+};
+const BUDGET_GROUP_COLORS = {
+  'Receitas': 'var(--positive)',
+  'Essencial': '#3B82F6',
+  'Estilo de Vida': '#8B5CF6',
+  'Investimentos e Dívidas': '#F59E0B',
+};
+
+function catGroup(catName, tipo){
+  if(tipo==='Receita') return 'Receitas';
+  for(const [grp,cats] of Object.entries(BUDGET_GROUPS)){
+    if(cats.includes(catName)) return grp;
+  }
+  return 'Outros';
+}
+
+function calcMonthBudget(yearMonth){
+  const trans = getMonthTransacoes(yearMonth);
+  const cartao = getMonthCartao(yearMonth);
+  const result = {};
+  DATA.categorias.filter(c=>c.categoria!=='Pagamento Fatura Cartão'&&c.categoria!=='Transferência entre Contas').forEach(c=>{
+    const gastoConta = trans.filter(t=>t.tipo==='Despesa'&&t.categoria===c.categoria).reduce((s,t)=>s+t.valor,0);
     const gastoCartao = cartao.filter(t=>t.categoria===c.categoria).reduce((s,t)=>s+t.valor,0);
-    return {catObj:c, categoria:c.categoria, limite:c.limite||0, gasto:Math.round((gastoConta+gastoCartao)*100)/100};
+    const rec = trans.filter(t=>t.tipo==='Receita'&&t.categoria===c.categoria).reduce((s,t)=>s+t.valor,0);
+    const gasto = c.tipo==='Receita' ? rec : Math.round((gastoConta+gastoCartao)*100)/100;
+    result[c.categoria] = { limite:c.limite||0, gasto, tipo:c.tipo };
+  });
+  return result;
+}
+
+function renderBudget(key){
+  // Wire year navigation
+  const yearLbl = document.getElementById('budgetYearLabel');
+  const prevBtn = document.getElementById('budgetYearPrev');
+  const nextBtn = document.getElementById('budgetYearNext');
+  if(yearLbl) yearLbl.textContent = budgetYear;
+  if(prevBtn) prevBtn.onclick = ()=>{ budgetYear--; renderBudget(currentMonth); };
+  if(nextBtn) nextBtn.onclick = ()=>{ budgetYear++; renderBudget(currentMonth); };
+
+  // Build 12 months for selected year
+  const months = Array.from({length:12},(_,i)=>`${budgetYear}-${String(i+1).padStart(2,'0')}`);
+  const monthNames = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const nowKey = monthKey(new Date());
+
+  // Compute data for all months
+  const monthData = months.map(m => calcMonthBudget(m));
+
+  // KPI for current month
+  const curIdx = months.indexOf(nowKey);
+  const curData = curIdx>=0 ? monthData[curIdx] : monthData[new Date().getMonth()];
+  const totalPlan = Object.values(curData).filter(d=>d.tipo!=='Receita').reduce((s,d)=>s+d.limite,0);
+  const totalSpent = Object.values(curData).filter(d=>d.tipo!=='Receita').reduce((s,d)=>s+d.gasto,0);
+  const totalRec = Object.values(curData).filter(d=>d.tipo==='Receita').reduce((s,d)=>s+d.gasto,0);
+  const kpiEl = document.getElementById('budgetKpiRow');
+  if(kpiEl) kpiEl.innerHTML = `
+    <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">Receita do mês atual</span></div><div class="kpi-value" style="color:var(--positive)">${fmtBRL(totalRec)}</div></div>
+    <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">Total planejado (despesas)</span></div><div class="kpi-value">${fmtBRL(totalPlan)}</div></div>
+    <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">Total realizado (despesas)</span></div><div class="kpi-value" style="color:${totalSpent>totalPlan?'var(--negative)':'var(--text-1)'}">${fmtBRL(totalSpent)}</div><div style="font-size:11px;color:var(--text-3);margin-top:4px">${totalPlan>0?(totalSpent/totalPlan*100).toFixed(0)+'% do planejado':''}</div></div>
+    <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">Disponível / Saldo</span></div><div class="kpi-value" style="color:${totalPlan-totalSpent>=0?'var(--positive)':'var(--negative)'}">${fmtBRL(Math.abs(totalPlan-totalSpent))}</div><div style="font-size:11px;color:var(--text-3);margin-top:4px">${totalPlan-totalSpent>=0?'dentro do planejado':'acima do planejado'}</div></div>`;
+
+  // Build table
+  const thead = document.getElementById('budgetTableHead');
+  const tbody = document.getElementById('budgetTableBody');
+  if(!thead||!tbody) return;
+
+  // Header: category col + month groups
+  thead.innerHTML = `<tr>
+    <th class="cat-col" rowspan="2">Categoria</th>
+    ${months.map((m,i)=>`<th class="month-header" colspan="4" style="border-left:2px solid var(--border);${m===nowKey?'background:var(--accent-soft);color:var(--accent-2)':''}">${monthNames[i]}${m===nowKey?' ●':''}</th>`).join('')}
+  </tr>
+  <tr>
+    ${months.map(m=>`
+      <th style="border-left:2px solid var(--border)${m===nowKey?';background:var(--accent-soft);':''}" title="Planejado">Planejado</th>
+      <th title="Realizado">Realizado</th>
+      <th title="Diferença">Diferença</th>
+      <th title="% Atingimento">%</th>
+    `).join('')}
+  </tr>`;
+
+  // Helper to render 4 cells per month
+  function monthCells(m, idx, limite, gasto, tipo){
+    const isRecMonth = tipo==='Receita';
+    const plan = limite;
+    const real = gasto;
+    const diff = isRecMonth ? (real-plan) : (plan-real);
+    const pct = plan>0 ? (real/plan*100) : null;
+    const pctCls = pct===null?'bpct-none':pct>=100?(isRecMonth?'bpct-ok':'bpct-over'):pct>=75?'bpct-warn':'bpct-ok';
+    const diffCls = diff>=0?'bdiff-pos':'bdiff-neg';
+    const isCurrent = m===nowKey;
+    const bg = isCurrent?'background:var(--accent-soft);':'';
+    return `
+      <td class="planned-cell" style="${bg}${isCurrent?'border-left:2px solid var(--accent)':'border-left:2px solid var(--border)'}" data-cat="${name}" data-month="${m}">
+        ${plan>0?fmtBRL(plan):'<span style="color:var(--text-3)">—</span>'}
+      </td>
+      <td class="actual-cell" style="${bg};color:${real>0?(isRecMonth?'var(--positive)':'var(--negative)'):'var(--text-3)'}">${real>0?fmtBRL(real):'—'}</td>
+      <td class="diff-cell" style="${bg}"><span class="${diffCls}">${plan>0||real>0?(diff>=0?'+':'')+fmtBRL(Math.abs(diff)):'—'}</span></td>
+      <td class="pct-cell" style="${bg}"><span class="${pctCls}">${pct!==null?pct.toFixed(0)+'%':'—'}</span></td>`;
+  }
+
+  // Build rows by group
+  const allCatObjs = DATA.categorias.filter(c=>c.categoria!=='Pagamento Fatura Cartão'&&c.categoria!=='Transferência entre Contas');
+  const groups = {};
+  allCatObjs.forEach(c=>{
+    const grp = catGroup(c.categoria, c.tipo);
+    if(!groups[grp]) groups[grp]=[];
+    groups[grp].push(c);
   });
 
-  const totalOrcado = all.reduce((s,c)=>s+(c.limite||0),0);
-  const totalGasto  = all.reduce((s,c)=>s+c.gasto,0);
-  const saldo = totalOrcado - totalGasto;
+  const groupOrder = ['Receitas','Essencial','Estilo de Vida','Investimentos e Dívidas','Outros'];
+  let rows = '';
 
-  const kpiRow = document.getElementById('budgetKpiRow');
-  if(kpiRow) kpiRow.innerHTML = `
-    <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">Total Orçado</span></div><div class="kpi-value num">${fmtBRL(totalOrcado)}</div><div style="font-size:11.5px;color:var(--text-3);margin-top:6px">${all.filter(c=>c.limite>0).length} categoria${all.filter(c=>c.limite>0).length!==1?'s':''} com limite</div></div>
-    <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">Total Gasto</span></div><div class="kpi-value num" style="color:var(--negative)">${fmtBRL(totalGasto)}</div><div style="font-size:11.5px;color:var(--text-3);margin-top:6px">${totalOrcado>0?(totalGasto/totalOrcado*100).toFixed(0)+'% do orçamento':'Sem limite global'}</div></div>
-    <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">Disponível</span></div><div class="kpi-value num" style="color:${saldo>=0?'var(--positive)':'var(--negative)'}">${fmtBRL(Math.abs(saldo))}</div><div style="font-size:11.5px;color:var(--text-3);margin-top:6px">${saldo>=0?'dentro do orçamento':'acima do orçamento'}</div></div>`;
+  groupOrder.filter(g=>groups[g]?.length).forEach(grp=>{
+    const cats = groups[grp];
+    const grpColor = BUDGET_GROUP_COLORS[grp]||'var(--text-3)';
+    // Group total row
+    const totalsByMonth = months.map((m,i)=>{
+      const mdata = monthData[i];
+      const totalPl = cats.reduce((s,c)=>s+(mdata[c.categoria]?.limite||0),0);
+      const totalRe = cats.reduce((s,c)=>s+(mdata[c.categoria]?.gasto||0),0);
+      return {pl:totalPl, re:totalRe};
+    });
+    rows += `<tr class="group-header">
+      <td class="cat-name-cell" style="border-left:4px solid ${grpColor}">
+        <span style="font-size:13px;font-weight:700;color:${grpColor}">${grp}</span>
+      </td>
+      ${months.map((m,i)=>{
+        const {pl,re}=totalsByMonth[i];
+        const diff=pl-re, pct=pl>0?(re/pl*100):null;
+        const diffCls=diff>=0?'bdiff-pos':'bdiff-neg';
+        const pctCls=pct===null?'bpct-none':pct>=100?'bpct-over':pct>=75?'bpct-warn':'bpct-ok';
+        const isCurrent=m===nowKey;
+        const bg=isCurrent?'background:var(--accent-soft);':'';
+        return `<td class="planned-cell" style="${bg}${isCurrent?'border-left:2px solid var(--accent)':'border-left:2px solid var(--border)'};font-weight:700">${pl>0?fmtBRL(pl):'—'}</td>
+          <td class="actual-cell" style="${bg};font-weight:700;color:${re>0?'var(--negative)':'var(--text-3)'}">${re>0?fmtBRL(re):'—'}</td>
+          <td class="diff-cell" style="${bg};font-weight:700"><span class="${diffCls}">${pl>0||re>0?(diff>=0?'+':'')+fmtBRL(Math.abs(diff)):'—'}</span></td>
+          <td class="pct-cell" style="${bg};font-weight:700"><span class="${pctCls}">${pct!==null?pct.toFixed(0)+'%':'—'}</span></td>`;
+      }).join('')}
+    </tr>`;
 
-  const list = document.getElementById('budgetList');
-  const editBtn = document.getElementById('budgetEditToggle');
-  if(editBtn){
-    editBtn.textContent = budgetEditMode ? 'Salvar limites' : '✎ Editar limites';
-    editBtn.onclick = () => {
-      if(budgetEditMode){
-        document.querySelectorAll('#budgetList .budget-edit-input').forEach(input => {
-          const cat = DATA.categorias.find(c => c.categoria === input.dataset.cat);
-          if(cat) cat.limite = parseFloat(input.value)||0;
-        });
-        budgetEditMode = false;
-        showToast('Limites de orçamento salvos.');
-        renderView('orcamento');
-      } else {
-        budgetEditMode = true;
+    // Category rows
+    cats.forEach(c=>{
+      const hasData = months.some((m,i)=>(monthData[i][c.categoria]?.gasto||0)>0 || (monthData[i][c.categoria]?.limite||0)>0);
+      rows += `<tr>
+        <td class="cat-name-cell sub" style="border-left:4px solid ${grpColor}40">${c.categoria}</td>
+        ${months.map((m,i)=>monthCells(m,i,monthData[i][c.categoria]?.limite||0,monthData[i][c.categoria]?.gasto||0,c.tipo)).join('')}
+      </tr>`;
+    });
+  });
+
+  tbody.innerHTML = rows;
+
+  // Click on planned cell to edit inline
+  tbody.querySelectorAll('.planned-cell').forEach(cell=>{
+    cell.style.cursor='pointer';
+    cell.title='Clique para editar o limite';
+    cell.ondblclick = ()=>{
+      const catName = cell.dataset.cat;
+      const current = cell.textContent.trim();
+      const catObj = DATA.categorias.find(c=>c.categoria===catName);
+      if(!catObj) return;
+      const inp = document.createElement('input');
+      inp.type='number'; inp.min='0'; inp.step='10';
+      inp.value = catObj.limite||0;
+      inp.className='budget-edit-input-inline';
+      inp.style.cssText='width:80px;background:var(--surface);border:1.5px solid var(--accent);border-radius:5px;padding:3px 6px;font-size:12px;font-family:Inter,sans-serif;text-align:right;color:var(--text-1);';
+      cell.innerHTML=''; cell.appendChild(inp); inp.focus(); inp.select();
+      const save = ()=>{
+        const val=parseFloat(inp.value)||0;
+        catObj.limite=val;
+        if(currentUser) db.from('categorias').update({limite_mensal:val}).eq('id',catObj._dbId).then(()=>showToast('Limite atualizado'));
         renderBudget(currentMonth);
-      }
+      };
+      inp.onblur=save;
+      inp.onkeydown=e=>{ if(e.key==='Enter') save(); if(e.key==='Escape') renderBudget(currentMonth); };
     };
-  }
+  });
 
-  if(budgetEditMode){
-    list.innerHTML = allCats.map(c => `
-      <div class="bcat-card">
-        <div class="bcat-top"><span class="bcat-name">${c.categoria}</span><span style="font-size:11.5px;color:var(--text-3)">Gasto: ${fmtBRL(all.find(x=>x.categoria===c.categoria)?.gasto||0)}</span></div>
-        <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
-          <span style="font-size:11.5px;color:var(--text-3)">Limite R$</span>
-          <input class="budget-edit-input" data-cat="${c.categoria}" type="number" min="0" step="10" value="${c.limite||0}">
-        </div>
-      </div>`).join('');
-    return;
+  // Scroll to current month
+  const head = document.getElementById('budgetTableHead');
+  if(head && curIdx>=0){
+    setTimeout(()=>{
+      const ths = head.querySelectorAll('th.month-header');
+      if(ths[curIdx]) ths[curIdx].scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'});
+    },100);
   }
-
-  const computed = all.filter(c => c.gasto > 0 || c.limite > 0);
-  if(computed.length === 0){
-    list.innerHTML = '<div class="empty-note" style="grid-column:1/-1">Nenhuma despesa neste mês. Clique em "✎ Editar limites" para definir seu orçamento.</div>';
-  } else {
-    list.innerHTML = computed.map(c => {
-      const pct = c.limite > 0 ? (c.gasto/c.limite*100) : 0;
-      const over = c.limite > 0 && c.gasto > c.limite;
-      const warn = c.limite > 0 && pct >= 75 && !over;
-      const cls = c.limite===0 ? 'free' : (over ? 'over' : (warn ? 'warn' : 'ok'));
-      const barPct = c.limite > 0 ? Math.min(pct,100) : (c.gasto>0?8:0);
-      const statusText = c.limite===0 ? 'Sem limite — clique em Editar limites' : (over ? `Estourou ${fmtBRL(c.gasto-c.limite)}` : `Restam ${fmtBRL(c.limite-c.gasto)}`);
-      return `<div class="bcat-card">
-        <div class="bcat-top"><span class="bcat-name">${c.categoria}</span><span class="bcat-pct ${cls}">${c.limite>0?pct.toFixed(0)+'%':'—'}</span></div>
-        <div class="bcat-bar"><div class="bcat-bar-fill ${cls}" style="width:${barPct}%"></div></div>
-        <div class="bcat-amounts"><span class="spent">${fmtBRL(c.gasto)}</span>${c.limite>0?`<span class="limit">/ ${fmtBRL(c.limite)}</span>`:''}</div>
-        <div class="bcat-status ${cls}">${statusText}</div>
-      </div>`;
-    }).join('');
-  }
-
-  try { const ctx = document.getElementById('chartBudget').getContext('2d');
-  if(chartBudgetInst) chartBudgetInst.destroy();
-  if(computed.length === 0) return;
-  chartBudgetInst = new Chart(ctx, {
-    type:'bar',
-    data:{
-      labels: computed.map(c=>c.categoria),
-      datasets:[
-        {label:'Planejado', data:computed.map(c=>c.limite), backgroundColor:'#2A2E3B', borderRadius:4, barThickness:10},
-        {label:'Realizado', data:computed.map(c=>c.gasto), backgroundColor:computed.map(c=>(c.limite>0&&c.gasto>c.limite)?'#FF7A72':'#6C63FF'), borderRadius:4, barThickness:10},
-      ]
-    },
-    options:{
-      indexAxis:'y', responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{position:'bottom', labels:{color:chartColors().tickColor, font:{size:11}, boxWidth:10, boxHeight:10}},
-        tooltip:(()=>{const cc3=chartColors(); return { backgroundColor:cc3.tooltipBg, borderColor:cc3.tooltipBorder, borderWidth:1, titleColor:document.documentElement.classList.contains('light')?'#4A5568':'#9BA1B0', bodyColor:document.documentElement.classList.contains('light')?'#0F1117':'#F2F3F6', callbacks:{label:(c)=>c.dataset.label+': '+fmtBRL(c.raw)} };})() },
-      scales:{
-        x:{ grid:{color:chartColors().gridColor}, ticks:{color:chartColors().tickColor, font:{size:10}, callback:(v)=>fmtBRL(v)} },
-        y:{ grid:{display:false}, ticks:{color:chartColors().tickColor, font:{size:11.5}} }
-      }
-    }
-  }); } catch(e){ console.warn('Budget chart error:', e.message); }
 }
+
 
 // ===================== Pendencias view =====================
 function daysUntil(dateStr){
@@ -4540,6 +4728,7 @@ function renderView(view){
   } else if(view === 'cartao'){
     renderCartaoPage(currentMonth);
   } else if(view === 'orcamento'){
+    budgetYear = budgetYear || new Date().getFullYear();
     renderBudget(currentMonth);
   } else if(view === 'metas'){
     renderMetas();
