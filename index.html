@@ -4886,6 +4886,7 @@ function renderConfiguracoes(){
           <div class="cc-item-sub">${c.tipo}${!arq?' · Saldo: '+fmtBRL(c.saldoAtual):''}</div>
         </div>
         <div class="cc-item-actions">
+          ${!arq?`<button class="cat-action-btn cfg-adjust-bal" data-id="${c._dbId}" title="Ajustar saldo">⚖️</button>`:''}
           ${!arq?`<button class="cat-action-btn cfg-edit-conta" data-id="${c._dbId}" title="Editar">${EDIT_SVG}</button>`:''}
           <button class="cat-action-btn ${arq?'':'danger'} cfg-arch" data-type="conta" data-id="${c._dbId}" data-archived="${arq}" data-nome="${c.conta}" title="${arq?'Reativar':'Arquivar'}">${arq?UNARCH_SVG:ARCH_SVG}</button>
         </div>
@@ -4893,6 +4894,10 @@ function renderConfiguracoes(){
     contasEl.innerHTML = ativas.map(c=>renderConta(c,false)).join('')
       + (arquivadas.length ? `<details style="margin-top:10px"><summary style="cursor:pointer;font-size:12px;color:var(--text-3);padding:4px 0">Arquivadas (${arquivadas.length})</summary><div style="margin-top:6px">${arquivadas.map(c=>renderConta(c,true)).join('')}</div></details>` : '')
       || '<div class="empty-note">Nenhuma conta. Clique em + Adicionar conta.</div>';
+    contasEl.querySelectorAll('.cfg-adjust-bal').forEach(btn=>btn.addEventListener('click',()=>{
+      const c = DATA.contas.find(x=>x._dbId===btn.dataset.id);
+      if(c) openAdjustBal(c);
+    }));
     contasEl.querySelectorAll('.cfg-edit-conta').forEach(btn=>btn.addEventListener('click',()=>editConfigConta(btn.dataset.id)));
     contasEl.querySelectorAll('.cfg-arch').forEach(btn=>btn.addEventListener('click',()=>archiveConfigItem(btn.dataset.type,btn.dataset.id,btn.dataset.archived==='true',btn.dataset.nome)));
   }
@@ -5058,15 +5063,42 @@ async function saveConfigItem(){
   if(configMode==='conta'){
     const tipo = document.getElementById('configModalTipo').value;
     if(configEditTarget){
+      const saldoEdit = parseFloat(document.getElementById('configModalSaldo')?.value)||null;
       configEditTarget.conta = nome; configEditTarget.tipo = tipo;
-      await db.from('contas').update({nome, tipo}).eq('id', configEditTarget._dbId);
+      const updatePayload = {nome, tipo};
+      if(saldoEdit !== null && saldoEdit !== configEditTarget.saldoInicial){
+        // Saldo inicial changed — update and recalc saldoAtual
+        const diff = saldoEdit - (configEditTarget.saldoInicial||0);
+        configEditTarget.saldoInicial = saldoEdit;
+        configEditTarget.saldoAtual = Math.round((configEditTarget.saldoAtual + diff)*100)/100;
+        DATA.saldoTotal = Math.round((DATA.saldoTotal + diff)*100)/100;
+        updatePayload.saldo_inicial = saldoEdit;
+        updatePayload.saldo_atual = configEditTarget.saldoAtual;
+      }
+      await db.from('contas').update(updatePayload).eq('id', configEditTarget._dbId);
       showToast('Conta atualizada.');
     } else {
-      const saldo = parseFloat(document.getElementById('configModalSaldo').value)||0;
-      const {data} = await db.from('contas').insert({user_id:uid, nome, tipo, saldo_inicial:saldo, saldo_atual:saldo}).select().single();
-      if(data) DATA.contas.push({_dbId:data.id, conta:nome, tipo, saldoInicial:saldo, saldoAtual:saldo});
-      DATA.saldoTotal += saldo;
-      showToast(`Conta "${nome}" adicionada.`);
+      const saldo = parseFloat(document.getElementById('configModalSaldo')?.value)||0;
+      let insertResult;
+      try {
+        // Try with saldo_atual (new schema)
+        const r = await db.from('contas').insert({user_id:uid, nome, tipo, saldo_inicial:saldo, saldo_atual:saldo}).select().single();
+        insertResult = r;
+      } catch(e1) {
+        // Fallback: insert without saldo_atual (old schema)
+        const r = await db.from('contas').insert({user_id:uid, nome, tipo, saldo_inicial:saldo}).select().single();
+        insertResult = r;
+      }
+      const newConta = insertResult?.data;
+      if(newConta){
+        const contaObj = {_dbId:newConta.id, conta:nome, tipo, saldoInicial:saldo, saldoAtual:saldo, arquivado:false, _id:_nextId++, _source:'contas'};
+        DATA.contas.push(contaObj);
+        DATA.saldoTotal = Math.round((DATA.saldoTotal + saldo)*100)/100;
+        renderSidebar();
+        showToast(`Conta "${nome}" adicionada com saldo inicial de ${fmtBRL(saldo)}.`);
+      } else {
+        showToast('Erro ao criar conta. Verifique o console.');
+      }
     }
   } else if(configMode==='cartao'){
     const banco = document.getElementById('configModalBanco').value.trim()||null;
@@ -5968,11 +6000,14 @@ function confirmDeleteFutures(){
   closeDeleteRecModal();
   showToast(`${count} parcela(s)/lançamento(s) excluído(s).`);
 }
-function deleteEntry(entry){
+async function deleteEntry(entry){
   if(entry._source === 'cartaoCompras'){
     const idx = DATA.cartaoCompras.findIndex(t=>t._id===entry._id);
     if(idx>-1) DATA.cartaoCompras.splice(idx,1);
-    if(entry._dbId) db.from('cartao_compras').delete().eq('id',entry._dbId);
+    if(entry._dbId){
+      const {error} = await db.from('cartao_compras').delete().eq('id',entry._dbId);
+      if(error) console.error('Delete cartao error:', error);
+    }
   } else {
     const idx = DATA.transacoes.findIndex(t=>t._id===entry._id);
     if(idx>-1) DATA.transacoes.splice(idx,1);
@@ -5983,7 +6018,19 @@ function deleteEntry(entry){
       contaObj.saldoAtual = Math.round((contaObj.saldoAtual+delta)*100)/100;
       DATA.saldoTotal = Math.round((DATA.saldoTotal+delta)*100)/100;
     }
-    if(entry._dbId) db.from('transacoes').delete().eq('id',entry._dbId);
+    if(entry._dbId){
+      const {error} = await db.from('transacoes').delete().eq('id',entry._dbId);
+      if(error){
+        console.error('Delete tx error:', error);
+        showToast('Erro ao excluir. Tente novamente.');
+        // Re-add to memory if DB delete failed
+        if(entry._source==='cartaoCompras') DATA.cartaoCompras.push(entry);
+        else DATA.transacoes.push(entry);
+      }
+    } else {
+      // No _dbId means not yet saved to DB — just remove from memory is enough
+      console.warn('Delete: no _dbId, removed from memory only');
+    }
   }
   renderAll();
 }
