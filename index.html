@@ -3058,68 +3058,121 @@ function showLoadingOverlay(show) {
 
 // ── Default data for new users ───────────────────────
 async function ensureDefaults(uid) {
-  const { data: c } = await db.from('contas').select('id').limit(1);
-  if(!c || c.length===0) {
-    await db.from('contas').insert([
-      {user_id:uid, nome:'Conta Corrente', tipo:'Conta Corrente', saldo_inicial:0},
-      {user_id:uid, nome:'Poupança', tipo:'Poupança', saldo_inicial:0},
-      {user_id:uid, nome:'Dinheiro', tipo:'Dinheiro', saldo_inicial:0},
-    ]);
-  }
-  const { data: cat } = await db.from('categorias').select('id').limit(1);
-  if(!cat || cat.length===0) {
-    await db.from('categorias').insert([
-      {user_id:uid, nome:'Salário', tipo:'Receita', limite_mensal:0},
-      {user_id:uid, nome:'Freelance / Consultoria', tipo:'Receita', limite_mensal:0},
-      {user_id:uid, nome:'Investimentos', tipo:'Receita', limite_mensal:0},
-      {user_id:uid, nome:'Outros (Receita)', tipo:'Receita', limite_mensal:0},
-      {user_id:uid, nome:'Moradia', tipo:'Despesa', limite_mensal:2500},
-      {user_id:uid, nome:'Alimentação', tipo:'Despesa', limite_mensal:1200},
-      {user_id:uid, nome:'Transporte', tipo:'Despesa', limite_mensal:600},
-      {user_id:uid, nome:'Saúde', tipo:'Despesa', limite_mensal:500},
-      {user_id:uid, nome:'Educação', tipo:'Despesa', limite_mensal:500},
-      {user_id:uid, nome:'Lazer', tipo:'Despesa', limite_mensal:400},
-      {user_id:uid, nome:'Vestuário', tipo:'Despesa', limite_mensal:300},
-      {user_id:uid, nome:'Serviços / Assinaturas', tipo:'Despesa', limite_mensal:200},
-      {user_id:uid, nome:'Outros (Despesa)', tipo:'Despesa', limite_mensal:0},
-      {user_id:uid, nome:'Pagamento Fatura Cartão', tipo:'Despesa', limite_mensal:0},
-      {user_id:uid, nome:'Transferência entre Contas', tipo:'Transferência', limite_mensal:0},
-    ]);
-  }
-  // Check subcategorias independently (may be empty even if other defaults exist)
-  const { data: subCheck } = await db.from('subcategorias').select('id').limit(1);
-  if(!subCheck || subCheck.length === 0) {
-    await db.from('subcategorias').insert([
-      {user_id:uid, categoria_nome:'Alimentação', nome:'Supermercado'},
-      {user_id:uid, categoria_nome:'Alimentação', nome:'Restaurante'},
-      {user_id:uid, categoria_nome:'Alimentação', nome:'Delivery'},
-      {user_id:uid, categoria_nome:'Alimentação', nome:'Padaria / Café'},
-      {user_id:uid, categoria_nome:'Alimentação', nome:'Feira / Hortifruti'},
-      {user_id:uid, categoria_nome:'Transporte', nome:'Combustível'},
-      {user_id:uid, categoria_nome:'Transporte', nome:'Uber / 99'},
-      {user_id:uid, categoria_nome:'Transporte', nome:'Estacionamento'},
-      {user_id:uid, categoria_nome:'Transporte', nome:'Manutenção veículo'},
-      {user_id:uid, categoria_nome:'Saúde', nome:'Farmácia'},
-      {user_id:uid, categoria_nome:'Saúde', nome:'Consulta médica'},
-      {user_id:uid, categoria_nome:'Saúde', nome:'Academia'},
-      {user_id:uid, categoria_nome:'Saúde', nome:'Plano de saúde'},
-      {user_id:uid, categoria_nome:'Moradia', nome:'Aluguel'},
-      {user_id:uid, categoria_nome:'Moradia', nome:'Condomínio'},
-      {user_id:uid, categoria_nome:'Moradia', nome:'Energia elétrica'},
-      {user_id:uid, categoria_nome:'Moradia', nome:'Água'},
-      {user_id:uid, categoria_nome:'Moradia', nome:'Internet'},
-      {user_id:uid, categoria_nome:'Lazer', nome:'Cinema / Teatro'},
-      {user_id:uid, categoria_nome:'Lazer', nome:'Streaming'},
-      {user_id:uid, categoria_nome:'Lazer', nome:'Viagem'},
-      {user_id:uid, categoria_nome:'Lazer', nome:'Bar / Balada'},
-      {user_id:uid, categoria_nome:'Educação', nome:'Curso / Treinamento'},
-      {user_id:uid, categoria_nome:'Educação', nome:'Livros'},
-      {user_id:uid, categoria_nome:'Educação', nome:'Mensalidade escolar'},
-      {user_id:uid, categoria_nome:'Serviços / Assinaturas', nome:'Software'},
-      {user_id:uid, categoria_nome:'Serviços / Assinaturas', nome:'Celular'},
-      {user_id:uid, categoria_nome:'Serviços / Assinaturas', nome:'TV a cabo'},
-    ]);
-  }
+  // ── Contas: não cria padrão — usuário cadastra as suas ──
+  // (removido o auto-create de Conta Corrente, Poupança e Dinheiro)
+
+  // ── Categorias ───────────────────────────────────────────
+  try {
+    const { data: cat } = await db.from('categorias').select('id').limit(1);
+    if(!cat || cat.length === 0) {
+      await db.from('categorias').insert([
+        // Despesas
+        {user_id:uid, nome:'Alimentação',            tipo:'Despesa', limite_mensal:0},
+        {user_id:uid, nome:'Compras Pessoais',        tipo:'Despesa', limite_mensal:0},
+        {user_id:uid, nome:'Educação',               tipo:'Despesa', limite_mensal:0},
+        {user_id:uid, nome:'Financeiro',             tipo:'Despesa', limite_mensal:0},
+        {user_id:uid, nome:'Investimentos',          tipo:'Despesa', limite_mensal:0},
+        {user_id:uid, nome:'Lazer',                  tipo:'Despesa', limite_mensal:0},
+        {user_id:uid, nome:'Moradia',                tipo:'Despesa', limite_mensal:0},
+        {user_id:uid, nome:'Outras Despesas',        tipo:'Despesa', limite_mensal:0},
+        {user_id:uid, nome:'Pets',                   tipo:'Despesa', limite_mensal:0},
+        {user_id:uid, nome:'Saúde',                  tipo:'Despesa', limite_mensal:0},
+        {user_id:uid, nome:'Serviços / Assinaturas', tipo:'Despesa', limite_mensal:0},
+        {user_id:uid, nome:'Transporte',             tipo:'Despesa', limite_mensal:0},
+        {user_id:uid, nome:'Pagamento Fatura Cartão',tipo:'Despesa', limite_mensal:0},
+        // Receitas
+        {user_id:uid, nome:'Salário',         tipo:'Receita', limite_mensal:0},
+        {user_id:uid, nome:'Investimentos',   tipo:'Receita', limite_mensal:0},
+        {user_id:uid, nome:'Outras Receitas', tipo:'Receita', limite_mensal:0},
+        {user_id:uid, nome:'Freelance',       tipo:'Receita', limite_mensal:0},
+        {user_id:uid, nome:'Benefícios',      tipo:'Receita', limite_mensal:0},
+        {user_id:uid, nome:'Presentes',       tipo:'Receita', limite_mensal:0},
+        {user_id:uid, nome:'Vendas',          tipo:'Receita', limite_mensal:0},
+        // Sistema
+        {user_id:uid, nome:'Transferência entre Contas', tipo:'Transferência', limite_mensal:0},
+      ]);
+    }
+  } catch(e){ console.warn('ensureDefaults/categorias:', e.message); }
+
+  // ── Subcategorias ─────────────────────────────────────────
+  try {
+    const { data: sub } = await db.from('subcategorias').select('id').limit(1);
+    if(!sub || sub.length === 0) {
+      await db.from('subcategorias').insert([
+        // Alimentação
+        {user_id:uid, categoria_nome:'Alimentação', nome:'Bebidas'},
+        {user_id:uid, categoria_nome:'Alimentação', nome:'Delivery'},
+        {user_id:uid, categoria_nome:'Alimentação', nome:'Feira'},
+        {user_id:uid, categoria_nome:'Alimentação', nome:'Mercado'},
+        {user_id:uid, categoria_nome:'Alimentação', nome:'Padaria / Café'},
+        {user_id:uid, categoria_nome:'Alimentação', nome:'Restaurante'},
+        // Compras Pessoais
+        {user_id:uid, categoria_nome:'Compras Pessoais', nome:'Acessórios'},
+        {user_id:uid, categoria_nome:'Compras Pessoais', nome:'Calçados'},
+        {user_id:uid, categoria_nome:'Compras Pessoais', nome:'Cosméticos'},
+        {user_id:uid, categoria_nome:'Compras Pessoais', nome:'Higiene Pessoal'},
+        {user_id:uid, categoria_nome:'Compras Pessoais', nome:'Outras Compras'},
+        {user_id:uid, categoria_nome:'Compras Pessoais', nome:'Roupas'},
+        // Educação
+        {user_id:uid, categoria_nome:'Educação', nome:'Cursos'},
+        {user_id:uid, categoria_nome:'Educação', nome:'Escola'},
+        {user_id:uid, categoria_nome:'Educação', nome:'Faculdade'},
+        {user_id:uid, categoria_nome:'Educação', nome:'Livros'},
+        {user_id:uid, categoria_nome:'Educação', nome:'Material Escolar'},
+        // Financeiro
+        {user_id:uid, categoria_nome:'Financeiro', nome:'Dívida'},
+        {user_id:uid, categoria_nome:'Financeiro', nome:'Empréstimo'},
+        {user_id:uid, categoria_nome:'Financeiro', nome:'Juros e Encargos'},
+        {user_id:uid, categoria_nome:'Financeiro', nome:'Taxas'},
+        // Lazer
+        {user_id:uid, categoria_nome:'Lazer', nome:'Bar / Balada'},
+        {user_id:uid, categoria_nome:'Lazer', nome:'Cinema / Teatro'},
+        {user_id:uid, categoria_nome:'Lazer', nome:'Eventos'},
+        {user_id:uid, categoria_nome:'Lazer', nome:'Hobbies'},
+        {user_id:uid, categoria_nome:'Lazer', nome:'Jogos'},
+        {user_id:uid, categoria_nome:'Lazer', nome:'Viagem'},
+        // Moradia
+        {user_id:uid, categoria_nome:'Moradia', nome:'Água'},
+        {user_id:uid, categoria_nome:'Moradia', nome:'Aluguel'},
+        {user_id:uid, categoria_nome:'Moradia', nome:'Condomínio'},
+        {user_id:uid, categoria_nome:'Moradia', nome:'Decoração'},
+        {user_id:uid, categoria_nome:'Moradia', nome:'Energia'},
+        {user_id:uid, categoria_nome:'Moradia', nome:'Gás'},
+        {user_id:uid, categoria_nome:'Moradia', nome:'Internet'},
+        {user_id:uid, categoria_nome:'Moradia', nome:'IPTU'},
+        {user_id:uid, categoria_nome:'Moradia', nome:'Móveis'},
+        // Pets
+        {user_id:uid, categoria_nome:'Pets', nome:'Petshop e Gerais'},
+        {user_id:uid, categoria_nome:'Pets', nome:'Ração'},
+        {user_id:uid, categoria_nome:'Pets', nome:'Veterinário'},
+        // Saúde
+        {user_id:uid, categoria_nome:'Saúde', nome:'Academia'},
+        {user_id:uid, categoria_nome:'Saúde', nome:'Dentista'},
+        {user_id:uid, categoria_nome:'Saúde', nome:'Estética'},
+        {user_id:uid, categoria_nome:'Saúde', nome:'Exames'},
+        {user_id:uid, categoria_nome:'Saúde', nome:'Farmácia'},
+        {user_id:uid, categoria_nome:'Saúde', nome:'Médico'},
+        {user_id:uid, categoria_nome:'Saúde', nome:'Plano de Saúde'},
+        {user_id:uid, categoria_nome:'Saúde', nome:'Terapia'},
+        // Serviços / Assinaturas
+        {user_id:uid, categoria_nome:'Serviços / Assinaturas', nome:'Aplicativos'},
+        {user_id:uid, categoria_nome:'Serviços / Assinaturas', nome:'Celular'},
+        {user_id:uid, categoria_nome:'Serviços / Assinaturas', nome:'Software'},
+        {user_id:uid, categoria_nome:'Serviços / Assinaturas', nome:'Streaming'},
+        // Transporte
+        {user_id:uid, categoria_nome:'Transporte', nome:'Combustível'},
+        {user_id:uid, categoria_nome:'Transporte', nome:'Documentação'},
+        {user_id:uid, categoria_nome:'Transporte', nome:'Estacionamento'},
+        {user_id:uid, categoria_nome:'Transporte', nome:'Manutenção'},
+        {user_id:uid, categoria_nome:'Transporte', nome:'Pedágio'},
+        {user_id:uid, categoria_nome:'Transporte', nome:'Seguro'},
+        {user_id:uid, categoria_nome:'Transporte', nome:'Uber'},
+        // Investimentos (receita)
+        {user_id:uid, categoria_nome:'Investimentos', nome:'Rendimentos'},
+        {user_id:uid, categoria_nome:'Investimentos', nome:'Resgate'},
+      ]);
+    }
+  } catch(e){ console.warn('ensureDefaults/subcategorias:', e.message); }
 }
 
 // ── Load all data from Supabase ──────────────────────
