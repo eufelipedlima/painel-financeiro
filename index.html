@@ -2669,11 +2669,41 @@
       <input type="hidden" id="fStatusTransf" value="Pago">
     </div>
 
-    <!-- Parcela (só Cartão) -->
-    <div class="form-group" id="fParcelaGroup" style="display:none;">
-      <label class="form-label">Parcela <span style="font-weight:400;letter-spacing:0;text-transform:none;">(opcional)</span></label>
-      <input type="text" class="form-input" id="fParcela" placeholder="Ex: 1/6">
-      <div class="form-hint">Deixe em branco para compra à vista</div>
+
+    <!-- Parcelamento (só Cartão) -->
+    <div id="fParcelaGroup" style="display:none">
+      <!-- Toggle parcelada -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:var(--surface-2);border:1.5px solid var(--border-soft);border-radius:9px;cursor:pointer;margin-bottom:0" onclick="toggleParcelada()">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text-1)">💳 Compra parcelada?</div>
+          <div style="font-size:11.5px;color:var(--text-3);margin-top:2px">Gera lançamento em cada mês automaticamente</div>
+        </div>
+        <div id="parceladaToggle" style="width:42px;height:24px;border-radius:99px;background:var(--surface-3);border:2px solid var(--border);transition:.2s ease;position:relative;flex-shrink:0">
+          <div id="parceladaThumb" style="width:18px;height:18px;border-radius:50%;background:var(--text-3);position:absolute;top:1px;left:1px;transition:.2s ease"></div>
+        </div>
+      </div>
+
+      <!-- Parcelamento options (expanded) -->
+      <div id="parceladaOptions" style="display:none;margin-top:8px;padding:14px;background:var(--surface-2);border-radius:9px;border:1.5px solid var(--accent-soft)">
+        <!-- Mode toggle -->
+        <div style="display:flex;gap:6px;margin-bottom:12px">
+          <button type="button" id="modeValorParcela" class="freq-btn active" onclick="setParcelaMode('parcela')" style="flex:1;font-size:12px">Valor por parcela</button>
+          <button type="button" id="modeValorTotal" class="freq-btn" onclick="setParcelaMode('total')" style="flex:1;font-size:12px">Valor total</button>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" id="parcelaValorLbl">Valor por parcela (R$)</label>
+            <input type="number" class="form-input" id="parcelaValorInput" min="0.01" step="0.01" placeholder="0,00" oninput="calcParcela()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nº de parcelas</label>
+            <input type="number" class="form-input" id="parcelaNInput" min="2" max="72" step="1" placeholder="Ex: 12" oninput="calcParcela()">
+          </div>
+        </div>
+        <div id="parcelaPreview" style="margin-top:8px;padding:10px 12px;background:var(--accent-soft);border-radius:7px;font-size:12.5px;font-weight:600;color:var(--accent-2);display:none"></div>
+      </div>
+      <!-- Hidden input kept for compatibility -->
+      <input type="hidden" id="fParcela" value="">
     </div>
 
     <div class="form-divider"></div>
@@ -5677,6 +5707,75 @@ function applyImpact(entry){
   }
 }
 
+
+// ── Installment (parcelamento) logic ───────────────────────
+let _parcelada = false;
+let _parcelaMode = 'parcela'; // 'parcela' or 'total'
+
+function toggleParcelada(){
+  _parcelada = !_parcelada;
+  const tog = document.getElementById('parceladaToggle');
+  const thumb = document.getElementById('parceladaThumb');
+  const opts = document.getElementById('parceladaOptions');
+  if(tog){ tog.style.background = _parcelada ? 'var(--accent)' : 'var(--surface-3)'; }
+  if(thumb){ thumb.style.left = _parcelada ? '19px' : '1px'; thumb.style.background = _parcelada ? '#fff' : 'var(--text-3)'; }
+  if(opts){ opts.style.display = _parcelada ? 'block' : 'none'; }
+  if(!_parcelada){ document.getElementById('parcelaPreview').style.display='none'; }
+  calcParcela();
+}
+
+function setParcelaMode(mode){
+  _parcelaMode = mode;
+  document.getElementById('modeValorParcela').classList.toggle('active', mode==='parcela');
+  document.getElementById('modeValorTotal').classList.toggle('active', mode==='total');
+  document.getElementById('parcelaValorLbl').textContent = mode==='parcela' ? 'Valor por parcela (R$)' : 'Valor total (R$)';
+  calcParcela();
+}
+
+function calcParcela(){
+  if(!_parcelada) return;
+  const n = parseInt(document.getElementById('parcelaNInput').value)||0;
+  const v = parseFloat(document.getElementById('parcelaValorInput').value)||0;
+  const prev = document.getElementById('parcelaPreview');
+  if(n<1||v<=0){ prev.style.display='none'; return; }
+
+  let valorParcela, valorTotal;
+  if(_parcelaMode==='parcela'){
+    valorParcela = v;
+    valorTotal = Math.round(v*n*100)/100;
+  } else {
+    valorTotal = v;
+    valorParcela = Math.round(v/n*100)/100;
+  }
+  prev.style.display='block';
+  prev.textContent = `${n}x de ${fmtBRL(valorParcela)} = Total: ${fmtBRL(valorTotal)}`;
+
+  // Sync main valor field with per-installment value
+  document.getElementById('fValor').value = valorParcela.toFixed(2);
+}
+
+function resetParcelada(){
+  _parcelada = false;
+  _parcelaMode = 'parcela';
+  const tog = document.getElementById('parceladaToggle');
+  const thumb = document.getElementById('parceladaThumb');
+  const opts = document.getElementById('parceladaOptions');
+  const prev = document.getElementById('parcelaPreview');
+  if(tog){ tog.style.background='var(--surface-3)'; }
+  if(thumb){ thumb.style.left='1px'; thumb.style.background='var(--text-3)'; }
+  if(opts){ opts.style.display='none'; }
+  if(prev){ prev.style.display='none'; }
+  const vi = document.getElementById('parcelaValorInput');
+  const ni = document.getElementById('parcelaNInput');
+  if(vi) vi.value='';
+  if(ni) ni.value='';
+  const ml = document.getElementById('modeValorParcela');
+  const mt = document.getElementById('modeValorTotal');
+  if(ml) ml.classList.add('active');
+  if(mt) mt.classList.remove('active');
+  document.getElementById('fParcela').value='';
+}
+
 // ── Recurring transactions ──────────────────────────────────
 let _recorrente = false;
 let _recorrenciaFreq = 'mensal';
@@ -6227,6 +6326,8 @@ function openDrawer(){
   // Hide delete button for new entries
   const delBtnNew = document.getElementById('drawerDeleteBtn');
   if(delBtnNew) delBtnNew.style.display = 'none';
+  // Reset parcelada
+  resetParcelada();
   // Reset recurring toggle
   _recorrente = false;
   _recorrenciaFreq = 'mensal';
