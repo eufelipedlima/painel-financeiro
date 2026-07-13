@@ -2846,9 +2846,21 @@ async function handleAuth() {
     }
     if(result.error) {
       errEl.style.color='var(--negative)';
-      const msg = result.error.message;
-      errEl.textContent = msg.includes('Invalid login') ? 'E-mail ou senha incorretos.' :
-                          msg.includes('already registered') ? 'E-mail já cadastrado.' : msg;
+      const msg = result.error.message || '';
+      errEl.textContent =
+        msg.includes('Invalid login') || msg.includes('invalid_credentials')
+          ? 'E-mail ou senha incorretos. Verifique e tente novamente.' :
+        msg.includes('already registered') || msg.includes('User already registered')
+          ? 'Este e-mail já está cadastrado. Tente entrar.' :
+        msg.includes('Email not confirmed')
+          ? 'E-mail não confirmado. Verifique sua caixa de entrada e clique no link enviado.' :
+        msg.includes('too many requests') || msg.includes('rate limit')
+          ? 'Muitas tentativas. Aguarde alguns minutos e tente novamente.' :
+        msg.includes('Password should')
+          ? 'A senha deve ter pelo menos 6 caracteres.' :
+        msg.includes('network') || msg.includes('fetch')
+          ? 'Erro de conexão. Verifique sua internet.' :
+          'Erro: ' + msg;
       btn.disabled=false;
       btn.textContent = isRegister ? 'Criar conta' : 'Entrar';
     }
