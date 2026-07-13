@@ -2574,7 +2574,7 @@
         <label class="form-label">Data</label>
         <input type="date" class="form-input" id="fData">
       </div>
-      <div class="form-group">
+      <div class="form-group" id="fValorGroup">
         <label class="form-label">Valor (R$)</label>
         <input type="number" step="0.01" min="0" class="form-input" id="fValor" placeholder="0,00">
       </div>
@@ -5717,10 +5717,13 @@ function toggleParcelada(){
   const tog = document.getElementById('parceladaToggle');
   const thumb = document.getElementById('parceladaThumb');
   const opts = document.getElementById('parceladaOptions');
+  const valGrp = document.getElementById('fValorGroup');
   if(tog){ tog.style.background = _parcelada ? 'var(--accent)' : 'var(--surface-3)'; }
   if(thumb){ thumb.style.left = _parcelada ? '19px' : '1px'; thumb.style.background = _parcelada ? '#fff' : 'var(--text-3)'; }
   if(opts){ opts.style.display = _parcelada ? 'block' : 'none'; }
-  if(!_parcelada){ document.getElementById('parcelaPreview').style.display='none'; }
+  // Hide main valor field when parcelada (value is set by calcParcela)
+  if(valGrp){ valGrp.style.display = _parcelada ? 'none' : 'block'; }
+  if(!_parcelada){ document.getElementById('parcelaPreview').style.display='none'; document.getElementById('fValor').value=''; }
   calcParcela();
 }
 
@@ -5774,6 +5777,8 @@ function resetParcelada(){
   if(ml) ml.classList.add('active');
   if(mt) mt.classList.remove('active');
   document.getElementById('fParcela').value='';
+  const vg = document.getElementById('fValorGroup');
+  if(vg) vg.style.display='block';
 }
 
 // ── Recurring transactions ──────────────────────────────────
