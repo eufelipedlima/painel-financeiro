@@ -4765,14 +4765,20 @@ function renderPending(){
       <td>${t.categoria||''}</td>
       <td>${urgencyPill(days)}</td>
       <td class="val-cell">${fmtBRL(t.valor)}</td>
-      <td><button class="pend-confirm-btn ${isRec?'receita':'despesa'}" data-id="${t._id}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
-        ${isRec ? 'Recebi' : 'Paguei'}
-      </button></td>
+      <td style="white-space:nowrap;display:flex;gap:5px;align-items:center">
+        <button class="pend-confirm-btn ${isRec?'receita':'despesa'}" data-id="${t._id}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+          ${isRec ? 'Recebi' : 'Paguei'}
+        </button>
+        <button class="tbl-edit-btn pend-edit-btn" data-id="${t._id}" data-src="transacoes" title="Editar" style="margin:0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+      </td>
     </tr>`;
   }).join('');
   body.querySelectorAll('.pend-confirm-btn').forEach(btn => {
     btn.onclick = () => markEntryAsPaid(parseInt(btn.dataset.id));
+  });
+  body.querySelectorAll('.pend-edit-btn').forEach(btn => {
+    btn.onclick = (e) => { e.stopPropagation(); openEditDrawer(parseInt(btn.dataset.id), 'transacoes'); };
   });
   if(isMobile()) renderMobileCards(pend,'mobilePendList',{emptyMsg:'Nenhuma pendência neste mês.'});
 }
@@ -5516,14 +5522,20 @@ function renderAtrasadas(){
       <td>${t.categoria||''}</td>
       <td><span class="urgency-pill overdue">${days===0?'Vence hoje':`Atrasado ${daysAbs}d`}</span></td>
       <td class="val-cell">${fmtBRL(t.valor)}</td>
-      <td><button class="pend-confirm-btn ${isRec?'receita':'despesa'}" data-id="${t._id}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
-        ${isRec?'Recebi':'Paguei'}
-      </button></td>
+      <td style="white-space:nowrap;display:flex;gap:5px;align-items:center">
+        <button class="pend-confirm-btn ${isRec?'receita':'despesa'}" data-id="${t._id}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+          ${isRec?'Recebi':'Paguei'}
+        </button>
+        <button class="tbl-edit-btn atras-edit-btn" data-id="${t._id}" data-src="transacoes" title="Editar" style="margin:0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+      </td>
     </tr>`;
   }).join('');
   body.querySelectorAll('.pend-confirm-btn').forEach(btn => {
     btn.onclick = () => markEntryAsPaid(parseInt(btn.dataset.id));
+  });
+  body.querySelectorAll('.atras-edit-btn').forEach(btn => {
+    btn.onclick = (e) => { e.stopPropagation(); openEditDrawer(parseInt(btn.dataset.id), 'transacoes'); };
   });
   if(isMobile()) renderMobileCards([...rows].sort((a,b)=>parseDate(a.data)-parseDate(b.data)),'mobileAtrasadasList',{emptyMsg:'Nenhuma transação atrasada.'});
 }
