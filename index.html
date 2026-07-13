@@ -2675,7 +2675,7 @@
       <!-- Toggle parcelada -->
       <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:var(--surface-2);border:1.5px solid var(--border-soft);border-radius:9px;cursor:pointer;margin-bottom:0" onclick="toggleParcelada()">
         <div>
-          <div style="font-size:13px;font-weight:600;color:var(--text-1)">💳 Compra parcelada?</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text-1)" id="parceladaLabel">💳 Compra parcelada?</div>
           <div style="font-size:11.5px;color:var(--text-3);margin-top:2px">Gera lançamento em cada mês automaticamente</div>
         </div>
         <div id="parceladaToggle" style="width:42px;height:24px;border-radius:99px;background:var(--surface-3);border:2px solid var(--border);transition:.2s ease;position:relative;flex-shrink:0">
@@ -5718,6 +5718,9 @@ let _parcelaMode = 'parcela'; // 'parcela' or 'total'
 
 function toggleParcelada(){
   _parcelada = !_parcelada;
+  // Update label based on type
+  const lbl = document.getElementById('parceladaLabel');
+  if(lbl) lbl.textContent = formType==='Cartão' ? '💳 Compra parcelada?' : '📋 Despesa parcelada?';
   const tog = document.getElementById('parceladaToggle');
   const thumb = document.getElementById('parceladaThumb');
   const opts = document.getElementById('parceladaOptions');
@@ -6434,9 +6437,15 @@ function setFormType(type){
   ).join('');
   document.getElementById('rowStatusFormaPagto').style.display = (isCartao || isTransf) ? 'none' : '';
   document.getElementById('fStatusTransfGroup').style.display = isTransf ? '' : 'none';
-  document.getElementById('fParcelaGroup').style.display = isCartao ? '' : 'none';
+  const isDespOrCartao = isCartao || type==='Despesa';
+  document.getElementById('fParcelaGroup').style.display = isDespOrCartao ? '' : 'none';
+  // Hide recurring toggle for cartão (installments handle it)
+  const recRow = document.getElementById('rowRecorrente');
+  if(recRow) recRow.style.display = (isCartao||isTransf) ? 'none' : '';
   // Reset subcategoria
   document.getElementById('fSubcategoriaGroup').style.display = 'none';
+  const parcLbl = document.getElementById('parceladaLabel');
+  if(parcLbl) parcLbl.textContent = isCartao ? '💳 Compra parcelada?' : '📋 Despesa parcelada?';
   document.getElementById('fSubcategoria').innerHTML = '';
   if(!isTransf) setTimeout(updateSubcategorias, 50);
 }
@@ -6563,13 +6572,69 @@ function saveEntry(){
     if(fat) fat.valorTotal = Math.round((fat.valorTotal + valor) * 100) / 100;
   } else {
     const isTransf = formType === 'Transferência';
+    const conta = document.getElementById('fConta').value;
+    const catVal = isTransf ? 'Transferência entre Contas' : document.getElementById('fCategoria').value;
+    const fPagto = isTransf ? 'Transferência' : document.getElementById('fFormaPagto').value;
+    const fStatus = isTransf ? document.getElementById('fStatusTransf').value : document.getElementById('fStatus').value;
+
+    // ── Despesa parcelada ──────────────────────────────────
+    if(_parcelada && formType === 'Despesa'){
+      const n = parseInt(document.getElementById('parcelaNInput').value)||1;
+      const vInput = parseFloat(document.getElementById('parcelaValorInput').value)||valor;
+      const vParcela = _parcelaMode === 'total'
+        ? Math.round(vInput/n*100)/100
+        : vInput;
+      const parcRecId = 'parc-' + Date.now() + '-' + Math.random().toString(36).slice(2,7);
+
+      for(let i=0; i<n; i++){
+        const baseDate = parseDate(data);
+        const futDate = new Date(baseDate.getFullYear(), baseDate.getMonth() + i, baseDate.getDate());
+        const parcelaLabel = `${i+1}/${n}`;
+        const futEntry = {
+          _id: _nextId++,
+          data: localDateStr(futDate),
+          descricao: `${descricao} (${parcelaLabel})`,
+          tipo: 'Despesa',
+          categoria: catVal,
+          subcategoria,
+          conta,
+          contaDestino: null,
+          formaPagamento: fPagto,
+          status: i === 0 ? fStatus : 'Pendente', // first gets current status
+          valor: vParcela,
+          obs: [obs, 'PARC:'+parcRecId].filter(Boolean).join(' | '),
+          _source: 'transacoes', _new: true,
+          recorrente: false,
+          recorrenciaId: parcRecId,
+          recorrenciaFreq: null
+        };
+        DATA.transacoes.push(futEntry);
+        pendingSync.push(futEntry);
+        dbSaveTransaction(futEntry);
+        // Update account balance for paid installments
+        if(futEntry.status === 'Pago'){
+          const co = DATA.contas.find(c=>c.conta===conta);
+          if(co){ co.saldoAtual=Math.round((co.saldoAtual-vParcela)*100)/100; }
+          DATA.saldoTotal = Math.round((DATA.saldoTotal-vParcela)*100)/100;
+        }
+        const fm = `${futDate.getFullYear()}-${String(futDate.getMonth()+1).padStart(2,'0')}`;
+        if(!months.includes(fm)){ months.push(fm); months.sort(); }
+      }
+      updateSyncBar();
+      showToast(`${n}x de ${fmtBRL(vParcela)} lançadas!`);
+      _recorrente = false; resetParcelada();
+      closeDrawer(); renderAll();
+      return;
+    }
+
+    // ── Normal / Recurring ─────────────────────────────────
     entry = {
       data, descricao, tipo: formType,
-      categoria: isTransf ? 'Transferência entre Contas' : document.getElementById('fCategoria').value,
-      conta: document.getElementById('fConta').value,
+      categoria: catVal,
+      conta,
       contaDestino: isTransf ? document.getElementById('fContaDestino').value : null,
-      formaPagamento: isTransf ? 'Transferência' : document.getElementById('fFormaPagto').value,
-      status: isTransf ? document.getElementById('fStatusTransf').value : document.getElementById('fStatus').value,
+      formaPagamento: fPagto,
+      status: fStatus,
       subcategoria: isTransf ? null : subcategoria,
       valor, obs, _source: 'transacoes', _new: true,
       recorrente: _recorrente,
