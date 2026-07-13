@@ -5106,6 +5106,20 @@ async function saveConfigItem(){
     const fechamento = parseInt(document.getElementById('configModalFechamento').value)||null;
     const vencimento = parseInt(document.getElementById('configModalVencimento').value)||null;
     const limite = parseFloat(document.getElementById('configModalLimiteCartao').value)||0;
+
+    // Validate required fields
+    if(!fechamento || fechamento < 1 || fechamento > 31){
+      document.getElementById('configModalFechamento').focus();
+      document.getElementById('configModalFechamento').style.borderColor = 'var(--negative)';
+      showToast('⚠️ Informe o dia de fechamento do cartão (1-31).'); return;
+    }
+    if(!vencimento || vencimento < 1 || vencimento > 31){
+      document.getElementById('configModalVencimento').focus();
+      document.getElementById('configModalVencimento').style.borderColor = 'var(--negative)';
+      showToast('⚠️ Informe o dia de vencimento do cartão (1-31).'); return;
+    }
+    document.getElementById('configModalFechamento').style.borderColor = '';
+    document.getElementById('configModalVencimento').style.borderColor = '';
     const {data} = await db.from('cartoes').insert({user_id:uid, nome, banco, dia_fechamento:fechamento, dia_vencimento:vencimento, limite}).select().single();
     if(data) DATA.cartoes.push({_dbId:data.id, cartao:nome, banco, fechamento, vencimento, limite});
     showToast(`Cartão "${nome}" adicionado.`);
@@ -7210,12 +7224,12 @@ renderAll();
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label">Dia de fechamento</label>
-          <input type="number" min="1" max="31" class="form-input" id="configModalFechamento" placeholder="Ex: 15">
+          <label class="form-label">Dia de fechamento <span style="color:var(--negative)">*</span></label>
+          <input type="number" min="1" max="31" class="form-input" id="configModalFechamento" placeholder="Ex: 15" required>
         </div>
         <div class="form-group">
-          <label class="form-label">Dia de vencimento</label>
-          <input type="number" min="1" max="31" class="form-input" id="configModalVencimento" placeholder="Ex: 22">
+          <label class="form-label">Dia de vencimento <span style="color:var(--negative)">*</span></label>
+          <input type="number" min="1" max="31" class="form-input" id="configModalVencimento" placeholder="Ex: 22" required>
         </div>
       </div>
       <div class="form-group">
