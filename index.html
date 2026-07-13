@@ -3466,19 +3466,20 @@ function refreshMonthPickers(){
 function inMonth(dateStr, key){ return monthKey(parseDate(dateStr)) === key; }
 function getMonthTransacoes(key){ return DATA.transacoes.filter(t => inMonth(t.data, key)); }
 function getCartaoFaturaMonth(compra){
+  // Convention: the invoice is named by the month you PAY, not when you spend.
+  // With close=29:
+  //   June 12 (≤29) → July invoice  (+1 month)
+  //   June 29 (≤29) → July invoice  (+1 month)
+  //   June 30 (>29) → August invoice (+2 months)
   const cartaoObj = DATA.cartoes.find(c => c.cartao === compra.cartao);
   const d = parseDate(compra.data);
   if(!cartaoObj || !cartaoObj.fechamento){
     return monthKey(d);
   }
   const dia = d.getDate();
-  if(dia <= cartaoObj.fechamento){
-    return monthKey(d);
-  } else {
-    const next = new Date(d.getTime());
-    next.setMonth(next.getMonth() + 1);
-    return monthKey(next);
-  }
+  const monthsAhead = dia <= cartaoObj.fechamento ? 1 : 2;
+  const invoice = new Date(d.getFullYear(), d.getMonth() + monthsAhead, 1);
+  return monthKey(invoice);
 }
 function getMonthCartao(key){ return DATA.cartaoCompras.filter(t => getCartaoFaturaMonth(t) === key); }
 
