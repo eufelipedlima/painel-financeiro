@@ -1979,6 +1979,59 @@
   #recorrenteToggle.on{ background:var(--accent); border-color:var(--accent); }
   #recorrenteToggle.on #recorrenteThumb{ left:19px; background:#fff; }
 
+
+  /* ── Onboarding banner ── */
+  .onboarding-banner{
+    background:linear-gradient(135deg,#1e3461,#2563EB);
+    border-radius:14px; padding:20px 24px; margin-bottom:18px; color:#fff;
+    box-shadow:0 4px 20px rgba(37,99,235,0.25);
+    position:relative; overflow:hidden;
+  }
+  .onboarding-banner::before{
+    content:''; position:absolute; right:-40px; top:-40px;
+    width:180px; height:180px; border-radius:50%;
+    background:rgba(255,255,255,0.05);
+  }
+  .onboarding-title{ font-size:17px; font-weight:700; margin-bottom:4px; }
+  .onboarding-sub{ font-size:12.5px; opacity:.8; margin-bottom:16px; }
+  .onboarding-steps{ display:flex; flex-direction:column; gap:8px; }
+  .onboarding-step{
+    display:flex; align-items:center; gap:10px; padding:10px 14px;
+    background:rgba(255,255,255,0.1); border-radius:9px; cursor:pointer;
+    border:1px solid rgba(255,255,255,0.15); transition:.12s ease;
+    text-decoration:none; color:#fff;
+  }
+  .onboarding-step:hover{ background:rgba(255,255,255,0.18); }
+  .onboarding-step.done{ opacity:.6; }
+  .onboarding-step-icon{
+    width:28px; height:28px; border-radius:50%; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(255,255,255,0.15); font-size:14px;
+  }
+  .onboarding-step.done .onboarding-step-icon{
+    background:rgba(16,185,129,0.4); color:#fff;
+  }
+  .onboarding-step-text{ flex:1; }
+  .onboarding-step-label{ font-size:13px; font-weight:600; }
+  .onboarding-step-desc{ font-size:11px; opacity:.75; margin-top:1px; }
+  .onboarding-dismiss{
+    position:absolute; top:12px; right:14px; background:rgba(255,255,255,0.15);
+    border:none; color:#fff; border-radius:6px; padding:4px 10px;
+    font-size:11.5px; cursor:pointer; font-family:Inter,sans-serif; font-weight:600;
+  }
+  .onboarding-progress{
+    display:flex; align-items:center; gap:8px; margin-bottom:14px;
+  }
+  .onboarding-bar-wrap{ flex:1; height:4px; background:rgba(255,255,255,0.2); border-radius:99px; }
+  .onboarding-bar-fill{ height:100%; border-radius:99px; background:#fff; transition:width .4s ease; }
+  .onboarding-pct{ font-size:11.5px; opacity:.8; font-weight:600; }
+
+  @media(max-width:768px){
+    .onboarding-banner{ padding:16px 16px; }
+    .onboarding-steps{ gap:6px; }
+    .onboarding-step{ padding:9px 12px; }
+  }
+
 </style>
 </head>
 <body>
@@ -1992,6 +2045,14 @@
     <div class="login-tabs">
       <button class="login-tab active" id="tabLogin" onclick="showLoginTab('login')">Entrar</button>
       <button class="login-tab" id="tabRegister" onclick="showLoginTab('register')">Criar conta</button>
+    </div>
+    <!-- Register-only fields (hidden on login) -->
+    <div id="registerFields" style="display:none">
+      <div style="display:flex;gap:10px;margin-bottom:12px">
+        <input type="text" class="login-input" id="loginNome" placeholder="Seu nome" style="margin-bottom:0;flex:1" autocomplete="given-name">
+        <input type="text" class="login-input" id="loginSobrenome" placeholder="Sobrenome" style="margin-bottom:0;flex:1" autocomplete="family-name">
+      </div>
+      <input type="tel" class="login-input" id="loginTelefone" placeholder="Telefone (opcional)" autocomplete="tel">
     </div>
     <input type="email" class="login-input" id="loginEmail" placeholder="Seu e-mail" autocomplete="email">
     <input type="password" class="login-input" id="loginPass" placeholder="Senha" autocomplete="current-password">
@@ -2097,6 +2158,18 @@
           <div class="page-sub" id="ovSubtitle">—</div>
         </div>
         <div class="month-picker" id="monthPickerRoot"></div>
+      </div>
+
+      <!-- Onboarding banner (hidden after dismissed or completed) -->
+      <div class="onboarding-banner" id="onboardingBanner" style="display:none">
+        <button class="onboarding-dismiss" onclick="dismissOnboarding()">✕ Dispensar</button>
+        <div class="onboarding-title" id="onboardingTitle">👋 Bem-vindo(a) ao Painel Financeiro!</div>
+        <div class="onboarding-sub">Siga os passos abaixo para configurar sua conta e começar a usar.</div>
+        <div class="onboarding-progress">
+          <div class="onboarding-bar-wrap"><div class="onboarding-bar-fill" id="onboardingBar" style="width:0%"></div></div>
+          <span class="onboarding-pct" id="onboardingPct">0%</span>
+        </div>
+        <div class="onboarding-steps" id="onboardingSteps"></div>
       </div>
 
       <!-- Row 1: 4 compact KPI cards -->
@@ -2969,7 +3042,10 @@ let currentUser = null;
 function showLoginTab(tab) {
   document.getElementById('tabLogin').classList.toggle('active', tab==='login');
   document.getElementById('tabRegister').classList.toggle('active', tab==='register');
-  document.getElementById('loginBtn').textContent = tab==='login' ? 'Entrar' : 'Criar conta';
+  document.getElementById('loginBtn').textContent = tab==='login' ? 'Entrar' : 'Criar conta →';
+  document.getElementById('registerFields').style.display = tab==='register' ? 'block' : 'none';
+  document.getElementById('loginPassConfirm').style.display = tab==='register' ? 'block' : 'none';
+  document.getElementById('loginError').textContent = '';
   document.getElementById('loginPassConfirm').style.display = tab==='register' ? '' : 'none';
   document.getElementById('loginError').textContent = '';
 }
@@ -2988,15 +3064,23 @@ async function handleAuth() {
     if(isRegister) {
       const confirm = document.getElementById('loginPassConfirm').value;
       if(pass !== confirm) { errEl.textContent = 'As senhas não coincidem.'; btn.disabled=false; btn.textContent='Criar conta'; return; }
+      const nome = document.getElementById('loginNome')?.value.trim()||'';
+      const sobrenome = document.getElementById('loginSobrenome')?.value.trim()||'';
+      const telefone = document.getElementById('loginTelefone')?.value.trim()||'';
+      if(!nome){ errEl.textContent='Informe seu nome.'; btn.disabled=false; btn.textContent='Criar conta →'; return; }
       result = await db.auth.signUp({ email, password: pass });
       if(!result.error && result.data.user) {
         currentUser = result.data.user;
+        // Save profile data
+        try {
+          await db.from('perfis').upsert({user_id:currentUser.id, nome, sobrenome, telefone}, {onConflict:'user_id'});
+        } catch(e){ console.warn('perfil save:', e); }
         errEl.style.color='var(--positive)';
-        errEl.textContent = 'Conta criada! Entrando...';
+        errEl.textContent = `Bem-vindo(a), ${nome}! Entrando...`;
         setTimeout(async () => {
           showAppScreen();
           await loadAllData();
-        }, 500);
+        }, 600);
         return;
       }
     } else {
@@ -4884,6 +4968,7 @@ function isMobile(){ return window.innerWidth <= 768; }
 function renderView(view){
   if(view === 'overview'){
     document.getElementById('ovSubtitle').textContent = 'Referente a ' + monthLabel(currentMonth);
+    renderOnboarding();
     renderKPIs(currentMonth);
     renderOvFatura(currentMonth);
     renderFluxoChart(currentMonth);
@@ -5812,6 +5897,84 @@ function applyImpact(entry){
 }
 
 
+
+
+// ── Onboarding checklist ───────────────────────────────────
+function renderOnboarding(){
+  const banner = document.getElementById('onboardingBanner');
+  if(!banner) return;
+
+  // Don't show if dismissed
+  if(localStorage.getItem('pf-onboarding-dismissed') === '1'){ banner.style.display='none'; return; }
+
+  // Check completion of each step
+  const p = DATA.perfil||{};
+  const steps = [
+    {
+      id:'profile',
+      done: !!(p.nome && p.nome.trim()),
+      icon:'👤', label:'Complete seu perfil',
+      desc:'Adicione seu nome e telefone',
+      action:()=>{ mobileNavigate?mobileNavigate('configuracoes'):null; [...document.querySelectorAll('.nav-item')].find(n=>n.dataset.view==='configuracoes')?.click(); }
+    },
+    {
+      id:'conta',
+      done: DATA.contas.filter(c=>!c.arquivado).length > 0,
+      icon:'🏦', label:'Adicione uma conta bancária',
+      desc:'Conta Corrente, Poupança, Carteira...',
+      action:()=>{ [...document.querySelectorAll('.nav-item')].find(n=>n.dataset.view==='configuracoes')?.click(); setTimeout(()=>showConfigTab('contas'),300); }
+    },
+    {
+      id:'cartao',
+      done: DATA.cartoes.length > 0,
+      icon:'💳', label:'Adicione um cartão de crédito',
+      desc:'Opcional — para controlar faturas',
+      action:()=>{ [...document.querySelectorAll('.nav-item')].find(n=>n.dataset.view==='configuracoes')?.click(); setTimeout(()=>showConfigTab('cartoes'),300); }
+    },
+    {
+      id:'lancamento',
+      done: DATA.transacoes.length > 0 || DATA.cartaoCompras.length > 0,
+      icon:'📝', label:'Faça seu primeiro lançamento',
+      desc:'Receita, despesa ou compra no cartão',
+      action:()=>{ openDrawer?.(); }
+    },
+  ];
+
+  const doneCount = steps.filter(s=>s.done).length;
+  const pct = Math.round(doneCount/steps.length*100);
+
+  // Hide banner if all done
+  if(doneCount === steps.length){
+    banner.style.display='none';
+    localStorage.setItem('pf-onboarding-dismissed','1');
+    return;
+  }
+
+  banner.style.display='block';
+
+  // Update progress
+  const nameStr = p.nome ? `👋 Olá, ${p.nome}!` : '👋 Bem-vindo(a) ao Painel Financeiro!';
+  document.getElementById('onboardingTitle').textContent = nameStr;
+  document.getElementById('onboardingBar').style.width = pct+'%';
+  document.getElementById('onboardingPct').textContent = doneCount+' de '+steps.length+' concluídos';
+
+  // Render steps
+  document.getElementById('onboardingSteps').innerHTML = steps.map(s=>`
+    <div class="onboarding-step${s.done?' done':''}" onclick="(${s.action.toString()})()">
+      <div class="onboarding-step-icon">${s.done?'✓':s.icon}</div>
+      <div class="onboarding-step-text">
+        <div class="onboarding-step-label">${s.done?'<s>'+s.label+'</s>':s.label}</div>
+        <div class="onboarding-step-desc">${s.desc}</div>
+      </div>
+      ${!s.done?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>':''}
+    </div>`).join('');
+}
+
+function dismissOnboarding(){
+  localStorage.setItem('pf-onboarding-dismissed','1');
+  const b = document.getElementById('onboardingBanner');
+  if(b){ b.style.opacity='0'; b.style.transition='opacity .3s'; setTimeout(()=>b.style.display='none',300); }
+}
 
 // ── Adjust balance ─────────────────────────────────────────
 let _adjustBalConta = null;
