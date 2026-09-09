@@ -64,7 +64,7 @@
     font-family:'Fraunces',serif; font-weight:600; font-size:16px; color:#fff;
     flex-shrink:0; letter-spacing:0;
   }
-  .brand-name{font-family:'Fraunces',serif; font-weight:600; font-size:15.5px; letter-spacing:-0.2px;}
+  .brand-name{font-family:'Fraunces',serif; font-weight:600; font-size:15.5px; letter-spacing:-0.2px; line-height:1.4;}
   .brand-sub{font-size:10.5px; color:var(--text-3); margin-top:1px; font-weight:400;}
 
   nav.nav{display:flex; flex-direction:column; gap:2px; margin-bottom:20px;}
@@ -91,12 +91,12 @@
     border:1px solid var(--border-soft);
   }
   .sidebar-total .lbl{font-size:10.5px; text-transform:uppercase; letter-spacing:1px; color:var(--text-3); margin-bottom:6px;}
-  .sidebar-total .val{font-family:'Inter',sans-serif; font-weight:600; font-size:19px;}
+  .sidebar-total .val{font-family:'Inter',sans-serif; font-weight:700; font-size:20px; color:var(--text-1);}
 
   /* Main */
   .main{flex:1; min-width:0; padding:28px 36px 60px;}
   .topbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; gap:20px;}
-  .page-title{font-family:'Fraunces',serif; font-size:25px; font-weight:600; letter-spacing:-0.2px;}
+  .page-title{font-family:'Fraunces',serif; font-size:25px; font-weight:600; letter-spacing:-0.2px; line-height:1.35; color:var(--accent-2); padding-top:2px;}
   .page-sub{font-size:13px; color:var(--text-2); margin-top:3px;}
 
   /* Month picker */
@@ -145,11 +145,16 @@
   .kpi-icon.green{background:var(--positive-soft); color:var(--positive);}
   .kpi-icon.red{background:var(--negative-soft); color:var(--negative);}
   .kpi-icon.gold{background:var(--warning-soft); color:var(--warning);}
-  .kpi-value{font-family:'Inter',sans-serif; font-weight:600; font-size:25px; letter-spacing:-0.4px;}
+  .kpi-value{font-family:'Inter',sans-serif; font-weight:700; font-size:27px; letter-spacing:-0.5px; color:var(--text-1);}
   .kpi-delta{display:inline-flex; align-items:center; gap:4px; font-size:11.5px; margin-top:9px; font-weight:500;}
   .kpi-delta svg{width:11px; height:11px;}
   .kpi-delta.up{color:var(--positive);}
   .kpi-delta.down{color:var(--negative);}
+  .kpi-subbreak{ margin-top:11px; padding-top:10px; border-top:1px solid var(--border-soft); }
+  .kpi-subbar{ height:4px; border-radius:99px; background:var(--negative-soft); overflow:hidden; display:flex; }
+  .kpi-subbar-fill{ height:100%; background:var(--positive); border-radius:99px 0 0 99px; }
+  .kpi-subtext{ display:flex; justify-content:space-between; gap:8px; margin-top:6px; font-size:10.5px; color:var(--text-2); }
+  .kpi-subtext b{ color:var(--text-1); font-weight:600; }
   .kpi-delta.flat{color:var(--text-3);}
 
   /* Panels */
@@ -229,11 +234,13 @@
   table.data-table thead th:hover{color:var(--text-1);}
   table.data-table thead th .sort-arrow{opacity:0; margin-left:3px; font-size:9px;}
   table.data-table thead th.sorted .sort-arrow{opacity:1;}
+  table.data-table thead th:has(.row-check){cursor:default;}
+  input.row-check{ width:15px; height:15px; accent-color:var(--accent); cursor:pointer; vertical-align:middle; }
   table.data-table tbody td{padding:12px; border-bottom:1px solid var(--border-soft); color:var(--text-1);}
   table.data-table tbody tr{transition:background .12s ease;}
   table.data-table tbody tr:hover{background:var(--surface-2);}
   table.data-table tbody tr:last-child td{border-bottom:none;}
-  .val-cell{font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap;}
+  .val-cell{font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; font-weight:600; text-align:right; white-space:nowrap; color:var(--text-1);}
   .tag{font-size:10.5px; padding:3px 9px; border-radius:20px; font-weight:600; text-transform:uppercase; letter-spacing:0.3px; white-space:nowrap;}
   .tag.Receita{background:var(--positive-soft); color:var(--positive);}
   .tag.Despesa{background:var(--negative-soft); color:var(--negative);}
@@ -326,6 +333,35 @@
     50%{box-shadow:0 4px 28px rgba(156,107,29,0.6), 0 0 0 16px rgba(156,107,29,0);}
   }
 
+  /* ---------- Transaction selection bar ---------- */
+  .tx-selection-bar{
+    position:fixed; left:50%; bottom:32px; transform:translate(-50%,90px);
+    display:flex; align-items:center; gap:16px;
+    background:#211B16; color:#F2EBDD; border:1px solid #3A2E20;
+    padding:12px 14px 12px 20px; border-radius:99px; z-index:110;
+    box-shadow:0 10px 32px rgba(0,0,0,0.35);
+    font-family:'Inter',sans-serif; font-size:13.5px; font-weight:500;
+    opacity:0; pointer-events:none;
+    transition:transform .22s cubic-bezier(.2,.8,.3,1), opacity .22s ease;
+    white-space:nowrap;
+  }
+  .tx-selection-bar.visible{ opacity:1; pointer-events:auto; transform:translate(-50%,0); }
+  .tx-selection-actions{ display:flex; align-items:center; gap:8px; }
+  .tx-sel-btn{
+    border:none; border-radius:99px; padding:9px 16px; font-size:13px; font-weight:600;
+    cursor:pointer; font-family:'Inter',sans-serif; transition:.15s ease;
+  }
+  .tx-sel-btn.ghost{ background:rgba(255,255,255,0.08); color:#F2EBDD; }
+  .tx-sel-btn.ghost:hover{ background:rgba(255,255,255,0.15); }
+  .tx-sel-btn.primary{ background:#C9A227; color:#211B16; }
+  .tx-sel-btn.primary:hover{ background:#E0BD4E; }
+  @media(max-width:768px){
+    .tx-selection-bar{ left:12px; right:12px; transform:translateY(90px); bottom:78px; padding:10px 10px 10px 16px; }
+    .tx-selection-bar.visible{ transform:translateY(0); }
+    .tx-selection-actions{ flex:1; }
+    .tx-sel-btn{ flex:1; padding:9px 10px; font-size:12.5px; }
+  }
+
   /* ---------- Drawer ---------- */
   .drawer-overlay{
     position:fixed; inset:0; background:rgba(0,0,0,0.6);
@@ -390,6 +426,7 @@
     border-color:var(--accent); box-shadow:0 0 0 3px rgba(156,107,29,0.18);
   }
   .form-input::placeholder{color:var(--text-3);}
+  .form-input:disabled{ background:var(--surface-3); color:var(--text-2); cursor:not-allowed; font-weight:600; }
   .form-select option{background:var(--surface-2); color:var(--text-1);}
   .form-row{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
   .form-row-3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;}
@@ -448,12 +485,12 @@
 
   /* ---------- Light theme ---------- */
   html.light{
-    --bg: #F1E9D8;
-    --surface: #FBF8F1;
-    --surface-2: #F5EEDE;
-    --surface-3: #EFE5D0;
-    --border: #E1D3B4;
-    --border-soft: #EAE0C8;
+    --bg: #F8F2E5;
+    --surface: #FDFBF6;
+    --surface-2: #F6EFDE;
+    --surface-3: #EFE5CD;
+    --border: #E3D5B3;
+    --border-soft: #EBE1C8;
     --border-hover: #C9B98F;
     --text-1: #2B2116;
     --text-2: #6B5D45;
@@ -1042,7 +1079,7 @@
     font-family:'Fraunces',serif; font-weight:600; font-size:20px; color:#fff;
     margin-bottom:22px;
   }
-  .login-title{ font-family:'Fraunces',serif; font-weight:600; font-size:24px; margin-bottom:4px; }
+  .login-title{ font-family:'Fraunces',serif; font-weight:600; font-size:24px; margin-bottom:4px; line-height:1.35; }
   .login-sub{ font-size:13.5px; color:var(--text-2); margin-bottom:28px; }
   .login-tabs{ display:flex; gap:0; margin-bottom:24px; border-bottom:1px solid var(--border); }
   .login-tab{
@@ -2117,7 +2154,7 @@
 
     <!-- Saldo total (logo abaixo das contas) -->
     <div class="sidebar-saldo-block">
-      <div class="lbl">Saldo total</div>
+      <div class="lbl">Saldo atual</div>
       <div class="val num" id="sidebarSaldo">—</div>
     </div>
 
@@ -2301,6 +2338,7 @@
         <!-- Desktop table (hidden on mobile) -->
         <table class="data-table" id="allTable">
           <thead><tr>
+            <th style="width:34px"><input type="checkbox" class="row-check" id="selectAllTx" title="Selecionar todos"></th>
             <th data-key="data">Data <span class="sort-arrow">▾</span></th>
             <th data-key="descricao">Descrição <span class="sort-arrow">▾</span></th>
             <th data-key="tipo">Tipo <span class="sort-arrow">▾</span></th>
@@ -2621,6 +2659,15 @@
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
   Novo lançamento
 </button>
+
+<!-- Transaction selection bar -->
+<div class="tx-selection-bar" id="txSelectionBar">
+  <span id="txSelectionCount">0 lançamentos selecionados</span>
+  <div class="tx-selection-actions">
+    <button class="tx-sel-btn ghost" onclick="clearTxSelection()">Limpar seleção</button>
+    <button class="tx-sel-btn primary" onclick="openTxPayModalBulk()">Lançar pagamentos</button>
+  </div>
+</div>
 
 <!-- Drawer overlay -->
 <div class="drawer-overlay" id="drawerOverlay"></div>
@@ -3716,11 +3763,18 @@ function getMonthCartao(key){ return DATA.cartaoCompras.filter(t => getCartaoFat
 function computeKPIs(key){
   const trans = getMonthTransacoes(key);
   const cartao = getMonthCartao(key);
-  const receita = trans.filter(t => t.tipo === 'Receita').reduce((s,t)=>s+t.valor,0);
-  const despesaConta = trans.filter(t => t.tipo === 'Despesa' && t.categoria !== 'Pagamento Fatura Cartão').reduce((s,t)=>s+t.valor,0);
+  const receitaTrans = trans.filter(t => t.tipo === 'Receita');
+  const receita = receitaTrans.reduce((s,t)=>s+t.valor,0);
+  const receitaRecebida = receitaTrans.filter(t=>t.status==='Pago').reduce((s,t)=>s+t.valor,0);
+  const receitaAReceber = Math.max(0, receita - receitaRecebida);
+  const despesaContaTrans = trans.filter(t => t.tipo === 'Despesa' && t.categoria !== 'Pagamento Fatura Cartão');
+  const despesaConta = despesaContaTrans.reduce((s,t)=>s+t.valor,0);
+  const despesaPaga = despesaContaTrans.filter(t=>t.status==='Pago').reduce((s,t)=>s+t.valor,0);
+  const despesaAPagar = Math.max(0, despesaConta - despesaPaga);
   const despesaCartao = cartao.reduce((s,t)=>s+t.valor,0);
   const despesa = despesaConta + despesaCartao;
-  return {receita, despesa, resultado: receita - despesa, saldoTotal: DATA.saldoTotal};
+  return {receita, despesa, resultado: receita - despesa, saldoTotal: DATA.saldoTotal,
+    receitaRecebida, receitaAReceber, despesaPaga, despesaAPagar};
 }
 
 function categorySums(key, tipo){
@@ -3795,13 +3849,19 @@ function renderKPIs(key){
   const prevKey = months.includes(shiftMonth(key,-1)) ? shiftMonth(key,-1) : null;
   const kPrev = prevKey ? computeKPIs(prevKey) : null;
 
+  const receitaPct = k.receita > 0 ? Math.min(100, (k.receitaRecebida/k.receita)*100) : 0;
+  const despesaPct = k.despesa > 0 ? Math.min(100, (k.despesaPaga/(k.despesaPaga+k.despesaAPagar||1))*100) : 0;
   const cards = [
-    {label:'Saldo Total', value:k.saldoTotal, icon:'blue', deltaHtml:'<span class="kpi-delta flat">Soma de todas as contas</span>',
+    {label:'Saldo Atual', value:k.saldoTotal, icon:'blue', deltaHtml:'<span class="kpi-delta flat">Soma de todas as contas</span>',
      svg:'<path d="M3 10h18M3 6h18v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6z"/>'},
     {label:'Receita do Mês', value:k.receita, icon:'green', deltaHtml: deltaHTML(k.receita, kPrev?kPrev.receita:null, true),
-     svg:'<path d="M12 19V5M5 12l7-7 7 7"/>'},
+     svg:'<path d="M12 19V5M5 12l7-7 7 7"/>',
+     subHtml:`<div class="kpi-subbreak"><div class="kpi-subbar"><div class="kpi-subbar-fill" style="width:${receitaPct}%"></div></div>
+       <div class="kpi-subtext"><span><b>${fmtBRL(k.receitaRecebida)}</b> recebido</span><span><b>${fmtBRL(k.receitaAReceber)}</b> a receber</span></div></div>`},
     {label:'Despesa do Mês', value:k.despesa, icon:'red', deltaHtml: deltaHTML(k.despesa, kPrev?kPrev.despesa:null, false),
-     svg:'<path d="M12 5v14M5 12l7 7 7-7"/>'},
+     svg:'<path d="M12 5v14M5 12l7 7 7-7"/>',
+     subHtml:`<div class="kpi-subbreak"><div class="kpi-subbar"><div class="kpi-subbar-fill" style="width:${despesaPct}%"></div></div>
+       <div class="kpi-subtext"><span><b>${fmtBRL(k.despesaPaga)}</b> pago</span><span><b>${fmtBRL(k.despesaAPagar)}</b> a pagar</span></div></div>`},
     {label:'Resultado do Mês', value:k.resultado, icon:'gold', deltaHtml: deltaHTML(k.resultado, kPrev?kPrev.resultado:null, true),
      svg:'<path d="M4 19h16M4 15l4-5 4 3 6-8"/>'},
   ];
@@ -3814,6 +3874,7 @@ function renderKPIs(key){
       </div>
       <div class="kpi-value num" id="kpiVal${i}">${fmtBRL(0)}</div>
       ${c.deltaHtml}
+      ${c.subHtml||''}
     </div>`).join('');
   cards.forEach((c,i) => animateValue(document.getElementById('kpiVal'+i), c.value, true));
 }
@@ -4007,6 +4068,7 @@ function renderAllTable(){
     const isRec = r.tipo === 'Receita';
     const statusLabel = r.status === 'Pago' ? '✓ Pago' : r.status === 'Pendente' ? '⏱ Pendente' : '⚠ ' + r.status;
     return `<tr>
+      <td>${isPend ? `<input type="checkbox" class="row-check tx-row-check" data-id="${r._id}" ${_selectedTxIds.has(r._id)?'checked':''}>` : ''}</td>
       <td class="mono">${fmtDateBR(r.data)}</td>
       <td>${r.descricao||''}${r.recorrente?'<span style="font-size:9.5px;background:var(--accent-soft);color:var(--accent-2);padding:1px 5px;border-radius:4px;margin-left:5px;font-weight:700">FIXO</span>':''}</td>
       <td><span class="tag ${r.tipo}">${r.tipo}</span></td>
@@ -4016,12 +4078,33 @@ function renderAllTable(){
       <td class="val-cell">${fmtBRL(r.valor)}</td>
       <td class="tbl-action-cell" style="white-space:nowrap;width:120px">
         <div style="display:flex;align-items:center;justify-content:flex-end;gap:5px">
-          ${isPend ? `<button class="tbl-pay-btn" data-id="${r._id}" data-rec="${isRec}" title="${isRec?'Confirmar recebimento':'Confirmar pagamento'}">${isRec?'Recebi':'Paguei'}</button>` : ''}
+          ${isPend ? `<button class="tbl-pay-btn" data-id="${r._id}" data-rec="${isRec}" title="${isRec?'Confirmar recebimento':'Confirmar pagamento'}">${isRec?'Receber':'Pagar'}</button>` : ''}
           <button class="tbl-edit-btn" data-id="${r._id}" data-src="${r._source}" title="Editar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
         </div>
       </td>
     </tr>`;
   }).join('');
+  const pendIdsOnPage = rows.filter(r=>r.status==='Pendente').map(r=>r._id);
+  body.querySelectorAll('.tx-row-check').forEach(cb => {
+    cb.onclick = (e) => e.stopPropagation();
+    cb.onchange = () => {
+      const id = parseInt(cb.dataset.id);
+      if(cb.checked) _selectedTxIds.add(id); else _selectedTxIds.delete(id);
+      updateTxSelectionBar();
+    };
+  });
+  const selAll = document.getElementById('selectAllTx');
+  if(selAll){
+    selAll.checked = pendIdsOnPage.length>0 && pendIdsOnPage.every(id=>_selectedTxIds.has(id));
+    selAll.onclick = (e) => e.stopPropagation();
+    selAll.onchange = () => {
+      if(selAll.checked) pendIdsOnPage.forEach(id=>_selectedTxIds.add(id));
+      else pendIdsOnPage.forEach(id=>_selectedTxIds.delete(id));
+      renderAllTable();
+      updateTxSelectionBar();
+    };
+  }
+  updateTxSelectionBar();
   body.querySelectorAll('.tbl-edit-btn').forEach(btn => {
     btn.onclick = (e) => { e.stopPropagation(); openEditDrawer(parseInt(btn.dataset.id), btn.dataset.src); };
   });
@@ -4078,7 +4161,7 @@ function renderAllTable(){
           <div class="mob-trans-footer">
             <div class="mob-trans-status-badge ${statusKey}">${statusIcon} ${statusTxt}</div>
             <div class="mob-trans-actions">
-              ${isPend?`<button class="mob-trans-pagar${isRec?' rec':''}" data-id="${t._id}">${isRec?'✓ Recebi':'✓ Paguei'}</button>`:''}
+              ${isPend?`<button class="mob-trans-pagar${isRec?' rec':''}" data-id="${t._id}">${isRec?'✓ Receber':'✓ Pagar'}</button>`:''}
               <button class="mob-trans-edit" data-id="${t._id}">✎ Editar</button>
             </div>
           </div>
@@ -4862,7 +4945,7 @@ function renderPending(){
       <td style="white-space:nowrap;display:flex;gap:5px;align-items:center">
         <button class="pend-confirm-btn ${isRec?'receita':'despesa'}" data-id="${t._id}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
-          ${isRec ? 'Recebi' : 'Paguei'}
+          ${isRec ? 'Receber' : 'Pagar'}
         </button>
         <button class="tbl-edit-btn pend-edit-btn" data-id="${t._id}" data-src="transacoes" title="Editar" style="margin:0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
       </td>
@@ -5047,7 +5130,7 @@ function renderMobileCards(rows, containerId, opts){
       <div class="mob-trans-footer">
         <div class="mob-trans-status-badge ${statusKey}">${statusIcon} ${statusTxt}</div>
         <div class="mob-trans-actions">
-          ${(!isPaid&&opts.showPay!==false)?`<button class="mob-trans-pagar${isRec?' rec':''}" data-id="${t._id}">${isRec?'✓ Recebi':'✓ Paguei'}</button>`:''}
+          ${(!isPaid&&opts.showPay!==false)?`<button class="mob-trans-pagar${isRec?' rec':''}" data-id="${t._id}">${isRec?'✓ Receber':'✓ Pagar'}</button>`:''}
           ${opts.showEdit!==false?`<button class="mob-trans-edit" data-id="${t._id}" data-src="${t._source||'transacoes'}">✎ Editar</button>`:''}
         </div>
       </div>
@@ -5621,7 +5704,7 @@ function renderAtrasadas(){
       <td style="white-space:nowrap;display:flex;gap:5px;align-items:center">
         <button class="pend-confirm-btn ${isRec?'receita':'despesa'}" data-id="${t._id}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
-          ${isRec?'Recebi':'Paguei'}
+          ${isRec?'Receber':'Pagar'}
         </button>
         <button class="tbl-edit-btn atras-edit-btn" data-id="${t._id}" data-src="transacoes" title="Editar" style="margin:0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
       </td>
@@ -6488,16 +6571,58 @@ function saveBudgetLimits(){
 
 // ── Transaction quick pay modal ────────────────────────────
 let _txPayId = null;
+let _txPayBulkIds = null;
+let _selectedTxIds = new Set();
+
+function updateTxSelectionBar(){
+  const bar = document.getElementById('txSelectionBar');
+  if(!bar) return;
+  const n = _selectedTxIds.size;
+  if(n === 0){ bar.classList.remove('visible'); return; }
+  document.getElementById('txSelectionCount').textContent = `${n} lançamento${n===1?'':'s'} selecionado${n===1?'':'s'}`;
+  bar.classList.add('visible');
+}
+function clearTxSelection(){
+  _selectedTxIds.clear();
+  renderAllTable();
+}
+function openTxPayModalBulk(){
+  const ids = Array.from(_selectedTxIds);
+  if(ids.length === 0) return;
+  const entries = ids.map(id=>DATA.transacoes.find(e=>e._id===id)).filter(Boolean);
+  if(entries.length === 0) return;
+  _txPayId = null;
+  _txPayBulkIds = ids;
+  const allRec = entries.every(e=>e.tipo==='Receita');
+  const allDesp = entries.every(e=>e.tipo==='Despesa');
+  const total = entries.reduce((s,e)=>s+e.valor,0);
+  document.getElementById('txPayTitle').textContent = allRec ? 'Confirmar recebimentos' : allDesp ? 'Confirmar pagamentos' : 'Confirmar lançamentos';
+  document.getElementById('txPayDesc').textContent = `${entries.length} lançamentos selecionados · Total ${fmtBRL(total)}`;
+  document.getElementById('txPayData').value = localDateStr();
+  const valorInput = document.getElementById('txPayValor');
+  valorInput.value = total.toFixed(2);
+  valorInput.disabled = true;
+  document.getElementById('txPayValorLabel').textContent = 'Valor total';
+  document.getElementById('txPayConta').innerHTML =
+    DATA.contas.filter(c=>!c.arquivado).map(c=>`<option value="${c.conta}">${c.conta} (${fmtBRL(c.saldoAtual)})</option>`).join('');
+  const overlay = document.getElementById('txPayOverlay');
+  overlay.style.display = 'flex';
+  requestAnimationFrame(()=>overlay.classList.add('open'));
+}
 
 function openTxPayModal(entryId){
   const entry = DATA.transacoes.find(e=>e._id===entryId);
   if(!entry) return;
   _txPayId = entryId;
+  _txPayBulkIds = null;
   const isRec = entry.tipo === 'Receita';
   document.getElementById('txPayTitle').textContent = isRec ? 'Confirmar recebimento' : 'Confirmar pagamento';
   document.getElementById('txPayDesc').textContent = `${entry.descricao} · ${fmtBRL(entry.valor)}`;
   document.getElementById('txPayData').value = localDateStr();
-  document.getElementById('txPayValor').value = entry.valor.toFixed(2);
+  const valorInput = document.getElementById('txPayValor');
+  valorInput.value = entry.valor.toFixed(2);
+  valorInput.disabled = false;
+  document.getElementById('txPayValorLabel').textContent = 'Valor';
   document.getElementById('txPayConta').innerHTML =
     DATA.contas.filter(c=>!c.arquivado).map(c=>`<option value="${c.conta}">${c.conta} (${fmtBRL(c.saldoAtual)})</option>`).join('');
   if(entry.conta) document.getElementById('txPayConta').value = entry.conta;
@@ -6510,8 +6635,49 @@ function closeTxPayModal(){
   overlay.classList.remove('open');
   setTimeout(()=>{ overlay.style.display='none'; }, 250);
   _txPayId = null;
+  _txPayBulkIds = null;
+  document.getElementById('txPayValor').disabled = false;
 }
 async function confirmTxPay(){
+  if(_txPayBulkIds && _txPayBulkIds.length){
+    const conta = document.getElementById('txPayConta').value;
+    const data  = document.getElementById('txPayData').value;
+    let count = 0;
+    for(const id of _txPayBulkIds){
+      const entry = DATA.transacoes.find(e=>e._id===id);
+      if(!entry || entry.status==='Pago') continue;
+      entry.status = 'Pago';
+      entry.data   = data;
+      entry.conta  = conta;
+      const contaObj = DATA.contas.find(c=>c.conta===conta);
+      if(contaObj){
+        const delta = entry.tipo==='Receita' ? entry.valor : -entry.valor;
+        contaObj.saldoAtual = Math.round((contaObj.saldoAtual+delta)*100)/100;
+        DATA.saldoTotal = Math.round((DATA.saldoTotal+delta)*100)/100;
+      }
+      const divMatch = (entry.obs||'').match(/DIV:([^|]+)\|PARC:(\d+)/);
+      if(divMatch){
+        const [,divDbId,parcNumStr]=divMatch;
+        const divida=DATA.dividas.find(dv=>dv._dbId===divDbId);
+        if(divida){
+          const p=(divida.parcelas||[]).find(x=>x.numero===parseInt(parcNumStr));
+          if(p&&p.status!=='Pago'){
+            p.status='Pago';
+            divida.valorRestante=Math.max(0,Math.round((divida.valorRestante-p.valorParcela)*100)/100);
+            if(divida.valorRestante<=0) divida.status='Quitada';
+            dbUpdateParcela(p); dbUpdateDividaRestante(divida);
+          }
+        }
+      }
+      await dbSaveTransaction(entry);
+      _selectedTxIds.delete(id);
+      count++;
+    }
+    showToast(`${count} lançamento${count===1?'':'s'} marcado${count===1?'':'s'} como pago!`);
+    closeTxPayModal();
+    renderAll();
+    return;
+  }
   if(_txPayId===null) return;
   const entry = DATA.transacoes.find(e=>e._id===_txPayId);
   if(!entry) return;
@@ -7805,7 +7971,7 @@ renderAll();
         <input type="date" class="form-input" id="txPayData">
       </div>
       <div class="form-group">
-        <label class="form-label">Valor</label>
+        <label class="form-label" id="txPayValorLabel">Valor</label>
         <input type="number" class="form-input" id="txPayValor" step="0.01">
       </div>
     </div>
