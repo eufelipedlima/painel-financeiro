@@ -1202,11 +1202,11 @@
   }
   .cat-row:hover{ border-color:var(--border-hover); }
   .cat-row.archived{ opacity:.5; }
-  .cat-row-left{ display:flex; align-items:center; gap:8px; min-width:200px; flex-shrink:0; }
-  .cat-row-name{ font-weight:600; font-size:13.5px; color:var(--text-1); }
-  .cat-row-limit{ font-size:11.5px; color:var(--text-3); margin-top:1px; }
-  .cat-row-subs{ flex:1; display:flex; flex-wrap:wrap; align-items:center; gap:5px; padding-top:2px; }
-  .cat-row-actions{ display:flex; gap:4px; flex-shrink:0; padding-top:2px; }
+  .cat-row-left{ display:flex; align-items:center; gap:9px; flex-shrink:0; }
+  .cat-row-name{ font-weight:600; font-size:13.5px; color:var(--text-1); white-space:nowrap; }
+  .cat-row-limit{ font-size:11.5px; color:var(--text-3); white-space:nowrap; }
+  .cat-row-subs{ flex:1; }
+  .cat-row-actions{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
 
   .sub-tag{
     display:inline-flex; align-items:center; gap:4px; padding:4px 10px;
@@ -5725,23 +5725,18 @@ function renderConfiguracoes(){
       return `<div class="cat-row${arq?' archived':''}">
         <div class="cat-row-left">
           <span class="config-tipo-badge ${tipo}" style="flex-shrink:0">${tipo==='Transferência'?'TRA':tipo==='Receita'?'REC':'DES'}</span>
-          <div>
-            <div class="cat-row-name">${c.categoria}</div>
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:2px">
-              ${c.tipo==='Despesa'&&!arq?`<select class="cat-row-group-select" data-id="${c._dbId}" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:${BUDGET_GROUP_COLORS[c.grupo||catGroup(c.categoria,c.tipo)]||'var(--text-3)'};background:none;border:1px solid var(--border);border-radius:5px;padding:2px 6px;cursor:pointer;font-family:Inter,sans-serif;outline:none">
-                ${['Essencial','Não Essencial','Investimento','Dívidas'].map(g=>`<option value="${g}" ${((c.grupo||catGroup(c.categoria,c.tipo))===g)?'selected':''}>${g}</option>`).join('')}
-              </select>`:''}
-              ${c.limite>0&&!arq?`<div class="cat-row-limit">Limite: ${fmtBRL(c.limite)}/mês</div>`:''}
-            </div>
-          </div>
+          <div class="cat-row-name">${c.categoria}</div>
+          ${c.tipo==='Despesa'&&!arq?`<select class="cat-row-group-select" data-id="${c._dbId}" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:${BUDGET_GROUP_COLORS[c.grupo||catGroup(c.categoria,c.tipo)]||'var(--text-3)'};background:none;border:1px solid var(--border);border-radius:5px;padding:2px 6px;cursor:pointer;font-family:Inter,sans-serif;outline:none;flex-shrink:0">
+            ${['Essencial','Não Essencial','Investimento','Dívidas'].map(g=>`<option value="${g}" ${((c.grupo||catGroup(c.categoria,c.tipo))===g)?'selected':''}>${g}</option>`).join('')}
+          </select>`:''}
+          ${c.limite>0&&!arq?`<div class="cat-row-limit">Limite: ${fmtBRL(c.limite)}/mês</div>`:''}
         </div>
-        <div class="cat-row-subs" style="align-items:center">
+        <div class="cat-row-subs"></div>
+        ${subsPanel}
+        <div class="cat-row-actions">
           ${!arq?`<button class="cat-row-sub-toggle cfg-sub-toggle" data-panel="${panelId}" title="${totalSubs} subcategorias">
             ${totalSubs > 0 ? toggleLabel : '+ subcategorias'}
           </button>`:''}
-        </div>
-        ${subsPanel}
-        <div class="cat-row-actions">
           ${!arq?`<button class="cat-action-btn cfg-edit-cat" data-id="${c._dbId}" title="Editar">${EDIT_SVG}</button>`:''}
           <button class="cat-action-btn ${arq?'':'danger'} cfg-arch" data-type="categoria" data-id="${c._dbId}" data-archived="${arq}" data-nome="${c.categoria}" title="${arq?'Reativar':'Arquivar'}">${arq?UNARCH_SVG:ARCH_SVG}</button>
         </div>
