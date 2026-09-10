@@ -235,6 +235,19 @@
   }
   .search-box input::placeholder{color:var(--text-3);}
   .chip-row{display:flex; gap:6px; flex-wrap:wrap;}
+  .tx-filters-panel{
+    display:none; gap:14px; flex-wrap:wrap; align-items:flex-end;
+    background:var(--surface-2); border:1px solid var(--border-soft); border-radius:10px;
+    padding:14px 16px; margin:-6px 0 16px;
+  }
+  .tx-filters-panel.open{ display:flex; }
+  .tx-filters-panel .form-group{ min-width:170px; flex:1; }
+  #txFiltersCount{
+    display:inline-flex; align-items:center; justify-content:center;
+    min-width:16px; height:16px; padding:0 4px; border-radius:99px;
+    background:var(--accent); color:#fff; font-size:10px; font-weight:700; margin-left:2px;
+  }
+  #txFiltersToggle.active{ border-color:var(--accent); color:var(--accent-2); }
   .chip{
     padding:7px 13px; border-radius:20px; font-size:12.5px; font-weight:500; cursor:pointer;
     background:var(--surface-2); color:var(--text-2); border:1px solid var(--border); transition:.15s ease;
@@ -2362,8 +2375,12 @@
           <div class="table-toolbar">
           <div class="search-box">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-            <input type="text" id="searchInput" placeholder="Buscar por descrição ou categoria...">
+            <input type="text" id="searchInput" placeholder="Buscar por descrição, categoria ou valor...">
           </div>
+          <button class="mp-btn" id="txFiltersToggle" style="display:flex;align-items:center;gap:6px;white-space:nowrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+            Filtros<span id="txFiltersCount" style="display:none"></span>
+          </button>
           <!-- Mobile filter dropdown (shown only on mobile) -->
           <div class="mob-filter-wrap" id="mobFilterWrap">
             <button class="mob-filter-btn" id="mobFilterBtn">
@@ -2386,6 +2403,22 @@
             <div class="chip" data-type="Transferência">Transferência</div>
             <div class="chip" data-type="Cartão">Cartão</div>
           </div>
+        </div>
+        <!-- Advanced filters panel (hidden by default) -->
+        <div class="tx-filters-panel" id="txFiltersPanel">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Conta / Cartão</label>
+            <select class="form-select" id="txFilterConta"><option value="Todos">Todos</option></select>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Categoria</label>
+            <select class="form-select" id="txFilterCategoria"><option value="Todos">Todas</option></select>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Dia específico</label>
+            <input type="date" class="form-input" id="txFilterDia">
+          </div>
+          <button class="mp-btn" id="txFiltersClear" style="align-self:flex-end">Limpar filtros</button>
         </div>
         <!-- Mobile card list (shown only on mobile) -->
         <div id="mobileTransList" class="mobile-trans-list"></div>
@@ -2899,9 +2932,13 @@
     </button>
     <div style="display:flex;gap:8px;margin-left:auto">
       <button class="btn btn-ghost" id="drawerCancelBtn">Cancelar</button>
+      <button class="btn" id="drawerSaveAndNewBtn" style="background:var(--surface-3);color:var(--text-1);border:1.5px solid var(--border);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+        Salvar e criar outra
+      </button>
       <button class="btn btn-primary" id="drawerSaveBtn">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-        Salvar lançamento
+        Salvar
       </button>
     </div>
   </div>
@@ -4093,6 +4130,9 @@ function renderRecent(key){
 let sortState = {key:'data', dir:-1};
 let typeFilter = 'Todos';
 let cardFilter = 'Todos';
+let txFilterConta = 'Todos';
+let txFilterCategoria = 'Todos';
+let txFilterDia = '';
 function getCombinedAll(){
   const trans = DATA.transacoes.map(t => ({
     _id:t._id, _source:'transacoes',
@@ -4128,8 +4168,16 @@ function renderAllTable(){
     return inMonth(r.data, currentMonth);
   });
   if(typeFilter !== 'Todos') rows = rows.filter(r => r.tipo === typeFilter);
+  if(txFilterConta !== 'Todos') rows = rows.filter(r => (r.conta||'') === txFilterConta || (r.conta||'').startsWith(txFilterConta+' →'));
+  if(txFilterCategoria !== 'Todos') rows = rows.filter(r => r.categoria === txFilterCategoria);
+  if(txFilterDia) rows = rows.filter(r => r.data === txFilterDia);
   const q = document.getElementById('searchInput').value.trim().toLowerCase();
-  if(q) rows = rows.filter(r => (r.descricao||'').toLowerCase().includes(q) || (r.categoria||'').toLowerCase().includes(q));
+  if(q) rows = rows.filter(r =>
+    (r.descricao||'').toLowerCase().includes(q) ||
+    (r.categoria||'').toLowerCase().includes(q) ||
+    fmtBRL(r.valor).toLowerCase().includes(q) ||
+    String(r.valor).replace('.',',').includes(q)
+  );
   rows.sort((a,b) => {
     let va = a[sortState.key], vb = b[sortState.key];
     if(sortState.key === 'data'){ va = parseDate(a.data); vb = parseDate(b.data); }
@@ -4262,6 +4310,51 @@ function renderAllTable(){
   }
 }
 document.getElementById('searchInput').addEventListener('input', renderAllTable);
+
+// ── Advanced transaction filters (conta/cartão, categoria, dia) ────────────
+function populateTxFilters(){
+  const contaSel = document.getElementById('txFilterConta');
+  const catSel = document.getElementById('txFilterCategoria');
+  if(contaSel){
+    const opts = [
+      ...DATA.contas.filter(c=>!c.arquivado).map(c=>c.conta),
+      ...DATA.cartoes.map(c=>c.cartao)
+    ];
+    contaSel.innerHTML = '<option value="Todos">Todos</option>' + opts.map(n=>`<option value="${n}">${n}</option>`).join('');
+    contaSel.value = txFilterConta;
+  }
+  if(catSel){
+    const cats = [...new Set(DATA.categorias.map(c=>c.categoria))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+    catSel.innerHTML = '<option value="Todos">Todas</option>' + cats.map(n=>`<option value="${n}">${n}</option>`).join('');
+    catSel.value = txFilterCategoria;
+  }
+}
+function updateTxFiltersCount(){
+  const n = (txFilterConta!=='Todos'?1:0) + (txFilterCategoria!=='Todos'?1:0) + (txFilterDia?1:0);
+  const badge = document.getElementById('txFiltersCount');
+  const btn = document.getElementById('txFiltersToggle');
+  if(badge){ badge.textContent = n>0?n:''; badge.style.display = n>0?'inline-flex':'none'; }
+  if(btn) btn.classList.toggle('active', n>0);
+}
+document.getElementById('txFiltersToggle')?.addEventListener('click', () => {
+  document.getElementById('txFiltersPanel')?.classList.toggle('open');
+});
+document.getElementById('txFilterConta')?.addEventListener('change', (e) => {
+  txFilterConta = e.target.value; updateTxFiltersCount(); renderAllTable();
+});
+document.getElementById('txFilterCategoria')?.addEventListener('change', (e) => {
+  txFilterCategoria = e.target.value; updateTxFiltersCount(); renderAllTable();
+});
+document.getElementById('txFilterDia')?.addEventListener('change', (e) => {
+  txFilterDia = e.target.value; updateTxFiltersCount(); renderAllTable();
+});
+document.getElementById('txFiltersClear')?.addEventListener('click', () => {
+  txFilterConta = 'Todos'; txFilterCategoria = 'Todos'; txFilterDia = '';
+  const contaSel = document.getElementById('txFilterConta'); if(contaSel) contaSel.value = 'Todos';
+  const catSel = document.getElementById('txFilterCategoria'); if(catSel) catSel.value = 'Todos';
+  const diaInput = document.getElementById('txFilterDia'); if(diaInput) diaInput.value = '';
+  updateTxFiltersCount(); renderAllTable();
+});
 
 // Filter is handled by global month picker
 
@@ -5271,6 +5364,7 @@ function renderView(view){
 
 function renderAll(){
   try { renderSidebar(); } catch(e){ console.error('renderSidebar error:', e); }
+  try { populateTxFilters(); } catch(e){ console.error('populateTxFilters error:', e); }
   try { renderView(currentView); } catch(e){ console.error('renderView error:', e); }
   try { refreshMonthPickers(); } catch(e){ console.error('refreshMonthPickers error:', e); }
 }
@@ -7087,6 +7181,7 @@ function openEditDrawer(id, source){
   const entry = arr.find(e => e._id === id);
   if(!entry) return;
   editTarget = entry;
+  _saveAndNew = false;
   const tipo = source === 'cartaoCompras' ? 'Cartão' : entry.tipo;
   setFormType(tipo);
   document.getElementById('fData').value = entry.data || '';
@@ -7115,6 +7210,8 @@ function openEditDrawer(id, source){
   // Update drawer header to show edit mode
   document.querySelector('.drawer-title').innerHTML = 'Editar Lançamento <span class="drawer-mode-badge">✎ editando</span>';
   document.getElementById('drawerSaveBtn').innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg> Salvar alterações`;
+  const saveAndNewBtnEdit = document.getElementById('drawerSaveAndNewBtn');
+  if(saveAndNewBtnEdit) saveAndNewBtnEdit.style.display = 'none';
   // Hide recurring toggle when editing
   const recRowEdit = document.getElementById('rowRecorrente');
   if(recRowEdit) recRowEdit.style.display = 'none';
@@ -7142,7 +7239,9 @@ function openDrawer(){
   setStatusToggle('fStatusTransf', 'Pago');
   setFormType(formType);
   document.querySelector('.drawer-title').textContent = 'Novo Lançamento';
-  document.getElementById('drawerSaveBtn').innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Salvar lançamento`;
+  document.getElementById('drawerSaveBtn').innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Salvar`;
+  const saveAndNewBtnOpen = document.getElementById('drawerSaveAndNewBtn');
+  if(saveAndNewBtnOpen) saveAndNewBtnOpen.style.display = '';
   // Hide delete button for new entries
   const delBtnNew = document.getElementById('drawerDeleteBtn');
   if(delBtnNew) delBtnNew.style.display = 'none';
@@ -7171,6 +7270,15 @@ function closeDrawer(){
   document.getElementById('drawer').classList.remove('open');
   document.getElementById('drawerOverlay').classList.remove('open');
   document.getElementById('fabBtn').classList.remove('open');
+}
+let _saveAndNew = false;
+function finishNewEntrySave(){
+  if(_saveAndNew){
+    _saveAndNew = false;
+    openDrawer();
+  } else {
+    closeDrawer();
+  }
 }
 function showToast(msg, type='success', duration=3000){
   const el = document.getElementById('toast');
@@ -7334,7 +7442,7 @@ function saveEntry(){
       updateSyncBar();
       showToast(`${n}x de ${fmtBRL(vParcela)} lançadas no cartão!`);
       resetParcelada();
-      closeDrawer();
+      finishNewEntrySave();
       renderAll();
       return;
     }
@@ -7406,7 +7514,7 @@ function saveEntry(){
       updateSyncBar();
       showToast(`${n}x de ${fmtBRL(vParcela)} lançadas!`);
       _recorrente = false; resetParcelada();
-      closeDrawer(); renderAll();
+      finishNewEntrySave(); renderAll();
       return;
     }
 
@@ -7482,7 +7590,7 @@ function saveEntry(){
   _recorrente = false;
   _recorrenciaFreq = 'mensal';
 
-  closeDrawer();
+  finishNewEntrySave();
   if(!_recorrente) showToast(`"${descricao}" adicionado com sucesso.`);
   renderAll();
 }
@@ -7801,7 +7909,8 @@ document.getElementById('fabBtn').onclick = openDrawer;
 document.getElementById('drawerClose').onclick = closeDrawer;
 document.getElementById('drawerCancelBtn').onclick = closeDrawer;
 document.getElementById('drawerOverlay').onclick = closeDrawer;
-document.getElementById('drawerSaveBtn').onclick = saveEntry;
+document.getElementById('drawerSaveBtn').onclick = () => { _saveAndNew = false; saveEntry(); };
+document.getElementById('drawerSaveAndNewBtn').onclick = () => { _saveAndNew = true; saveEntry(); };
 document.getElementById('drawerDeleteBtn').onclick = () => {
   if(!editTarget) return;
   closeDrawer();
