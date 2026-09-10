@@ -3418,6 +3418,18 @@ async function loadAllData() {
       return { _dbId:r.id, _id:nextId++, _source:'cartaoCompras', data:r.data, descricao:r.descricao, categoria:r.categoria, subcategoria:r.subcategoria||null, cartao:r.cartao, parcela:r.parcela, valor:+r.valor||0, conferido:r.conferido, obs, parcGroupId: pgMatch?pgMatch[0]:null };
     });
     DATA.faturas = (fatDb||[]).map(r => ({ _dbId:r.id, cartao:r.cartao, competencia:r.competencia, valorTotal:+r.valor_total||0, fechamento:r.data_fechamento, vencimento:r.data_vencimento, status:r.status, dataPagamento:r.data_pagamento||null, contaPagamento:r.conta_pagamento||null }));
+
+    // ── One-time repair: faturas already marked "Pago" whose purchases never
+    // got their "conferido" flag persisted (bug present before this fix) ──
+    DATA.faturas.filter(f => f.status === 'Pago').forEach(f => {
+      const compKey = (f.competencia||'').slice(0,7);
+      DATA.cartaoCompras.forEach(t => {
+        if(t.cartao === f.cartao && t.conferido !== 'Sim' && getCartaoFaturaMonth(t) === compKey){
+          t.conferido = 'Sim';
+          dbUpdateEntryStatus(t, 'Pago');
+        }
+      });
+    });
     const movMap = {};
     (mmDb||[]).forEach(r => { if(!movMap[r.meta_id]) movMap[r.meta_id]=[]; movMap[r.meta_id].push({ _dbId:r.id, data:r.data, tipo:r.tipo, valor:+r.valor||0, conta:r.conta, obs:r.observacoes }); });
     DATA.metas = (mtDb||[]).map(r => ({ _dbId:r.id, _id:nextId++, nome:r.nome, descricao:r.descricao, status:r.status, valorMeta:+r.valor_meta||0, valorAtual:+r.valor_atual||0, dataAlvo:r.data_alvo, criadaEm:r.created_at?.split('T')[0], movimentacoes:movMap[r.id]||[] }));
@@ -7686,9 +7698,12 @@ async function confirmPayment(){
     fat.valorTotal = 0;
     fat.dataPagamento = data;
     fat.contaPagamento = conta;
-    // Mark all purchases for this card/month as conferido
+    // Mark all purchases for this card/month as conferido (and persist it!)
     DATA.cartaoCompras.forEach(t => {
-      if(t.cartao === payTarget.cartao && getCartaoFaturaMonth(t) === compKey) t.conferido = 'Sim';
+      if(t.cartao === payTarget.cartao && getCartaoFaturaMonth(t) === compKey && t.conferido !== 'Sim'){
+        t.conferido = 'Sim';
+        dbUpdateEntryStatus(t, 'Pago');
+      }
     });
     // Sync any existing pending "Pagamento Fatura Cartão" entry for this card/month in Transações,
     // instead of leaving it orphaned as Pendente
