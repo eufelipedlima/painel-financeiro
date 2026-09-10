@@ -5248,14 +5248,14 @@ function renderBudgetCatList(key, data){
         const pctCls = pct===null?'bpct-none':pct>=100?(isRec?'bpct-ok':'bpct-over'):pct>=75?'bpct-warn':'bpct-ok';
         const barColor = pct===null?'var(--border-hover)':pct>=100?(isRec?'var(--positive)':'var(--negative)'):pct>=75?'var(--warning)':'var(--positive)';
         const subs = subcategorySums(key, c.categoria);
-        const expanded = orcExpanded.has(c.categoria);
+        const expanded = orcExpanded.has(c._dbId);
         return `<div class="budget-cat-row">
           <div class="budget-cat-row-main">
-            <button class="budget-cat-expand ${subs.length?'':'invisible'}" data-cat="${c.categoria}" ${subs.length?'':'disabled'} title="Ver subcategorias">${expanded?'▾':'▸'}</button>
+            <button class="budget-cat-expand ${subs.length?'':'invisible'}" data-id="${c._dbId}" ${subs.length?'':'disabled'} title="Ver subcategorias">${expanded?'▾':'▸'}</button>
             <div class="budget-cat-name" title="${c.categoria}">${c.categoria}</div>
             <div class="budget-cat-bar-wrap"><div class="budget-cat-bar-fill" style="width:${pctShown}%;background:${barColor}"></div></div>
             <div class="budget-cat-real">${fmtBRL(d.gasto)}</div>
-            <div class="budget-cat-limite${d.limite>0?'':' undefined'}" data-cat="${c.categoria}" title="Clique para editar o limite">${d.limite>0?fmtBRL(d.limite):'+ Definir'}</div>
+            <div class="budget-cat-limite${d.limite>0?'':' undefined'}" data-id="${c._dbId}" title="Clique para editar o limite">${d.limite>0?fmtBRL(d.limite):'+ Definir'}</div>
             <div class="budget-cat-pct ${pctCls}">${pct!==null?pct.toFixed(0)+'%':'—'}</div>
           </div>
           ${expanded?`<div class="budget-subcat-list">
@@ -5270,15 +5270,14 @@ function renderBudgetCatList(key, data){
 
   list.querySelectorAll('.budget-cat-expand:not([disabled])').forEach(btn=>{
     btn.onclick = ()=>{
-      const cat = btn.dataset.cat;
-      if(orcExpanded.has(cat)) orcExpanded.delete(cat); else orcExpanded.add(cat);
+      const id = btn.dataset.id;
+      if(orcExpanded.has(id)) orcExpanded.delete(id); else orcExpanded.add(id);
       renderBudgetCatList(key, data);
     };
   });
   list.querySelectorAll('.budget-cat-limite').forEach(cell=>{
     cell.onclick = ()=>{
-      const catName = cell.dataset.cat;
-      const catObj = DATA.categorias.find(c=>c.categoria===catName);
+      const catObj = DATA.categorias.find(c=>String(c._dbId)===String(cell.dataset.id));
       if(!catObj) return;
       const inp = document.createElement('input');
       inp.type='number'; inp.min='0'; inp.step='10';
@@ -5729,7 +5728,9 @@ function renderConfiguracoes(){
           <div>
             <div class="cat-row-name">${c.categoria}</div>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:2px">
-              ${c.tipo==='Despesa'&&!arq?`<span style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:${BUDGET_GROUP_COLORS[catGroup(c.categoria,c.tipo)]||'var(--text-3)'}">${catGroup(c.categoria,c.tipo)}</span>`:''}
+              ${c.tipo==='Despesa'&&!arq?`<select class="cat-row-group-select" data-id="${c._dbId}" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:${BUDGET_GROUP_COLORS[c.grupo||catGroup(c.categoria,c.tipo)]||'var(--text-3)'};background:none;border:1px solid var(--border);border-radius:5px;padding:2px 6px;cursor:pointer;font-family:Inter,sans-serif;outline:none">
+                ${['Essencial','Não Essencial','Investimento','Dívidas'].map(g=>`<option value="${g}" ${((c.grupo||catGroup(c.categoria,c.tipo))===g)?'selected':''}>${g}</option>`).join('')}
+              </select>`:''}
               ${c.limite>0&&!arq?`<div class="cat-row-limit">Limite: ${fmtBRL(c.limite)}/mês</div>`:''}
             </div>
           </div>
@@ -5756,6 +5757,18 @@ function renderConfiguracoes(){
       + (arquivadas.length?`<details style="margin-top:12px"><summary style="cursor:pointer;font-size:12px;color:var(--text-3);padding:4px 0">Arquivadas (${arquivadas.length})</summary><div style="margin-top:8px">${arquivadas.map(c=>renderCat(c,true)).join('')}</div></details>`:'');
     if(!catsEl.innerHTML) catsEl.innerHTML='<div class="empty-note">Nenhuma categoria.</div>';
     catsEl.querySelectorAll('.cfg-edit-cat').forEach(btn=>btn.addEventListener('click',()=>editConfigCategoria(btn.dataset.id)));
+    catsEl.querySelectorAll('.cat-row-group-select').forEach(sel=>sel.addEventListener('change', async (e)=>{
+      e.stopPropagation();
+      const catObj = DATA.categorias.find(c=>String(c._dbId)===String(sel.dataset.id));
+      if(!catObj) return;
+      const novoGrupo = sel.value;
+      catObj.grupo = novoGrupo;
+      sel.style.color = BUDGET_GROUP_COLORS[novoGrupo]||'var(--text-3)';
+      if(currentUser && catObj._dbId){
+        await db.from('categorias').update({grupo:novoGrupo}).eq('id', catObj._dbId);
+      }
+      showToast(`"${catObj.categoria}" agora é ${novoGrupo}.`);
+    }));
     catsEl.querySelectorAll('.cfg-edit-sub').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();editConfigSubcategoria(btn.dataset.id);}));
     catsEl.querySelectorAll('.cfg-arch').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();archiveConfigItem(btn.dataset.type,btn.dataset.id,btn.dataset.archived==='true',btn.dataset.nome);}));
     catsEl.querySelectorAll('.cfg-add-sub').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();openAddSubcategoria(btn.dataset.cat);}));
@@ -5934,6 +5947,12 @@ async function saveConfigItem(){
   } else if(configMode==='categoria'){
     const limite = parseFloat(document.getElementById('configModalLimite').value)||0;
     const grupo = configTipo === 'Receita' ? null : document.getElementById('configModalGrupo').value;
+    const dup = DATA.categorias.find(c =>
+      c.tipo===configTipo && !c.arquivado &&
+      c.categoria.trim().toLowerCase()===nome.trim().toLowerCase() &&
+      (!configEditTarget || c._dbId!==configEditTarget._dbId)
+    );
+    if(dup){ showToast(`Já existe uma categoria de ${configTipo.toLowerCase()} chamada "${nome}".`, 'error'); return; }
     if(configEditTarget){
       configEditTarget.categoria = nome; configEditTarget.limite = limite; configEditTarget.grupo = grupo;
       await db.from('categorias').update({nome, limite_mensal:limite, grupo}).eq('id', configEditTarget._dbId);
@@ -8318,7 +8337,8 @@ renderAll();
         <select class="form-select" id="configModalGrupo">
           <option value="Essencial">Essencial</option>
           <option value="Não Essencial">Não Essencial</option>
-          <option value="Investimentos e Dívidas">Investimentos e Dívidas</option>
+          <option value="Investimento">Investimento</option>
+          <option value="Dívidas">Dívidas</option>
         </select>
       </div>
       <div class="form-group">
@@ -8333,7 +8353,8 @@ renderAll();
         <option value="">Herdar da categoria</option>
         <option value="Essencial">Essencial</option>
         <option value="Não Essencial">Não Essencial</option>
-        <option value="Investimentos e Dívidas">Investimentos e Dívidas</option>
+        <option value="Investimento">Investimento</option>
+        <option value="Dívidas">Dívidas</option>
       </select>
     </div>
     <div class="cmodal-actions">
