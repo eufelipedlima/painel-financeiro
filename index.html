@@ -2057,6 +2057,33 @@
   .bdiff-pos{ color:var(--positive); }
   .bdiff-neg{ color:var(--negative); }
 
+  /* Orçamento mensal — lista de categorias */
+  .budget-group-block{ margin-bottom:22px; }
+  .budget-group-block:last-child{ margin-bottom:0; }
+  .budget-group-title{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.7px; margin-bottom:10px; padding-bottom:6px; border-bottom:1px solid var(--border-soft); }
+  .budget-cat-row{ border-bottom:1px solid var(--border-soft); }
+  .budget-cat-row:last-child{ border-bottom:none; }
+  .budget-cat-row-main{
+    display:grid; grid-template-columns:20px 170px 1fr 100px 110px 52px;
+    align-items:center; gap:14px; padding:11px 4px;
+  }
+  .budget-cat-expand{ background:none; border:none; color:var(--text-3); cursor:pointer; font-size:11px; width:20px; padding:0; }
+  .budget-cat-expand.invisible{ visibility:hidden; cursor:default; }
+  .budget-cat-name{ font-size:13px; font-weight:500; color:var(--text-1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .budget-cat-bar-wrap{ height:6px; background:var(--surface-3); border-radius:99px; overflow:hidden; }
+  .budget-cat-bar-fill{ height:100%; border-radius:99px; transition:width .4s ease; }
+  .budget-cat-real{ font-size:13px; font-variant-numeric:tabular-nums; text-align:right; color:var(--text-2); }
+  .budget-cat-limite{ font-size:13px; font-variant-numeric:tabular-nums; text-align:right; color:var(--text-1); font-weight:600; cursor:pointer; padding:4px 8px; border-radius:6px; }
+  .budget-cat-limite:hover{ background:var(--surface-2); }
+  .budget-cat-pct{ font-size:12px; font-weight:700; text-align:right; }
+  .budget-subcat-list{ padding:2px 4px 12px 34px; display:flex; flex-direction:column; gap:6px; }
+  .budget-subcat-row{ display:flex; justify-content:space-between; font-size:12.5px; color:var(--text-2); padding:6px 10px; background:var(--surface-2); border-radius:6px; }
+  .budget-subcat-row .num{ font-variant-numeric:tabular-nums; font-weight:600; color:var(--text-1); }
+  @media(max-width:860px){
+    .budget-cat-row-main{ grid-template-columns:16px 1fr 90px 46px; }
+    .budget-cat-bar-wrap{ display:none; }
+  }
+
   @media(max-width:768px){
     .budget-table{ font-size:11px; }
     .budget-table td, .budget-table th{ padding:7px 8px; }
@@ -2551,28 +2578,48 @@
       <div class="topbar">
         <div>
           <div class="page-title">Orçamento</div>
-          <div class="page-sub">Planejado × realizado por mês e categoria</div>
+          <div class="page-sub">Planejado × realizado do mês</div>
         </div>
-        <div style="display:flex;gap:10px;align-items:center">
-          <button class="btn btn-ghost" id="budgetYearPrev" style="padding:7px 12px">‹</button>
-          <span id="budgetYearLabel" style="font-size:15px;font-weight:700;min-width:48px;text-align:center"></span>
-          <button class="btn btn-ghost" id="budgetYearNext" style="padding:7px 12px">›</button>
-        </div>
+        <div class="month-picker" id="monthPickerRootOrc"></div>
       </div>
+
       <!-- Summary KPIs -->
-      <div class="kpi-grid" id="budgetKpiRow" style="margin-bottom:16px"></div>
-      <!-- Multi-month table -->
-      <div class="panel" style="padding:0;overflow:hidden">
-        <div style="overflow-x:auto">
-          <table class="budget-table" id="budgetTable">
-            <thead id="budgetTableHead"></thead>
-            <tbody id="budgetTableBody"></tbody>
-          </table>
+      <div class="kpi-grid" id="budgetKpiRow" style="margin-bottom:14px"></div>
+      <!-- Group mini-cards (Essencial / Não Essencial / Investimentos) -->
+      <div class="kpi-grid" id="budgetGroupRow" style="margin-bottom:20px"></div>
+
+      <div class="subtab-bar" id="orcSubtabs" style="margin-bottom:16px">
+        <button class="subtab active" data-orctab="detalhado">Detalhado</button>
+        <button class="subtab" data-orctab="visaogeral">Visão Geral</button>
+      </div>
+
+      <!-- Detalhado -->
+      <div id="orcTabDetalhado">
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">Categorias do mês</div>
+            <button class="btn btn-ghost" onclick="showBudgetEditModal()" style="padding:7px 14px;font-size:12.5px">✎ Editar limites</button>
+          </div>
+          <div id="budgetCatList"></div>
         </div>
       </div>
-      <!-- Hidden chart canvas kept for compatibility -->
-      <canvas id="chartBudget" style="display:none"></canvas>
-      <div class="budget-cat-grid" id="budgetList" style="display:none"></div>
+
+      <!-- Visão Geral -->
+      <div id="orcTabVisaoGeral" style="display:none">
+        <div class="grid-2b">
+          <div class="panel">
+            <div class="panel-head"><div class="panel-title">Gasto por grupo</div></div>
+            <div class="donut-wrap">
+              <div class="donut-canvas"><canvas id="chartOrcGrupo"></canvas><div class="donut-center" id="donutCenterOrc"></div></div>
+              <div class="donut-legend" id="legendOrcGrupo"></div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div class="panel-title">Planejado × Realizado por grupo</div></div>
+            <div id="orcGroupBars"></div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- DESPESAS FIXAS -->
@@ -3815,7 +3862,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
 });
 
 // ===================== Month picker (rendered in 4 mount points, kept in sync) =====================
-const monthMounts = ['monthPickerRoot','monthPickerRoot2','monthPickerRoot3','monthPickerRoot4','monthPickerRoot5','monthPickerRootFixas'];
+const monthMounts = ['monthPickerRoot','monthPickerRoot2','monthPickerRoot3','monthPickerRoot4','monthPickerRoot5','monthPickerRootFixas','monthPickerRootOrc'];
 function buildMonthPicker(mountId){
   const root = document.getElementById(mountId);
   if(!root) return;
@@ -5070,176 +5117,183 @@ function calcMonthBudget(yearMonth){
   return result;
 }
 
+let orcSubtab = 'detalhado';
+let orcExpanded = new Set();
+
+function subcategorySums(key, catName){
+  const trans = getMonthTransacoes(key).filter(t => t.tipo==='Despesa' && t.categoria===catName);
+  const cartao = getMonthCartao(key).filter(t => t.categoria===catName);
+  const sums = {};
+  trans.forEach(t => { const k = t.subcategoria || 'Sem subcategoria'; sums[k] = (sums[k]||0)+t.valor; });
+  cartao.forEach(t => { const k = t.subcategoria || 'Sem subcategoria'; sums[k] = (sums[k]||0)+t.valor; });
+  return Object.entries(sums).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+}
+
 function renderBudget(key){
-  // Wire year navigation
-  const yearLbl = document.getElementById('budgetYearLabel');
-  const prevBtn = document.getElementById('budgetYearPrev');
-  const nextBtn = document.getElementById('budgetYearNext');
-  if(yearLbl) yearLbl.textContent = budgetYear;
-  if(prevBtn) prevBtn.onclick = ()=>{ budgetYear--; renderBudget(currentMonth); };
-  if(nextBtn) nextBtn.onclick = ()=>{ budgetYear++; renderBudget(currentMonth); };
+  const data = calcMonthBudget(key);
+  const despesaEntries = Object.entries(data).filter(([,d])=>d.tipo!=='Receita');
+  const receitaEntries = Object.entries(data).filter(([,d])=>d.tipo==='Receita');
+  const totalPlanDesp = despesaEntries.reduce((s,[,d])=>s+d.limite,0);
+  const totalGastoDesp = despesaEntries.reduce((s,[,d])=>s+d.gasto,0);
+  const totalRec = receitaEntries.reduce((s,[,d])=>s+d.gasto,0);
+  const sobra = totalRec - totalGastoDesp;
 
-  // Build 12 months for selected year
-  const months = Array.from({length:12},(_,i)=>`${budgetYear}-${String(i+1).padStart(2,'0')}`);
-  const monthNames = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  const nowKey = monthKey(new Date());
-
-  // Compute data for all months
-  const monthData = months.map(m => calcMonthBudget(m));
-
-  // KPI for current month
-  const curIdx = months.indexOf(nowKey);
-  const curData = curIdx>=0 ? monthData[curIdx] : monthData[new Date().getMonth()];
-  const totalPlan = Object.values(curData).filter(d=>d.tipo!=='Receita').reduce((s,d)=>s+d.limite,0);
-  const totalSpent = Object.values(curData).filter(d=>d.tipo!=='Receita').reduce((s,d)=>s+d.gasto,0);
-  const totalRec = Object.values(curData).filter(d=>d.tipo==='Receita').reduce((s,d)=>s+d.gasto,0);
   const kpiEl = document.getElementById('budgetKpiRow');
   if(kpiEl) kpiEl.innerHTML = `
-    <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">Receita do mês atual</span></div><div class="kpi-value" style="color:var(--positive)">${fmtBRL(totalRec)}</div></div>
-    <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">Total planejado (despesas)</span></div><div class="kpi-value">${fmtBRL(totalPlan)}</div></div>
-    <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">Total realizado (despesas)</span></div><div class="kpi-value" style="color:${totalSpent>totalPlan?'var(--negative)':'var(--text-1)'}">${fmtBRL(totalSpent)}</div><div style="font-size:11px;color:var(--text-3);margin-top:4px">${totalPlan>0?(totalSpent/totalPlan*100).toFixed(0)+'% do planejado':''}</div></div>
-    <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">Disponível / Saldo</span></div><div class="kpi-value" style="color:${totalPlan-totalSpent>=0?'var(--positive)':'var(--negative)'}">${fmtBRL(Math.abs(totalPlan-totalSpent))}</div><div style="font-size:11px;color:var(--text-3);margin-top:4px">${totalPlan-totalSpent>=0?'dentro do planejado':'acima do planejado'}</div></div>`;
+    <div class="kpi-card">
+      <div class="kpi-top"><span class="kpi-label">Receita do mês</span><div class="kpi-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div></div>
+      <div class="kpi-value num">${fmtBRL(totalRec)}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-top"><span class="kpi-label">Despesa planejada</span><div class="kpi-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 3"/></svg></div></div>
+      <div class="kpi-value num">${fmtBRL(totalPlanDesp)}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-top"><span class="kpi-label">Despesa realizada</span><div class="kpi-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg></div></div>
+      <div class="kpi-value num" style="color:${totalPlanDesp>0&&totalGastoDesp>totalPlanDesp?'var(--negative)':'var(--text-1)'}">${fmtBRL(totalGastoDesp)}</div>
+      <span class="kpi-delta flat">${totalPlanDesp>0?(totalGastoDesp/totalPlanDesp*100).toFixed(0)+'% do planejado':'sem planejamento definido'}</span>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-top"><span class="kpi-label">Sobra do mês</span><div class="kpi-icon gold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16M4 15l4-5 4 3 6-8"/></svg></div></div>
+      <div class="kpi-value num" style="color:${sobra>=0?'var(--positive)':'var(--negative)'}">${fmtBRL(Math.abs(sobra))}</div>
+      <span class="kpi-delta flat">${sobra>=0?'dentro do previsto':'acima da receita'}</span>
+    </div>`;
 
-  // Build table
-  const thead = document.getElementById('budgetTableHead');
-  const tbody = document.getElementById('budgetTableBody');
-  if(!thead||!tbody) return;
+  const groupsForMini = ['Essencial','Não Essencial','Investimentos e Dívidas'];
+  const grpEl = document.getElementById('budgetGroupRow');
+  if(grpEl) grpEl.innerHTML = groupsForMini.map(grp=>{
+    const catsInGrp = despesaEntries.filter(([name])=>catGroup(name,'Despesa')===grp);
+    const pl = catsInGrp.reduce((s,[,d])=>s+d.limite,0);
+    const re = catsInGrp.reduce((s,[,d])=>s+d.gasto,0);
+    const pct = pl>0 ? Math.min((re/pl)*100,100) : (re>0?100:0);
+    const over = pl>0 && re>pl;
+    const color = BUDGET_GROUP_COLORS[grp];
+    return `<div class="kpi-card">
+      <div class="kpi-top"><span class="kpi-label" style="color:${color}">${grp}</span></div>
+      <div class="kpi-value num" style="font-size:19px">${fmtBRL(re)}<span style="font-size:12px;color:var(--text-3);font-weight:500"> / ${pl>0?fmtBRL(pl):'sem limite'}</span></div>
+      <div class="kpi-subbar" style="margin-top:10px;background:var(--surface-3)"><div class="kpi-subbar-fill" style="width:${pct}%;background:${over?'var(--negative)':color}"></div></div>
+    </div>`;
+  }).join('');
 
-  // Header: category col + month groups
-  thead.innerHTML = `<tr>
-    <th class="cat-col" rowspan="2">
-      Categoria
-      <button onclick="showBudgetEditModal()" style="margin-left:8px;padding:3px 8px;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text-2);font-family:Inter,sans-serif">✎ Editar</button>
-    </th>
-    ${months.map((m,i)=>{
-      const even = i%2===1;
-      const isCur = m===nowKey;
-      const bg = isCur ? 'background:var(--accent-soft);color:var(--accent-2)' : (even?'background:var(--surface-3)':'');
-      return `<th class="month-header${even?' col-even':''}" colspan="4" style="border-left:2px solid var(--border);${bg}">${monthNames[i]}${isCur?' ●':''}</th>`;
-    }).join('')}
-  </tr>
-  <tr>
-    ${months.map((m,i)=>{
-      const even=i%2===1; const isCur=m===nowKey;
-      const bg=isCur?';background:var(--accent-soft);':'';
-      const ec=even?' col-even':'';
-      return `<th class="${ec}" style="border-left:2px solid var(--border)${bg}" title="Planejado (duplo clique para editar)">Planejado</th>
-        <th class="${ec}" title="Realizado">Realizado</th>
-        <th class="${ec}" title="Diferença">Diferença</th>
-        <th class="${ec}" title="% Atingimento">%</th>`;
-    }).join('')}
-  </tr>`;
+  renderBudgetCatList(key, data);
+  if(orcSubtab === 'visaogeral') renderOrcVisaoGeral(key, data);
+}
 
-  // Helper to render 4 cells per month
-  function monthCells(m, idx, limite, gasto, tipo){
-    const isRecMonth = tipo==='Receita';
-    const plan = limite;
-    const real = gasto;
-    const diff = isRecMonth ? (real-plan) : (plan-real);
-    const pct = plan>0 ? (real/plan*100) : null;
-    const pctCls = pct===null?'bpct-none':pct>=100?(isRecMonth?'bpct-ok':'bpct-over'):pct>=75?'bpct-warn':'bpct-ok';
-    const diffCls = diff>=0?'bdiff-pos':'bdiff-neg';
-    const isCurrent = m===nowKey;
-    const even = idx%2===1;
-    const ec = even?' col-even':'';
-    const bg = isCurrent?'background:var(--accent-soft);':'';
-    const leftBorder = isCurrent?'border-left:2px solid var(--accent)':'border-left:2px solid var(--border)';
-    return `
-      <td class="planned-cell${ec}" style="${bg}${leftBorder}" data-cat="${name}" data-month="${m}">
-        ${plan>0?fmtBRL(plan):'<span style="color:var(--text-3)">—</span>'}
-      </td>
-      <td class="actual-cell${ec}" style="${bg};color:${real>0?(isRecMonth?'var(--positive)':'var(--negative)'):'var(--text-3)'}">${real>0?fmtBRL(real):'—'}</td>
-      <td class="diff-cell${ec}" style="${bg}"><span class="${diffCls}">${plan>0||real>0?(diff>=0?'+':'')+fmtBRL(Math.abs(diff)):'—'}</span></td>
-      <td class="pct-cell${ec}" style="${bg}"><span class="${pctCls}">${pct!==null?pct.toFixed(0)+'%':'—'}</span></td>`;
-  }
-
-  // Build rows by group
-  const allCatObjs = DATA.categorias.filter(c=>c.categoria!=='Pagamento Fatura Cartão'&&c.categoria!=='Transferência entre Contas').sort((a,b)=>a.categoria.localeCompare(b.categoria,'pt-BR'));
+function renderBudgetCatList(key, data){
+  const list = document.getElementById('budgetCatList');
+  if(!list) return;
+  const allCatObjs = DATA.categorias.filter(c=>c.categoria!=='Pagamento Fatura Cartão'&&c.categoria!=='Transferência entre Contas'&&!c.arquivado);
   const groups = {};
   allCatObjs.forEach(c=>{
     const grp = catGroup(c.categoria, c.tipo);
     if(!groups[grp]) groups[grp]=[];
     groups[grp].push(c);
   });
-
-  const groupOrder = ['Receitas','Essencial','Estilo de Vida','Investimentos e Dívidas','Outros'];
-  let rows = '';
-
-  groupOrder.filter(g=>groups[g]?.length).forEach(grp=>{
-    const cats = groups[grp];
+  const groupOrder = ['Receitas','Essencial','Não Essencial','Investimentos e Dívidas','Outros'];
+  list.innerHTML = groupOrder.filter(g=>groups[g]?.length).map(grp=>{
     const grpColor = BUDGET_GROUP_COLORS[grp]||'var(--text-3)';
-    // Group total row
-    const totalsByMonth = months.map((m,i)=>{
-      const mdata = monthData[i];
-      const totalPl = cats.reduce((s,c)=>s+(mdata[c.categoria]?.limite||0),0);
-      const totalRe = cats.reduce((s,c)=>s+(mdata[c.categoria]?.gasto||0),0);
-      return {pl:totalPl, re:totalRe};
-    });
-    rows += `<tr class="group-header">
-      <td class="cat-name-cell" style="border-left:4px solid ${grpColor}">
-        <span style="font-size:13px;font-weight:700;color:${grpColor}">${grp}</span>
-      </td>
-      ${months.map((m,i)=>{
-        const {pl,re}=totalsByMonth[i];
-        const diff=pl-re, pct=pl>0?(re/pl*100):null;
-        const diffCls=diff>=0?'bdiff-pos':'bdiff-neg';
-        const pctCls=pct===null?'bpct-none':pct>=100?'bpct-over':pct>=75?'bpct-warn':'bpct-ok';
-        const isCurrent=m===nowKey;
-        const bg=isCurrent?'background:var(--accent-soft);':'';
-        return `<td class="planned-cell" style="${bg}${isCurrent?'border-left:2px solid var(--accent)':'border-left:2px solid var(--border)'};font-weight:700">${pl>0?fmtBRL(pl):'—'}</td>
-          <td class="actual-cell" style="${bg};font-weight:700;color:${re>0?'var(--negative)':'var(--text-3)'}">${re>0?fmtBRL(re):'—'}</td>
-          <td class="diff-cell" style="${bg};font-weight:700"><span class="${diffCls}">${pl>0||re>0?(diff>=0?'+':'')+fmtBRL(Math.abs(diff)):'—'}</span></td>
-          <td class="pct-cell" style="${bg};font-weight:700"><span class="${pctCls}">${pct!==null?pct.toFixed(0)+'%':'—'}</span></td>`;
+    const cats = groups[grp].slice().sort((a,b)=>a.categoria.localeCompare(b.categoria,'pt-BR'));
+    return `<div class="budget-group-block">
+      <div class="budget-group-title" style="color:${grpColor}">${grp}</div>
+      ${cats.map(c=>{
+        const d = data[c.categoria] || {limite:0,gasto:0,tipo:c.tipo};
+        const isRec = c.tipo==='Receita';
+        const pct = d.limite>0 ? (d.gasto/d.limite*100) : null;
+        const pctShown = pct===null ? 0 : Math.min(pct,100);
+        const pctCls = pct===null?'bpct-none':pct>=100?(isRec?'bpct-ok':'bpct-over'):pct>=75?'bpct-warn':'bpct-ok';
+        const barColor = pct===null?'var(--border-hover)':pct>=100?(isRec?'var(--positive)':'var(--negative)'):pct>=75?'var(--warning)':'var(--positive)';
+        const subs = subcategorySums(key, c.categoria);
+        const expanded = orcExpanded.has(c.categoria);
+        return `<div class="budget-cat-row">
+          <div class="budget-cat-row-main">
+            <button class="budget-cat-expand ${subs.length?'':'invisible'}" data-cat="${c.categoria}" ${subs.length?'':'disabled'} title="Ver subcategorias">${expanded?'▾':'▸'}</button>
+            <div class="budget-cat-name" title="${c.categoria}">${c.categoria}</div>
+            <div class="budget-cat-bar-wrap"><div class="budget-cat-bar-fill" style="width:${pctShown}%;background:${barColor}"></div></div>
+            <div class="budget-cat-real">${fmtBRL(d.gasto)}</div>
+            <div class="budget-cat-limite" data-cat="${c.categoria}" title="Clique para editar o limite">${d.limite>0?fmtBRL(d.limite):'Definir'}</div>
+            <div class="budget-cat-pct ${pctCls}">${pct!==null?pct.toFixed(0)+'%':'—'}</div>
+          </div>
+          ${expanded?`<div class="budget-subcat-list">
+            ${subs.length?subs.map(([nome,val])=>`<div class="budget-subcat-row"><span>${nome}</span><span class="num">${fmtBRL(val)}</span></div>`).join(''):'<div class="empty-note" style="padding:10px 0">Sem lançamentos com subcategoria neste mês.</div>'}
+          </div>`:''}
+        </div>`;
       }).join('')}
-    </tr>`;
+    </div>`;
+  }).join('');
 
-    // Category rows
-    cats.forEach(c=>{
-      const hasData = months.some((m,i)=>(monthData[i][c.categoria]?.gasto||0)>0 || (monthData[i][c.categoria]?.limite||0)>0);
-      rows += `<tr>
-        <td class="cat-name-cell sub" style="border-left:4px solid ${grpColor}40">${c.categoria}</td>
-        ${months.map((m,i)=>monthCells(m,i,monthData[i][c.categoria]?.limite||0,monthData[i][c.categoria]?.gasto||0,c.tipo)).join('')}
-      </tr>`;
-    });
+  if(!list.innerHTML) list.innerHTML = '<div class="empty-note">Nenhuma categoria cadastrada.</div>';
+
+  list.querySelectorAll('.budget-cat-expand:not([disabled])').forEach(btn=>{
+    btn.onclick = ()=>{
+      const cat = btn.dataset.cat;
+      if(orcExpanded.has(cat)) orcExpanded.delete(cat); else orcExpanded.add(cat);
+      renderBudgetCatList(key, data);
+    };
   });
-
-  tbody.innerHTML = rows;
-
-  // Click on planned cell to edit inline
-  tbody.querySelectorAll('.planned-cell').forEach(cell=>{
-    cell.style.cursor='pointer';
-    cell.title='Clique para editar o limite';
-    cell.ondblclick = ()=>{
+  list.querySelectorAll('.budget-cat-limite').forEach(cell=>{
+    cell.onclick = ()=>{
       const catName = cell.dataset.cat;
-      const current = cell.textContent.trim();
       const catObj = DATA.categorias.find(c=>c.categoria===catName);
       if(!catObj) return;
       const inp = document.createElement('input');
       inp.type='number'; inp.min='0'; inp.step='10';
       inp.value = catObj.limite||0;
-      inp.className='budget-edit-input-inline';
-      inp.style.cssText='width:80px;background:var(--surface);border:1.5px solid var(--accent);border-radius:5px;padding:3px 6px;font-size:12px;font-family:Inter,sans-serif;text-align:right;color:var(--text-1);';
+      inp.className = 'form-input';
+      inp.style.cssText='width:100px;padding:5px 8px;font-size:13px;text-align:right;margin-left:auto';
       cell.innerHTML=''; cell.appendChild(inp); inp.focus(); inp.select();
       const save = ()=>{
         const val=parseFloat(inp.value)||0;
         catObj.limite=val;
-        if(currentUser) db.from('categorias').update({limite_mensal:val}).eq('id',catObj._dbId).then(()=>showToast('Limite atualizado'));
+        if(currentUser && catObj._dbId) db.from('categorias').update({limite_mensal:val}).eq('id',catObj._dbId).then(()=>showToast('Limite atualizado.'));
         renderBudget(currentMonth);
       };
       inp.onblur=save;
       inp.onkeydown=e=>{ if(e.key==='Enter') save(); if(e.key==='Escape') renderBudget(currentMonth); };
     };
   });
-
-  // Scroll to current month
-  const head = document.getElementById('budgetTableHead');
-  if(head && curIdx>=0){
-    setTimeout(()=>{
-      const ths = head.querySelectorAll('th.month-header');
-      if(ths[curIdx]) ths[curIdx].scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'});
-    },100);
-  }
 }
+
+let chartOrcGrupoInst = null;
+function renderOrcVisaoGeral(key, data){
+  const despesaEntries = Object.entries(data).filter(([,d])=>d.tipo!=='Receita');
+  const groupSums = {};
+  despesaEntries.forEach(([name,d])=>{
+    if(d.gasto<=0) return;
+    const grp = catGroup(name,'Despesa');
+    groupSums[grp] = (groupSums[grp]||0)+d.gasto;
+  });
+  const entries = Object.entries(groupSums).sort((a,b)=>b[1]-a[1]);
+  chartOrcGrupoInst = renderDonut('chartOrcGrupo','legendOrcGrupo','donutCenterOrc', entries, chartOrcGrupoInst);
+
+  const groupOrderBars = ['Essencial','Não Essencial','Investimentos e Dívidas'];
+  const barsEl = document.getElementById('orcGroupBars');
+  if(barsEl) barsEl.innerHTML = groupOrderBars.map(grp=>{
+    const catsInGrp = despesaEntries.filter(([name])=>catGroup(name,'Despesa')===grp);
+    const pl = catsInGrp.reduce((s,[,d])=>s+d.limite,0);
+    const re = catsInGrp.reduce((s,[,d])=>s+d.gasto,0);
+    const pct = pl>0?Math.min((re/pl)*100,100):(re>0?100:0);
+    const over = pl>0 && re>pl;
+    const color = BUDGET_GROUP_COLORS[grp];
+    return `<div style="margin-bottom:20px">
+      <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:7px">
+        <span style="font-weight:600;color:${color}">${grp}</span>
+        <span style="color:var(--text-2)">${fmtBRL(re)} <span style="color:var(--text-3)">/ ${pl>0?fmtBRL(pl):'sem limite'}</span></span>
+      </div>
+      <div class="kpi-subbar" style="height:8px;background:var(--surface-3)"><div class="kpi-subbar-fill" style="width:${pct}%;background:${over?'var(--negative)':color}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function showOrcSubtab(tab){
+  orcSubtab = tab;
+  document.querySelectorAll('#orcSubtabs .subtab').forEach(b=>b.classList.toggle('active', b.dataset.orctab===tab));
+  document.getElementById('orcTabDetalhado').style.display = tab==='detalhado'?'':'none';
+  document.getElementById('orcTabVisaoGeral').style.display = tab==='visaogeral'?'':'none';
+  renderBudget(currentMonth);
+}
+document.querySelectorAll('#orcSubtabs .subtab').forEach(btn=>{
+  btn.onclick = ()=> showOrcSubtab(btn.dataset.orctab);
+});
 
 
 // ===================== Pendencias view =====================
@@ -5524,7 +5578,6 @@ function renderView(view){
   } else if(view === 'cartao'){
     renderCartaoPage(currentMonth);
   } else if(view === 'orcamento'){
-    budgetYear = budgetYear || new Date().getFullYear();
     renderBudget(currentMonth);
   } else if(view === 'metas'){
     renderMetas();
@@ -6919,7 +6972,7 @@ function showBudgetEditModal(){
     if(!groups[grp]) groups[grp]=[];
     groups[grp].push(c);
   });
-  const groupOrder = ['Receitas','Essencial','Estilo de Vida','Investimentos e Dívidas','Outros'];
+  const groupOrder = ['Receitas','Essencial','Não Essencial','Investimentos e Dívidas','Outros'];
   list.innerHTML = groupOrder.filter(g=>groups[g]?.length).map(grp=>`
     <div style="margin-bottom:16px">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:${BUDGET_GROUP_COLORS[grp]||'var(--text-3)'};margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border-soft)">${grp}</div>
