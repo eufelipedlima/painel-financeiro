@@ -2597,10 +2597,22 @@
       <div class="panel">
         <div class="panel-head">
           <div class="panel-title">Lançamentos fixos do mês</div>
-          <button class="btn btn-primary" id="fixasNewBtn" style="padding:8px 16px;font-size:13px">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-            Novo lançamento
-          </button>
+        </div>
+        <div class="table-toolbar">
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            <input type="text" id="fixasSearchInput" placeholder="Buscar por descrição, categoria ou valor...">
+          </div>
+          <div style="position:relative">
+            <button class="mp-btn" id="fixasCatFilterToggle" style="display:flex;align-items:center;gap:6px;white-space:nowrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+              Categorias<span id="fixasCatFilterCount" style="display:none"></span>
+            </button>
+            <div class="tx-filters-panel" id="fixasCatFilterPanel" style="position:absolute; right:0; top:calc(100% + 6px); z-index:20; flex-direction:column; align-items:stretch; min-width:230px; max-height:280px; overflow-y:auto;">
+              <div id="fixasCatFilterList" style="display:flex; flex-direction:column; gap:2px"></div>
+              <button class="mp-btn" id="fixasCatFilterClear" style="margin-top:8px">Marcar todas</button>
+            </div>
+          </div>
         </div>
         <table class="data-table" id="fixasTable">
           <thead><tr>
@@ -4362,22 +4374,56 @@ function renderAllTable(){
 document.getElementById('searchInput').addEventListener('input', renderAllTable);
 
 // ===================== Despesas Fixas =====================
+let fixasCatFilter = null; // null = mostrar todas; Set = mostrar só essas
 function renderDespesasFixas(){
-  const fixas = DATA.transacoes.filter(t =>
+  const allFixas = DATA.transacoes.filter(t =>
     t.tipo === 'Despesa' && t.recorrente === true && inMonth(t.data, currentMonth)
   ).sort((a,b) => parseDate(a.data) - parseDate(b.data));
 
-  const total = fixas.reduce((s,t)=>s+t.valor,0);
+  const total = allFixas.reduce((s,t)=>s+t.valor,0);
   document.getElementById('fixasTotalVal').textContent = fmtBRL(total);
-  const paidCount = fixas.filter(t=>t.status==='Pago').length;
+  const paidCount = allFixas.filter(t=>t.status==='Pago').length;
   document.getElementById('fixasTotalSub').innerHTML =
-    `<span class="kpi-delta flat">${fixas.length} lançamento${fixas.length===1?'':'s'} fixo${fixas.length===1?'':'s'} · ${paidCount} já pago${paidCount===1?'':'s'}</span>`;
+    `<span class="kpi-delta flat">${allFixas.length} lançamento${allFixas.length===1?'':'s'} fixo${allFixas.length===1?'':'s'} · ${paidCount} já pago${paidCount===1?'':'s'}</span>`;
+
+  // Category checklist (built from categories present this month)
+  const cats = [...new Set(allFixas.map(t=>t.categoria).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  const catList = document.getElementById('fixasCatFilterList');
+  if(catList){
+    catList.innerHTML = cats.map(c => `
+      <label style="display:flex;align-items:center;gap:8px;padding:6px 4px;cursor:pointer;font-size:13px">
+        <input type="checkbox" class="row-check fixas-cat-check" value="${c}" ${(!fixasCatFilter || fixasCatFilter.has(c))?'checked':''}>
+        ${c}
+      </label>`).join('') || '<div style="font-size:12.5px;color:var(--text-3);padding:6px 4px">Nenhuma categoria ainda</div>';
+    catList.querySelectorAll('.fixas-cat-check').forEach(cb => {
+      cb.onchange = () => {
+        const checked = [...catList.querySelectorAll('.fixas-cat-check:checked')].map(c=>c.value);
+        fixasCatFilter = checked.length === cats.length ? null : new Set(checked);
+        updateFixasCatFilterCount();
+        renderDespesasFixas();
+      };
+    });
+  }
+  updateFixasCatFilterCount();
+
+  // Apply search + category filter for display
+  const q = (document.getElementById('fixasSearchInput')?.value || '').trim().toLowerCase();
+  let fixas = allFixas;
+  if(fixasCatFilter) fixas = fixas.filter(t => fixasCatFilter.has(t.categoria));
+  if(q) fixas = fixas.filter(t =>
+    (t.descricao||'').toLowerCase().includes(q) ||
+    (t.categoria||'').toLowerCase().includes(q) ||
+    fmtBRL(t.valor).toLowerCase().includes(q)
+  );
 
   const body = document.getElementById('fixasTableBody');
   const empty = document.getElementById('fixasTableEmpty');
   if(fixas.length === 0){
     body.innerHTML = '';
     empty.style.display = '';
+    empty.textContent = allFixas.length === 0
+      ? 'Nenhuma despesa fixa lançada ainda. Marque um lançamento como "recorrente" em Transações, ou crie um direto por aqui.'
+      : 'Nenhum lançamento encontrado com esses filtros.';
     document.getElementById('fixasTable').style.display = 'none';
     return;
   }
@@ -4408,11 +4454,26 @@ function renderDespesasFixas(){
     btn.onclick = () => openEditDrawer(parseInt(btn.dataset.id), btn.dataset.src);
   });
 }
-document.getElementById('fixasNewBtn')?.addEventListener('click', () => {
+function updateFixasCatFilterCount(){
+  const badge = document.getElementById('fixasCatFilterCount');
+  const btn = document.getElementById('fixasCatFilterToggle');
+  const n = fixasCatFilter ? fixasCatFilter.size : 0;
+  if(badge){ badge.textContent = n>0?n:''; badge.style.display = n>0?'inline-flex':'none'; }
+  if(btn) btn.classList.toggle('active', n>0);
+}
+document.getElementById('fixasSearchInput')?.addEventListener('input', renderDespesasFixas);
+document.getElementById('fixasCatFilterToggle')?.addEventListener('click', () => {
+  document.getElementById('fixasCatFilterPanel')?.classList.toggle('open');
+});
+document.getElementById('fixasCatFilterClear')?.addEventListener('click', () => {
+  fixasCatFilter = null;
+  renderDespesasFixas();
+});
+function openFixasDrawer(){
   openDrawer();
   setFormType('Despesa');
   toggleRecorrente();
-});
+}
 
 // ── Advanced transaction filters (conta/cartão, categoria, dia) ────────────
 function populateTxFilters(){
@@ -8048,7 +8109,10 @@ if(logoutBtnEl) {
   });
 }
 
-document.getElementById('fabBtn').onclick = openDrawer;
+document.getElementById('fabBtn').onclick = () => {
+  if(currentView === 'despesasfixas') openFixasDrawer();
+  else openDrawer();
+};
 document.getElementById('drawerClose').onclick = closeDrawer;
 document.getElementById('drawerCancelBtn').onclick = closeDrawer;
 document.getElementById('drawerOverlay').onclick = closeDrawer;
