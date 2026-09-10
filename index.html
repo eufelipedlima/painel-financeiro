@@ -2203,6 +2203,10 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 3"/></svg>
               Orçamento
             </div>
+            <div class="nav-item" data-view="despesasfixas">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18"/><path d="M8 2v4M16 2v4"/><path d="M7.5 13.5h2M7.5 17h2M11 13.5h2M11 17h2M14.5 13.5h2M14.5 17h2"/></svg>
+              Despesas Fixas
+            </div>
             <div class="nav-item" data-view="metas">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M1 12h2M21 12h2"/></svg>
               Metas
@@ -2569,6 +2573,48 @@
       <!-- Hidden chart canvas kept for compatibility -->
       <canvas id="chartBudget" style="display:none"></canvas>
       <div class="budget-cat-grid" id="budgetList" style="display:none"></div>
+    </div>
+
+    <!-- DESPESAS FIXAS -->
+    <div class="view" id="view-despesasfixas">
+      <div class="topbar">
+        <div>
+          <div class="page-title">Despesas Fixas</div>
+          <div class="page-sub">Seus compromissos recorrentes, mês a mês</div>
+        </div>
+        <div class="month-picker" id="monthPickerRootFixas"></div>
+      </div>
+      <div class="kpi-grid" style="margin-bottom:20px">
+        <div class="kpi-card" style="grid-column:span 2">
+          <div class="kpi-top">
+            <span class="kpi-label">Total em despesas fixas neste mês</span>
+            <div class="kpi-icon gold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18"/></svg></div>
+          </div>
+          <div class="kpi-value num" id="fixasTotalVal">R$ 0,00</div>
+          <span class="kpi-delta flat" id="fixasTotalSub">Seu custo de vida mensal fixo</span>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">Lançamentos fixos do mês</div>
+          <button class="btn btn-primary" id="fixasNewBtn" style="padding:8px 16px;font-size:13px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            Novo lançamento
+          </button>
+        </div>
+        <table class="data-table" id="fixasTable">
+          <thead><tr>
+            <th>Data</th>
+            <th>Descrição</th>
+            <th>Categoria</th>
+            <th>Conta</th>
+            <th>Status</th>
+            <th style="text-align:right">Valor</th><th></th>
+          </tr></thead>
+          <tbody id="fixasTableBody"></tbody>
+        </table>
+        <div class="empty-note" id="fixasTableEmpty" style="display:none;">Nenhuma despesa fixa lançada ainda. Marque um lançamento como "recorrente" em Transações, ou crie um direto por aqui.</div>
+      </div>
     </div>
 
 
@@ -3450,8 +3496,8 @@ async function loadAllData() {
     let nextId = 1;
     DATA.contas = (cDb||[]).map(r => ({ _dbId:r.id, conta:r.nome, tipo:r.tipo, saldoInicial:+r.saldo_inicial||0, saldoAtual:0, arquivado:r.arquivado||false }));
     DATA.cartoes = (krDb||[]).map(r => ({ _dbId:r.id, cartao:r.nome, banco:r.banco, limite:+r.limite||0, fechamento:r.dia_fechamento, vencimento:r.dia_vencimento }));
-    DATA.categorias = (catDb||[]).map(r => ({ _dbId:r.id, categoria:r.nome, tipo:r.tipo, limite:+r.limite_mensal||0, considerar:r.considerar_total, arquivado:r.arquivado||false }));
-    DATA.subcategorias = (subDb||[]).map(r => ({ _dbId:r.id, categoriaNome:r.categoria_nome, nome:r.nome, arquivado:r.arquivado||false }));
+    DATA.categorias = (catDb||[]).map(r => ({ _dbId:r.id, categoria:r.nome, tipo:r.tipo, limite:+r.limite_mensal||0, considerar:r.considerar_total, arquivado:r.arquivado||false, grupo:r.grupo||null }));
+    DATA.subcategorias = (subDb||[]).map(r => ({ _dbId:r.id, categoriaNome:r.categoria_nome, nome:r.nome, arquivado:r.arquivado||false, grupo:r.grupo||null }));
     DATA.transacoes = (trDb||[]).map(r => ({ _dbId:r.id, _id:nextId++, _source:'transacoes', data:r.data, descricao:r.descricao, tipo:r.tipo, categoria:r.categoria, subcategoria:r.subcategoria||null, conta:r.conta, contaDestino:r.conta_destino, formaPagamento:r.forma_pagamento, status:r.status, valor:+r.valor||0, obs:r.observacoes, recorrente:r.recorrente||false, recorrenciaId:r.recorrencia_id||null, recorrenciaFreq:r.recorrencia_freq||null }));
     DATA.cartaoCompras = (ccDb||[]).map(r => {
       const obs = r.observacoes||'';
@@ -3757,7 +3803,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
 });
 
 // ===================== Month picker (rendered in 4 mount points, kept in sync) =====================
-const monthMounts = ['monthPickerRoot','monthPickerRoot2','monthPickerRoot3','monthPickerRoot4','monthPickerRoot5'];
+const monthMounts = ['monthPickerRoot','monthPickerRoot2','monthPickerRoot3','monthPickerRoot4','monthPickerRoot5','monthPickerRootFixas'];
 function buildMonthPicker(mountId){
   const root = document.getElementById(mountId);
   if(!root) return;
@@ -4315,6 +4361,59 @@ function renderAllTable(){
 }
 document.getElementById('searchInput').addEventListener('input', renderAllTable);
 
+// ===================== Despesas Fixas =====================
+function renderDespesasFixas(){
+  const fixas = DATA.transacoes.filter(t =>
+    t.tipo === 'Despesa' && t.recorrente === true && inMonth(t.data, currentMonth)
+  ).sort((a,b) => parseDate(a.data) - parseDate(b.data));
+
+  const total = fixas.reduce((s,t)=>s+t.valor,0);
+  document.getElementById('fixasTotalVal').textContent = fmtBRL(total);
+  const paidCount = fixas.filter(t=>t.status==='Pago').length;
+  document.getElementById('fixasTotalSub').innerHTML =
+    `<span class="kpi-delta flat">${fixas.length} lançamento${fixas.length===1?'':'s'} fixo${fixas.length===1?'':'s'} · ${paidCount} já pago${paidCount===1?'':'s'}</span>`;
+
+  const body = document.getElementById('fixasTableBody');
+  const empty = document.getElementById('fixasTableEmpty');
+  if(fixas.length === 0){
+    body.innerHTML = '';
+    empty.style.display = '';
+    document.getElementById('fixasTable').style.display = 'none';
+    return;
+  }
+  empty.style.display = 'none';
+  document.getElementById('fixasTable').style.display = '';
+  body.innerHTML = fixas.map(r => {
+    const isPend = r.status === 'Pendente';
+    const statusLabel = r.status === 'Pago' ? '✓ Pago' : r.status === 'Pendente' ? '⏱ Pendente' : '⚠ ' + r.status;
+    return `<tr>
+      <td class="mono">${fmtDateBR(r.data)}</td>
+      <td>${r.descricao||''}<span style="font-size:9.5px;background:var(--accent-soft);color:var(--accent-2);padding:1px 5px;border-radius:4px;margin-left:5px;font-weight:700">FIXO</span></td>
+      <td>${r.categoria||''}</td>
+      <td>${r.conta||''}</td>
+      <td><span class="tx-status ${r.status}">${statusLabel}</span></td>
+      <td class="val-cell">${fmtBRL(r.valor)}</td>
+      <td class="tbl-action-cell" style="white-space:nowrap;width:120px">
+        <div style="display:flex;align-items:center;justify-content:flex-end;gap:5px">
+          ${isPend ? `<button class="tbl-pay-btn" data-id="${r._id}" data-rec="false" title="Confirmar pagamento">Pagar</button>` : ''}
+          <button class="tbl-edit-btn" data-id="${r._id}" data-src="transacoes" title="Editar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+  body.querySelectorAll('.tbl-pay-btn').forEach(btn => {
+    btn.onclick = () => openTxPayModal(parseInt(btn.dataset.id));
+  });
+  body.querySelectorAll('.tbl-edit-btn').forEach(btn => {
+    btn.onclick = () => openEditDrawer(parseInt(btn.dataset.id), btn.dataset.src);
+  });
+}
+document.getElementById('fixasNewBtn')?.addEventListener('click', () => {
+  openDrawer();
+  setFormType('Despesa');
+  toggleRecorrente();
+});
+
 // ── Advanced transaction filters (conta/cartão, categoria, dia) ────────────
 function populateTxFilters(){
   const contaSel = document.getElementById('txFilterConta');
@@ -4869,18 +4968,27 @@ let budgetYear = new Date().getFullYear();
 const BUDGET_GROUPS = {
   'Receitas': ['Salário','Empréstimos','Investimentos','Freelance','Vendas','Outras Receitas'],
   'Essencial': ['Alimentação','Contas','Educação','Moradia','Pets','Saúde e Bem-estar','Transporte'],
-  'Estilo de Vida': ['Assinaturas','Compras','Lazer','Presentes e Doações','Trabalho / Profissional'],
+  'Não Essencial': ['Assinaturas','Compras','Lazer','Presentes e Doações','Trabalho / Profissional'],
   'Investimentos e Dívidas': ['Financeiro','Financiamento','Impostos','Investimentos (Saída)'],
 };
 const BUDGET_GROUP_COLORS = {
   'Receitas': 'var(--positive)',
   'Essencial': '#7A8C99',
-  'Estilo de Vida': '#B5654A',
+  'Não Essencial': '#B5654A',
   'Investimentos e Dívidas': '#9C6B1D',
 };
 
-function catGroup(catName, tipo){
+function catGroup(catName, tipo, subcatName){
   if(tipo==='Receita') return 'Receitas';
+  // 1. Subcategoria override, if one is set and matches
+  if(subcatName){
+    const sub = DATA.subcategorias.find(s => s.categoriaNome===catName && s.nome===subcatName);
+    if(sub && sub.grupo) return sub.grupo;
+  }
+  // 2. Explicit grupo set on the categoria itself (user-configured)
+  const cat = DATA.categorias.find(c => c.categoria===catName);
+  if(cat && cat.grupo) return cat.grupo;
+  // 3. Fallback to the built-in default mapping (for categorias never configured)
   for(const [grp,cats] of Object.entries(BUDGET_GROUPS)){
     if(cats.includes(catName)) return grp;
   }
@@ -5361,6 +5469,8 @@ function renderView(view){
     renderMetas();
   } else if(view === 'dividas'){
     renderDividas();
+  } else if(view === 'despesasfixas'){
+    renderDespesasFixas();
   } else if(view === 'configuracoes'){
     showConfigTab(configTab);
   }
@@ -5446,8 +5556,8 @@ function renderConfiguracoes(){
       const panelId = 'subpanel-'+c._dbId;
       const subsPanel = !arq ? `
         <div class="cat-row-subs-panel" id="${panelId}">
-          ${subs.map(s=>`<span class="sub-tag">
-            ${s.nome}
+          ${subs.map(s=>`<span class="sub-tag" ${s.grupo?`title="Grupo: ${s.grupo} (sobrescreve a categoria)"`:''}>
+            ${s.nome}${s.grupo?`<span style="width:6px;height:6px;border-radius:50%;background:${BUDGET_GROUP_COLORS[s.grupo]||'var(--text-3)'};display:inline-block;margin-left:2px"></span>`:''}
             <button class="sub-tag-btn cfg-edit-sub" data-id="${s._dbId}" title="Editar">${EDIT_SVG}</button>
             <button class="sub-tag-btn danger cfg-arch" data-type="subcategoria" data-id="${s._dbId}" data-archived="false" data-nome="${s.nome}" title="Arquivar">${ARCH_SVG}</button>
           </span>`).join('')}
@@ -5459,7 +5569,10 @@ function renderConfiguracoes(){
           <span class="config-tipo-badge ${tipo}" style="flex-shrink:0">${tipo==='Transferência'?'TRA':tipo==='Receita'?'REC':'DES'}</span>
           <div>
             <div class="cat-row-name">${c.categoria}</div>
-            ${c.limite>0&&!arq?`<div class="cat-row-limit">Limite: ${fmtBRL(c.limite)}/mês</div>`:''}
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:2px">
+              ${c.tipo==='Despesa'&&!arq?`<span style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:${BUDGET_GROUP_COLORS[catGroup(c.categoria,c.tipo)]||'var(--text-3)'}">${catGroup(c.categoria,c.tipo)}</span>`:''}
+              ${c.limite>0&&!arq?`<div class="cat-row-limit">Limite: ${fmtBRL(c.limite)}/mês</div>`:''}
+            </div>
           </div>
         </div>
         <div class="cat-row-subs" style="align-items:center">
@@ -5505,6 +5618,8 @@ function openAddSubcategoria(categoriaNome){
   document.getElementById('configModalContaFields').style.display = 'none';
   document.getElementById('configModalCartaoFields').style.display = 'none';
   document.getElementById('configModalCatFields').style.display = 'none';
+  document.getElementById('configModalSubGrupoWrap').style.display = '';
+  document.getElementById('configModalSubGrupo').value = '';
   document.getElementById('configModalOverlay').classList.add('open');
   setTimeout(()=>document.getElementById('configModalName').focus(), 100);
 }
@@ -5518,6 +5633,8 @@ function editConfigSubcategoria(dbId){
   document.getElementById('configModalContaFields').style.display = 'none';
   document.getElementById('configModalCartaoFields').style.display = 'none';
   document.getElementById('configModalCatFields').style.display = 'none';
+  document.getElementById('configModalSubGrupoWrap').style.display = '';
+  document.getElementById('configModalSubGrupo').value = s.grupo || '';
   document.getElementById('configModalOverlay').classList.add('open');
   setTimeout(()=>document.getElementById('configModalName').focus(), 100);
 }
@@ -5531,6 +5648,7 @@ function editConfigConta(dbId){
   document.getElementById('configModalContaFields').style.display = '';
   document.getElementById('configModalCartaoFields').style.display = 'none';
   document.getElementById('configModalCatFields').style.display = 'none';
+  document.getElementById('configModalSubGrupoWrap').style.display = 'none';
   document.getElementById('configModalTipo').value = c.tipo;
   document.getElementById('configModalOverlay').classList.add('open');
 }
@@ -5544,7 +5662,15 @@ function editConfigCategoria(dbId){
   document.getElementById('configModalContaFields').style.display = 'none';
   document.getElementById('configModalCartaoFields').style.display = 'none';
   document.getElementById('configModalCatFields').style.display = '';
+  document.getElementById('configModalSubGrupoWrap').style.display = 'none';
   document.getElementById('configModalLimite').value = c.limite||0;
+  const grupoWrapEdit = document.getElementById('configModalGrupoWrap');
+  if(c.tipo === 'Receita'){
+    grupoWrapEdit.style.display = 'none';
+  } else {
+    grupoWrapEdit.style.display = '';
+    document.getElementById('configModalGrupo').value = c.grupo || catGroup(c.categoria, c.tipo);
+  }
   document.getElementById('configModalOverlay').classList.add('open');
 }
 function openAddConfig(mode, tipo=null){
@@ -5557,10 +5683,20 @@ function openAddConfig(mode, tipo=null){
   document.getElementById('configModalContaFields').style.display = mode==='conta' ? '' : 'none';
   document.getElementById('configModalCartaoFields').style.display = mode==='cartao' ? '' : 'none';
   document.getElementById('configModalCatFields').style.display = mode==='categoria' ? '' : 'none';
+  document.getElementById('configModalSubGrupoWrap').style.display = 'none';
   // Reset values
   if(mode==='conta'){ document.getElementById('configModalSaldo').value='0'; document.getElementById('configModalTipo').value='Conta Corrente'; }
   if(mode==='cartao'){ document.getElementById('configModalBanco').value=''; document.getElementById('configModalFechamento').value=''; document.getElementById('configModalVencimento').value=''; document.getElementById('configModalLimiteCartao').value='0'; }
-  if(mode==='categoria'){ document.getElementById('configModalLimite').value='0'; }
+  if(mode==='categoria'){
+    document.getElementById('configModalLimite').value='0';
+    const grupoWrapNew = document.getElementById('configModalGrupoWrap');
+    if(tipo === 'Receita'){
+      grupoWrapNew.style.display = 'none';
+    } else {
+      grupoWrapNew.style.display = '';
+      document.getElementById('configModalGrupo').value = 'Essencial';
+    }
+  }
   document.getElementById('configModalOverlay').classList.add('open');
   setTimeout(()=>document.getElementById('configModalName').focus(), 100);
 }
@@ -5638,28 +5774,31 @@ async function saveConfigItem(){
     showToast(`Cartão "${nome}" adicionado.`);
   } else if(configMode==='categoria'){
     const limite = parseFloat(document.getElementById('configModalLimite').value)||0;
+    const grupo = configTipo === 'Receita' ? null : document.getElementById('configModalGrupo').value;
     if(configEditTarget){
-      configEditTarget.categoria = nome; configEditTarget.limite = limite;
-      await db.from('categorias').update({nome, limite_mensal:limite}).eq('id', configEditTarget._dbId);
+      configEditTarget.categoria = nome; configEditTarget.limite = limite; configEditTarget.grupo = grupo;
+      await db.from('categorias').update({nome, limite_mensal:limite, grupo}).eq('id', configEditTarget._dbId);
       showToast('Categoria atualizada.');
     } else {
-      const {data} = await db.from('categorias').insert({user_id:uid, nome, tipo:configTipo, limite_mensal:limite}).select().single();
-      if(data) DATA.categorias.push({_dbId:data.id, categoria:nome, tipo:configTipo, limite, considerar:true});
+      const {data} = await db.from('categorias').insert({user_id:uid, nome, tipo:configTipo, limite_mensal:limite, grupo}).select().single();
+      if(data) DATA.categorias.push({_dbId:data.id, categoria:nome, tipo:configTipo, limite, considerar:true, grupo});
       showToast(`Categoria "${nome}" adicionada.`);
     }
   }
   if(configMode==='subcategoria'){
     const catNome = configTipo;
+    const subGrupo = document.getElementById('configModalSubGrupo').value || null;
     if(configEditTarget){
-      await db.from('subcategorias').update({nome}).eq('id', configEditTarget._dbId);
+      await db.from('subcategorias').update({nome, grupo:subGrupo}).eq('id', configEditTarget._dbId);
       configEditTarget.nome = nome;
+      configEditTarget.grupo = subGrupo;
       showToast(`Subcategoria renomeada para "${nome}".`);
       closeConfigModal();
       renderConfiguracoes();
       return;
     }
-    const {data} = await db.from('subcategorias').insert({user_id:uid, categoria_nome:catNome, nome}).select().single();
-    if(data) DATA.subcategorias.push({_dbId:data.id, categoriaNome:catNome, nome, arquivado:false});
+    const {data} = await db.from('subcategorias').insert({user_id:uid, categoria_nome:catNome, nome, grupo:subGrupo}).select().single();
+    if(data) DATA.subcategorias.push({_dbId:data.id, categoriaNome:catNome, nome, arquivado:false, grupo:subGrupo});
     showToast(`Subcategoria "${nome}" adicionada.`);
     closeConfigModal();
     renderConfiguracoes();
@@ -8012,10 +8151,28 @@ renderAll();
     </div>
     <!-- Categoria fields -->
     <div id="configModalCatFields" style="display:none">
+      <div class="form-group" id="configModalGrupoWrap">
+        <label class="form-label">Grupo</label>
+        <select class="form-select" id="configModalGrupo">
+          <option value="Essencial">Essencial</option>
+          <option value="Não Essencial">Não Essencial</option>
+          <option value="Investimentos e Dívidas">Investimentos e Dívidas</option>
+        </select>
+      </div>
       <div class="form-group">
         <label class="form-label">Limite mensal (R$) <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
         <input type="number" step="0.01" min="0" class="form-input" id="configModalLimite" placeholder="0,00" value="0">
       </div>
+    </div>
+    <!-- Subcategoria grupo override -->
+    <div id="configModalSubGrupoWrap" class="form-group" style="display:none">
+      <label class="form-label">Grupo <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional — sobrescreve o grupo da categoria)</span></label>
+      <select class="form-select" id="configModalSubGrupo">
+        <option value="">Herdar da categoria</option>
+        <option value="Essencial">Essencial</option>
+        <option value="Não Essencial">Não Essencial</option>
+        <option value="Investimentos e Dívidas">Investimentos e Dívidas</option>
+      </select>
     </div>
     <div class="cmodal-actions">
       <button class="btn btn-ghost" onclick="closeConfigModal()">Cancelar</button>
