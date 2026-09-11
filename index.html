@@ -4446,7 +4446,7 @@ function renderAllTable(){
         btn.onclick=()=>openEditDrawer(parseInt(btn.dataset.id),'transacoes');
       });
       mobList.querySelectorAll('.mob-trans-pagar').forEach(btn=>{
-        btn.onclick=()=>{ markEntryAsPaid(parseInt(btn.dataset.id)); };
+        btn.onclick=()=>{ openTxPayModal(parseInt(btn.dataset.id)); };
       });
     }
   }
@@ -5423,7 +5423,7 @@ function renderPending(){
     </tr>`;
   }).join('');
   body.querySelectorAll('.pend-confirm-btn').forEach(btn => {
-    btn.onclick = () => markEntryAsPaid(parseInt(btn.dataset.id));
+    btn.onclick = () => openTxPayModal(parseInt(btn.dataset.id));
   });
   body.querySelectorAll('.pend-edit-btn').forEach(btn => {
     btn.onclick = (e) => { e.stopPropagation(); openEditDrawer(parseInt(btn.dataset.id), 'transacoes'); };
@@ -5612,7 +5612,7 @@ function renderMobileCards(rows, containerId, opts){
     btn.onclick=()=>openEditDrawer(parseInt(btn.dataset.id), btn.dataset.src||'transacoes');
   });
   container.querySelectorAll('.mob-trans-pagar').forEach(btn=>{
-    btn.onclick=()=>{ markEntryAsPaid(parseInt(btn.dataset.id)); };
+    btn.onclick=()=>{ openTxPayModal(parseInt(btn.dataset.id)); };
   });
 }
 
@@ -6253,7 +6253,7 @@ function renderAtrasadas(){
     </tr>`;
   }).join('');
   body.querySelectorAll('.pend-confirm-btn').forEach(btn => {
-    btn.onclick = () => markEntryAsPaid(parseInt(btn.dataset.id));
+    btn.onclick = () => openTxPayModal(parseInt(btn.dataset.id));
   });
   body.querySelectorAll('.atras-edit-btn').forEach(btn => {
     btn.onclick = (e) => { e.stopPropagation(); openEditDrawer(parseInt(btn.dataset.id), 'transacoes'); };
@@ -7128,6 +7128,13 @@ function clearTxSelection(){
   _selectedTxIds.clear();
   renderAllTable();
 }
+function buildTxPayContaOptions(includeCartoes){
+  let html = `<optgroup label="Contas">${DATA.contas.filter(c=>!c.arquivado).map(c=>`<option value="${c.conta}">${c.conta} (${fmtBRL(c.saldoAtual)})</option>`).join('')}</optgroup>`;
+  if(includeCartoes && DATA.cartoes.length){
+    html += `<optgroup label="Cartão de crédito (lança na fatura)">${DATA.cartoes.map(c=>`<option value="${c.cartao}" data-cartao="true">${c.cartao}</option>`).join('')}</optgroup>`;
+  }
+  return html;
+}
 function openTxPayModalBulk(){
   const ids = Array.from(_selectedTxIds);
   if(ids.length === 0) return;
@@ -7145,8 +7152,7 @@ function openTxPayModalBulk(){
   valorInput.value = total.toFixed(2);
   valorInput.disabled = true;
   document.getElementById('txPayValorLabel').textContent = 'Valor total';
-  document.getElementById('txPayConta').innerHTML =
-    DATA.contas.filter(c=>!c.arquivado).map(c=>`<option value="${c.conta}">${c.conta} (${fmtBRL(c.saldoAtual)})</option>`).join('');
+  document.getElementById('txPayConta').innerHTML = buildTxPayContaOptions(!allRec);
   const overlay = document.getElementById('txPayOverlay');
   overlay.style.display = 'flex';
   requestAnimationFrame(()=>overlay.classList.add('open'));
@@ -7165,8 +7171,7 @@ function openTxPayModal(entryId){
   valorInput.value = entry.valor.toFixed(2);
   valorInput.disabled = false;
   document.getElementById('txPayValorLabel').textContent = 'Valor';
-  document.getElementById('txPayConta').innerHTML =
-    DATA.contas.filter(c=>!c.arquivado).map(c=>`<option value="${c.conta}">${c.conta} (${fmtBRL(c.saldoAtual)})</option>`).join('');
+  document.getElementById('txPayConta').innerHTML = buildTxPayContaOptions(!isRec);
   if(entry.conta) document.getElementById('txPayConta').value = entry.conta;
   const overlay = document.getElementById('txPayOverlay');
   overlay.style.display = 'flex';
@@ -7180,6 +7185,28 @@ function closeTxPayModal(){
   _txPayBulkIds = null;
   document.getElementById('txPayValor').disabled = false;
 }
+function applyPaymentToContaOrCartao(conta, valor, tipo, dataStr){
+  const cartaoObj = DATA.cartoes.find(c=>c.cartao===conta);
+  if(cartaoObj){
+    const compKey = getCartaoFaturaMonth({data:dataStr, cartao:conta});
+    let fat = DATA.faturas.find(f=>f.cartao===conta && f.competencia && f.competencia.slice(0,7)===compKey);
+    if(fat){
+      fat.valorTotal = Math.round((fat.valorTotal+valor)*100)/100;
+      if(fat.status==='Pago') fat.status='Pendente';
+    } else {
+      fat = {cartao:conta, competencia:compKey+'-01', valorTotal:valor, status:'Pendente', _new:true};
+      DATA.faturas.push(fat);
+    }
+    dbUpdateFatura(fat);
+    return;
+  }
+  const contaObj = DATA.contas.find(c=>c.conta===conta);
+  if(contaObj){
+    const delta = tipo==='Receita' ? valor : -valor;
+    contaObj.saldoAtual = Math.round((contaObj.saldoAtual+delta)*100)/100;
+    DATA.saldoTotal = Math.round((DATA.saldoTotal+delta)*100)/100;
+  }
+}
 async function confirmTxPay(){
   if(_txPayBulkIds && _txPayBulkIds.length){
     const conta = document.getElementById('txPayConta').value;
@@ -7191,12 +7218,7 @@ async function confirmTxPay(){
       entry.status = 'Pago';
       entry.data   = data;
       entry.conta  = conta;
-      const contaObj = DATA.contas.find(c=>c.conta===conta);
-      if(contaObj){
-        const delta = entry.tipo==='Receita' ? entry.valor : -entry.valor;
-        contaObj.saldoAtual = Math.round((contaObj.saldoAtual+delta)*100)/100;
-        DATA.saldoTotal = Math.round((DATA.saldoTotal+delta)*100)/100;
-      }
+      applyPaymentToContaOrCartao(conta, entry.valor, entry.tipo, data);
       const divMatch = (entry.obs||'').match(/DIV:([^|]+)\|PARC:(\d+)/);
       if(divMatch){
         const [,divDbId,parcNumStr]=divMatch;
@@ -7230,13 +7252,8 @@ async function confirmTxPay(){
   entry.status = 'Pago';
   entry.data   = data;
   entry.conta  = conta;
-  // Update balance
-  const contaObj = DATA.contas.find(c=>c.conta===conta);
-  if(contaObj){
-    const delta = entry.tipo==='Receita' ? valor : -valor;
-    contaObj.saldoAtual = Math.round((contaObj.saldoAtual+delta)*100)/100;
-    DATA.saldoTotal = Math.round((DATA.saldoTotal+delta)*100)/100;
-  }
+  // Update balance (conta bancária) ou lança na fatura (cartão)
+  applyPaymentToContaOrCartao(conta, valor, entry.tipo, data);
   // Sync with debt installment if linked
   const divMatch = (entry.obs||'').match(/DIV:([^|]+)\|PARC:(\d+)/);
   if(divMatch){
@@ -7749,7 +7766,6 @@ function saveEntry(){
     }
     const currMonth = monthKey(parseDate(data));
     if(!months.includes(currMonth)){ months.push(currMonth); months.sort(); }
-    currentMonth = currMonth;
     closeDrawer();
     showToast(`"${descricao}" atualizado com sucesso.`);
     renderAll();
@@ -7940,7 +7956,6 @@ function saveEntry(){
 
   const newMonth = monthKey(parseDate(data));
   if(!months.includes(newMonth)){ months.push(newMonth); months.sort(); }
-  currentMonth = newMonth;
 
   // Reset recurring state
   _recorrente = false;
