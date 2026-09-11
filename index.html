@@ -4460,12 +4460,6 @@ function renderDespesasFixas(){
     t.tipo === 'Despesa' && t.recorrente === true && inMonth(t.data, currentMonth)
   ).sort((a,b) => parseDate(a.data) - parseDate(b.data));
 
-  const total = allFixas.reduce((s,t)=>s+t.valor,0);
-  document.getElementById('fixasTotalVal').textContent = fmtBRL(total);
-  const paidCount = allFixas.filter(t=>t.status==='Pago').length;
-  document.getElementById('fixasTotalSub').innerHTML =
-    `<span class="kpi-delta flat">${allFixas.length} lançamento${allFixas.length===1?'':'s'} fixo${allFixas.length===1?'':'s'} · ${paidCount} já pago${paidCount===1?'':'s'}</span>`;
-
   // Category checklist (built from categories present this month)
   const cats = [...new Set(allFixas.map(t=>t.categoria).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
   const catList = document.getElementById('fixasCatFilterList');
@@ -4489,12 +4483,20 @@ function renderDespesasFixas(){
   // Apply search + category filter for display
   const q = (document.getElementById('fixasSearchInput')?.value || '').trim().toLowerCase();
   let fixas = allFixas;
+  const filtered = fixasCatFilter !== null || q !== '';
   if(fixasCatFilter) fixas = fixas.filter(t => fixasCatFilter.has(t.categoria));
   if(q) fixas = fixas.filter(t =>
     (t.descricao||'').toLowerCase().includes(q) ||
     (t.categoria||'').toLowerCase().includes(q) ||
     fmtBRL(t.valor).toLowerCase().includes(q)
   );
+
+  // Top KPI now reflects whatever is currently filtered
+  const total = fixas.reduce((s,t)=>s+t.valor,0);
+  document.getElementById('fixasTotalVal').textContent = fmtBRL(total);
+  const paidCount = fixas.filter(t=>t.status==='Pago').length;
+  document.getElementById('fixasTotalSub').innerHTML =
+    `<span class="kpi-delta flat">${fixas.length} lançamento${fixas.length===1?'':'s'} fixo${fixas.length===1?'':'s'} · ${paidCount} já pago${paidCount===1?'':'s'}${filtered?` · de ${fmtBRL(allFixas.reduce((s,t)=>s+t.valor,0))} no total`:''}</span>`;
 
   const body = document.getElementById('fixasTableBody');
   const empty = document.getElementById('fixasTableEmpty');
