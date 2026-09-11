@@ -5760,7 +5760,6 @@ function renderConfiguracoes(){
           ${c.limite>0&&!arq?`<div class="cat-row-limit">Limite: ${fmtBRL(c.limite)}/mês</div>`:''}
         </div>
         <div class="cat-row-subs"></div>
-        ${subsPanel}
         <div class="cat-row-actions">
           ${!arq?`<button class="cat-row-sub-toggle cfg-sub-toggle" data-panel="${panelId}" title="${totalSubs} subcategorias">
             ${totalSubs > 0 ? toggleLabel : '+ subcategorias'}
@@ -5768,6 +5767,7 @@ function renderConfiguracoes(){
           ${!arq?`<button class="cat-action-btn cfg-edit-cat" data-id="${c._dbId}" title="Editar">${EDIT_SVG}</button>`:''}
           <button class="cat-action-btn ${arq?'':'danger'} cfg-arch" data-type="categoria" data-id="${c._dbId}" data-archived="${arq}" data-nome="${c.categoria}" title="${arq?'Reativar':'Arquivar'}">${arq?UNARCH_SVG:ARCH_SVG}</button>
         </div>
+        ${subsPanel}
       </div>`;
     };
     const grouped = {};
