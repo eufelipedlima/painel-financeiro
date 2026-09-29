@@ -6589,10 +6589,10 @@ function renderInvestimentos(){
     </div>`;
   }).join('');
   grid.querySelectorAll('.meta-action-btn[data-id]').forEach(btn=>{
-    btn.onclick = () => openInvestMovModal(parseInt(btn.dataset.id), btn.dataset.tipo);
+    btn.onclick = () => openInvestMovModal(btn.dataset.id, btn.dataset.tipo);
   });
   grid.querySelectorAll('.invest-card-edit[data-edit]').forEach(btn=>{
-    btn.onclick = () => editConfigConta(parseInt(btn.dataset.edit));
+    btn.onclick = () => editConfigConta(btn.dataset.edit);
   });
 }
 
