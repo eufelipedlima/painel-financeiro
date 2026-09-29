@@ -278,6 +278,7 @@
   .tag.Despesa{background:var(--negative-soft); color:var(--negative);}
   .tag.Transferência{background:var(--accent-soft); color:var(--accent-2);}
   .tag.Cartão{background:var(--warning-soft); color:var(--warning);}
+  .tag.Ajuste{background:var(--surface-3); color:var(--text-2);}
   .status-dot{display:inline-flex; align-items:center; gap:6px; font-size:12px;}
   .status-dot::before{content:""; width:7px; height:7px; border-radius:50%;}
   .status-dot.Pago::before{background:var(--positive);}
@@ -3686,6 +3687,7 @@ async function loadAllData() {
       if(t.tipo==='Receita') sm[t.conta] = (+sm[t.conta]||0)+t.valor;
       else if(t.tipo==='Despesa') sm[t.conta] = (+sm[t.conta]||0)-t.valor;
       else if(t.tipo==='Transferência') { sm[t.conta]=(+sm[t.conta]||0)-t.valor; if(t.contaDestino) sm[t.contaDestino]=(+sm[t.contaDestino]||0)+t.valor; }
+      else if(t.tipo==='Ajuste') { const sinal = t.formaPagamento==='Ajuste (-)' ? -1 : 1; sm[t.conta] = (+sm[t.conta]||0) + sinal*t.valor; }
     });
     DATA.contas.forEach(c => { c.saldoAtual = Math.round((sm[c.conta]||0)*100)/100; });
     DATA.saldoTotal = DATA.contas.filter(c=>!c.arquivado).reduce((s,c)=>s+c.saldoAtual, 0);
@@ -4461,7 +4463,7 @@ function renderAllTable(){
     btn.onclick = (e) => { e.stopPropagation(); openTxPayModal(parseInt(btn.dataset.id)); };
   });
   const receitas = rows.filter(r=>r.tipo==='Receita').reduce((s,r)=>s+r.valor,0);
-  const despesas = rows.filter(r=>r.tipo!=='Receita'&&r.tipo!=='Transferência').reduce((s,r)=>s+r.valor,0);
+  const despesas = rows.filter(r=>r.tipo!=='Receita'&&r.tipo!=='Transferência'&&r.tipo!=='Ajuste').reduce((s,r)=>s+r.valor,0);
   const sumEl = document.getElementById('allTableSummary');
   if(sumEl) sumEl.innerHTML = `${rows.length} lançamento${rows.length===1?'':'s'} · <strong style="color:var(--positive)">${fmtBRL(receitas)}</strong> entradas · <strong style="color:var(--negative)">${fmtBRL(despesas)}</strong> saídas`;
 
@@ -7011,7 +7013,7 @@ function updateAdjustPreview(){
   prev.style.display='block';
   prev.style.background = isPos ? 'var(--positive-soft)' : 'var(--negative-soft)';
   prev.style.color = isPos ? 'var(--positive)' : 'var(--negative)';
-  prev.textContent = `Será criado um lançamento de ${isPos?'Receita':'Despesa'} de ${fmtBRL(Math.abs(diff))} com o nome "Ajuste de saldo".`;
+  prev.textContent = `Será criado um ajuste de saldo de ${fmtBRL(Math.abs(diff))} (${isPos?'aumento':'redução'}) — não entra como receita nem despesa do mês.`;
 }
 async function confirmAdjustBal(){
   if(!_adjustBalConta) return;
@@ -7026,10 +7028,10 @@ async function confirmAdjustBal(){
   const entry = {
     _id: _nextId++, data: today,
     descricao: 'Ajuste de saldo',
-    tipo: isPos ? 'Receita' : 'Despesa',
-    categoria: isPos ? 'Outras Receitas' : 'Outras Despesas',
+    tipo: 'Ajuste',
+    categoria: 'Ajuste de Saldo',
     conta: _adjustBalConta.conta,
-    contaDestino: null, formaPagamento: 'Ajuste',
+    contaDestino: null, formaPagamento: isPos ? 'Ajuste (+)' : 'Ajuste (-)',
     status: 'Pago', valor: Math.abs(diff), obs: null,
     recorrente: false, recorrenciaId: null, recorrenciaFreq: null,
     _source: 'transacoes', _new: true
