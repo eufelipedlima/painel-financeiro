@@ -7395,19 +7395,27 @@ function closeTxPayModal(){
   _txPayBulkIds = null;
   document.getElementById('txPayValor').disabled = false;
 }
-function applyPaymentToContaOrCartao(conta, valor, tipo, dataStr){
+function applyPaymentToContaOrCartao(conta, valor, tipo, dataStr, entry){
   const cartaoObj = DATA.cartoes.find(c=>c.cartao===conta);
   if(cartaoObj){
-    const compKey = getCartaoFaturaMonth({data:dataStr, cartao:conta});
-    let fat = DATA.faturas.find(f=>f.cartao===conta && f.competencia && f.competencia.slice(0,7)===compKey);
-    if(fat){
-      fat.valorTotal = Math.round((fat.valorTotal+valor)*100)/100;
-      if(fat.status==='Pago') fat.status='Pendente';
-    } else {
-      fat = {cartao:conta, competencia:compKey+'-01', valorTotal:valor, status:'Pendente', _new:true};
-      DATA.faturas.push(fat);
-    }
-    dbUpdateFatura(fat);
+    // Register this as a real card purchase, so it correctly joins that card's
+    // invoice total for the month (DATA.faturas.valorTotal tracks the REMAINING
+    // balance owed on an invoice, not the total charged — it must never be
+    // incremented directly here, only totalCompras via a cartaoCompras row).
+    const compra = {
+      _id: _nextId++, data: dataStr,
+      descricao: entry?.descricao || 'Pagamento via cartão',
+      categoria: (entry && entry.categoria !== 'Pagamento Fatura Cartão') ? entry.categoria : 'Outros (Despesa)',
+      subcategoria: entry?.subcategoria || null,
+      cartao: conta, parcela: null, valor, conferido: 'Não', obs: null,
+      _source: 'cartaoCompras', _new: true
+    };
+    DATA.cartaoCompras.push(compra);
+    dbSaveCartaoCompra(compra);
+    // Re-route the original lançamento to the "Pagamento Fatura Cartão" bucket
+    // so it isn't ALSO counted as a despesa in its original category — the real
+    // expense now lives in the cartaoCompras row created above.
+    if(entry) entry.categoria = 'Pagamento Fatura Cartão';
     return;
   }
   const contaObj = DATA.contas.find(c=>c.conta===conta);
@@ -7428,7 +7436,7 @@ async function confirmTxPay(){
       entry.status = 'Pago';
       entry.data   = data;
       entry.conta  = conta;
-      applyPaymentToContaOrCartao(conta, entry.valor, entry.tipo, data);
+      applyPaymentToContaOrCartao(conta, entry.valor, entry.tipo, data, entry);
       const divMatch = (entry.obs||'').match(/DIV:([^|]+)\|PARC:(\d+)/);
       if(divMatch){
         const [,divDbId,parcNumStr]=divMatch;
@@ -7463,7 +7471,7 @@ async function confirmTxPay(){
   entry.data   = data;
   entry.conta  = conta;
   // Update balance (conta bancária) ou lança na fatura (cartão)
-  applyPaymentToContaOrCartao(conta, valor, entry.tipo, data);
+  applyPaymentToContaOrCartao(conta, valor, entry.tipo, data, entry);
   // Sync with debt installment if linked
   const divMatch = (entry.obs||'').match(/DIV:([^|]+)\|PARC:(\d+)/);
   if(divMatch){
