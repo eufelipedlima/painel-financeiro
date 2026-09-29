@@ -805,6 +805,15 @@
   .meta-empty{ text-align:center; padding:60px 20px; color:var(--text-3); }
   .meta-empty svg{ width:48px; height:48px; margin-bottom:12px; opacity:.35; }
 
+  /* ---------- Investimentos / Cofrinhos ---------- */
+  .invest-card-icon{ width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; background:var(--accent-soft); flex-shrink:0; }
+  .invest-tipo-badge{ font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:14px; letter-spacing:.3px; flex-shrink:0; background:var(--accent-soft); color:var(--accent-2); }
+  .invest-card-saldo{ font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:22px; color:var(--text-1); margin:14px 0 2px; }
+  .invest-card-sub{ font-size:11.5px; color:var(--text-3); margin-bottom:14px; }
+  .invest-card-edit{ background:none; border:none; cursor:pointer; color:var(--text-3); font-size:13px; padding:2px 4px; flex-shrink:0; }
+  .invest-card-edit:hover{ color:var(--text-1); }
+  .invest-linked-note{ font-size:11px; color:var(--accent-2); background:var(--accent-soft); border-radius:8px; padding:6px 10px; margin-bottom:12px; line-height:1.4; }
+
   /* ---------- Generic centered modal ---------- */
   .cmodal-overlay{
     position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px);
@@ -2270,6 +2279,10 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/><path d="M14 15l1.5 1.5L18 13"/></svg>
               Dívidas
             </div>
+            <div class="nav-item" data-view="investimentos">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>
+              Investimentos
+            </div>
           </div>
         </div>
       </div>
@@ -2555,6 +2568,18 @@
           <div style="font-size:15px;font-weight:600;color:var(--text-2);margin-bottom:6px">Nenhuma dívida cadastrada</div>
           <div>Clique em "+ Nova Dívida" para começar</div>
         </div>
+      </div>
+    </div>
+
+    <!-- INVESTIMENTOS -->
+    <div class="view" id="view-investimentos">
+      <div class="topbar">
+        <div><div class="page-title">Investimentos</div><div class="page-sub">Cofrinhos e reservas guardados fora do dia a dia</div></div>
+        <button class="btn btn-primary" onclick="openAddConfig('conta','Investimento')" style="flex:none;padding:10px 18px;font-size:13.5px">+ Novo Cofrinho</button>
+      </div>
+      <div class="kpi-grid" style="grid-template-columns:repeat(1,1fr);margin-bottom:20px" id="investTotalRow"></div>
+      <div class="metas-grid" id="investGrid">
+        <div class="meta-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg><div style="font-size:15px;font-weight:600;color:var(--text-2);margin-bottom:6px">Nenhum cofrinho cadastrado</div><div>Clique em "+ Novo Cofrinho" para guardar dinheiro com um propósito</div></div>
       </div>
     </div>
 
@@ -3141,6 +3166,10 @@
       <label class="form-label">Descrição <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
       <input type="text" class="form-input" id="mDescricao" placeholder="Detalhes ou observações da meta">
     </div>
+    <div class="form-group" id="mContasVinculadasWrap" style="display:none">
+      <label class="form-label">Vincular a investimentos <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional — o progresso passa a ser o saldo somado deles)</span></label>
+      <div id="mContasVinculadasList" style="display:flex;flex-direction:column;gap:6px;max-height:140px;overflow-y:auto"></div>
+    </div>
     <div class="cmodal-actions">
       <button class="btn btn-ghost" onclick="closeMeta()">Cancelar</button>
       <button class="btn btn-primary" onclick="saveMeta()">Salvar meta</button>
@@ -3180,6 +3209,35 @@
     <div class="cmodal-actions">
       <button class="btn btn-ghost" onclick="closeMov()">Cancelar</button>
       <button class="btn btn-primary" onclick="saveMov()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- APORTAR/RESGATAR EM COFRINHO MODAL -->
+<div class="cmodal-overlay" id="investMovModalOverlay" onclick="if(event.target===this)closeInvestMov()">
+  <div class="cmodal" style="width:400px">
+    <div class="cmodal-head">
+      <div class="cmodal-title" id="investMovModalTitle">Aportar no cofrinho</div>
+      <button class="drawer-close" onclick="closeInvestMov()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div style="font-size:12px;color:var(--text-3);margin-bottom:14px">O valor é transferido de verdade entre as contas — não entra como receita nem despesa do mês.</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Data</label>
+        <input type="date" class="form-input" id="investMovData">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Valor (R$)</label>
+        <input type="number" step="0.01" min="0.01" class="form-input" id="investMovValor" placeholder="0,00">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" id="investMovContaLabel">Conta de origem</label>
+      <select class="form-select" id="investMovConta"></select>
+    </div>
+    <div class="cmodal-actions">
+      <button class="btn btn-ghost" onclick="closeInvestMov()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveInvestMov()">Confirmar</button>
     </div>
   </div>
 </div>
@@ -3611,7 +3669,7 @@ async function loadAllData() {
     });
     const movMap = {};
     (mmDb||[]).forEach(r => { if(!movMap[r.meta_id]) movMap[r.meta_id]=[]; movMap[r.meta_id].push({ _dbId:r.id, data:r.data, tipo:r.tipo, valor:+r.valor||0, conta:r.conta, obs:r.observacoes }); });
-    DATA.metas = (mtDb||[]).map(r => ({ _dbId:r.id, _id:nextId++, nome:r.nome, descricao:r.descricao, status:r.status, valorMeta:+r.valor_meta||0, valorAtual:+r.valor_atual||0, dataAlvo:r.data_alvo, criadaEm:r.created_at?.split('T')[0], movimentacoes:movMap[r.id]||[] }));
+    DATA.metas = (mtDb||[]).map(r => ({ _dbId:r.id, _id:nextId++, nome:r.nome, descricao:r.descricao, status:r.status, valorMeta:+r.valor_meta||0, valorAtual:+r.valor_atual||0, contasVinculadas:r.contas_vinculadas||[], dataAlvo:r.data_alvo, criadaEm:r.created_at?.split('T')[0], movimentacoes:movMap[r.id]||[] }));
     const parcMap = {};
     (ppDb||[]).forEach(r => { if(!parcMap[r.divida_id]) parcMap[r.divida_id]=[]; parcMap[r.divida_id].push({ _dbId:r.id, numero:r.numero, valorParcela:+r.valor_parcela||0, dataVencimento:r.data_vencimento, status:r.status }); });
     DATA.dividas = (dvDb||[]).map(r => ({ _dbId:r.id, _id:nextId++, nome:r.nome, credor:r.credor, categoria:r.categoria, valorTotal:+r.valor_total||0, valorRestante:+r.valor_restante||0, valorEntrada:+r.valor_entrada||0, numParcelas:r.num_parcelas, valorParcela:+r.valor_parcela||0, frequencia:r.frequencia, taxa:+r.taxa||0, dataInicio:r.data_inicio, conta:r.conta, status:r.status, modalidade:r.modalidade, parcelas:parcMap[r.id]||[] }));
@@ -3740,9 +3798,15 @@ async function dbSaveCartaoCompra(entry) {
 async function dbSaveMeta(meta) {
   if(!currentUser) return;
   try {
-    const row = { user_id:currentUser.id, nome:meta.nome, descricao:meta.descricao||null, status:meta.status, valor_meta:meta.valorMeta, valor_atual:meta.valorAtual, data_alvo:meta.dataAlvo||null };
-    if(meta._dbId) { await db.from('metas').update(row).eq('id',meta._dbId); }
-    else { const {data} = await db.from('metas').insert(row).select().single(); if(data) meta._dbId=data.id; }
+    const row = { user_id:currentUser.id, nome:meta.nome, descricao:meta.descricao||null, status:meta.status, valor_meta:meta.valorMeta, valor_atual:meta.valorAtual, data_alvo:meta.dataAlvo||null, contas_vinculadas:meta.contasVinculadas||[] };
+    if(meta._dbId) {
+      let r = await db.from('metas').update(row).eq('id',meta._dbId);
+      if(r.error){ const {contas_vinculadas, ...rowNoLink} = row; await db.from('metas').update(rowNoLink).eq('id',meta._dbId); }
+    } else {
+      let r = await db.from('metas').insert(row).select().single();
+      if(r.error){ const {contas_vinculadas, ...rowNoLink} = row; r = await db.from('metas').insert(rowNoLink).select().single(); }
+      if(r.data) meta._dbId=r.data.id;
+    }
   } catch(e) { console.error('meta sync',e); }
 }
 async function dbSaveMetaMov(meta, mov) {
@@ -4043,6 +4107,16 @@ function categorySums(key, tipo){
 }
 
 // ===================== Sidebar =====================
+// ===================== Investimentos / Cofrinhos helpers =====================
+function isInvestConta(c){ return !!(c && c.tipo && c.tipo.indexOf('Investimento')===0); }
+function investSubtipo(c){ const m = c && c.tipo && c.tipo.match(/^Investimento:\s*(.+)$/); return m ? m[1] : 'Cofrinho'; }
+const INVEST_ICONS = { 'Cofrinho':'🐷', 'CDB':'📈', 'Tesouro Direto':'🏛️', 'Ações':'📊', 'Outro':'💼' };
+function toggleConfigTipoInvest(){
+  const tipo = document.getElementById('configModalTipo')?.value;
+  const wrap = document.getElementById('configModalTipoInvestWrap');
+  if(wrap) wrap.style.display = (tipo === 'Investimento') ? '' : 'none';
+}
+
 function renderSidebar(){
   const _saldo = document.getElementById('sidebarSaldo');
   if(_saldo) _saldo.textContent = fmtBRL(DATA.saldoTotal);
@@ -4059,7 +4133,7 @@ function renderSidebar(){
   }
 
   const ACCT_COLORS = ['#9C6B1D','#5B6B3F','#C9A227','#A6432B','#7A8C99','#8B5E3C'];
-  const contasAtivas = DATA.contas.filter(c=>!c.arquivado);
+  const contasAtivas = DATA.contas.filter(c=>!c.arquivado && !isInvestConta(c));
   document.getElementById('acctList').innerHTML = contasAtivas.map((c,i) => `
     <div class="acct-item" data-conta="${c.conta}">
       <div class="acct-item-dot" style="background:${ACCT_COLORS[i%ACCT_COLORS.length]}"></div>
@@ -5522,14 +5596,15 @@ function renderOvMetas(){
   const ativas = DATA.metas.filter(m=>m.status!=='Concluída'&&m.status!=='Cancelada').slice(0,3);
   if(ativas.length===0){ el.innerHTML='<div class="empty-note" style="font-size:12px">Nenhuma meta ativa.</div>'; return; }
   el.innerHTML = ativas.map(m=>{
-    const pct = m.valorMeta>0 ? Math.min((m.valorAtual/m.valorMeta)*100,100) : 0;
+    const valorAtual = metaValorAtual(m);
+    const pct = m.valorMeta>0 ? Math.min((valorAtual/m.valorMeta)*100,100) : 0;
     return `<div class="ov-meta-item">
       <div class="ov-meta-header">
         <div class="ov-meta-name">${m.nome}</div>
         <div class="ov-meta-pct">${pct.toFixed(0)}%</div>
       </div>
       <div class="ov-meta-bar"><div class="ov-meta-fill" style="width:${pct}%"></div></div>
-      <div class="ov-meta-vals"><span>${fmtBRL(m.valorAtual)}</span><span>${fmtBRL(m.valorMeta)}</span></div>
+      <div class="ov-meta-vals"><span>${fmtBRL(valorAtual)}</span><span>${fmtBRL(m.valorMeta)}</span></div>
     </div>`;
   }).join('');
 }
@@ -5644,6 +5719,8 @@ function renderView(view){
     renderMetas();
   } else if(view === 'dividas'){
     renderDividas();
+  } else if(view === 'investimentos'){
+    renderInvestimentos();
   } else if(view === 'despesasfixas'){
     renderDespesasFixas();
   } else if(view === 'configuracoes'){
@@ -5858,7 +5935,14 @@ function editConfigConta(dbId){
   document.getElementById('configModalCartaoFields').style.display = 'none';
   document.getElementById('configModalCatFields').style.display = 'none';
   document.getElementById('configModalSubGrupoWrap').style.display = 'none';
-  document.getElementById('configModalTipo').value = c.tipo;
+  document.getElementById('configModalSaldo').value = c.saldoInicial||0;
+  if(isInvestConta(c)){
+    document.getElementById('configModalTipo').value = 'Investimento';
+    document.getElementById('configModalTipoInvestimento').value = investSubtipo(c);
+  } else {
+    document.getElementById('configModalTipo').value = c.tipo;
+  }
+  toggleConfigTipoInvest();
   document.getElementById('configModalOverlay').classList.add('open');
 }
 function editConfigCategoria(dbId){
@@ -5884,17 +5968,17 @@ function editConfigCategoria(dbId){
 }
 function openAddConfig(mode, tipo=null){
   configMode = mode; configTipo = tipo; configEditTarget = null;
-  const titles = {conta:'Adicionar conta bancária', cartao:'Adicionar cartão de crédito', categoria:`Nova categoria — ${tipo||'Despesa'}`};
+  const titles = {conta: tipo==='Investimento'?'Novo cofrinho / investimento':'Adicionar conta bancária', cartao:'Adicionar cartão de crédito', categoria:`Nova categoria — ${tipo||'Despesa'}`};
   document.getElementById('configModalTitle').textContent = titles[mode]||'Adicionar';
   document.getElementById('configModalName').value = '';
-  document.getElementById('configModalLabel').textContent = mode==='cartao' ? 'Nome do cartão' : mode==='conta' ? 'Nome da conta' : 'Nome da categoria';
+  document.getElementById('configModalLabel').textContent = mode==='cartao' ? 'Nome do cartão' : mode==='conta' ? (tipo==='Investimento'?'Nome do cofrinho':'Nome da conta') : 'Nome da categoria';
   // Show/hide field groups
   document.getElementById('configModalContaFields').style.display = mode==='conta' ? '' : 'none';
   document.getElementById('configModalCartaoFields').style.display = mode==='cartao' ? '' : 'none';
   document.getElementById('configModalCatFields').style.display = mode==='categoria' ? '' : 'none';
   document.getElementById('configModalSubGrupoWrap').style.display = 'none';
   // Reset values
-  if(mode==='conta'){ document.getElementById('configModalSaldo').value='0'; document.getElementById('configModalTipo').value='Conta Corrente'; }
+  if(mode==='conta'){ document.getElementById('configModalSaldo').value='0'; document.getElementById('configModalTipo').value=tipo==='Investimento'?'Investimento':'Conta Corrente'; document.getElementById('configModalTipoInvestimento').value='Cofrinho'; toggleConfigTipoInvest(); }
   if(mode==='cartao'){ document.getElementById('configModalBanco').value=''; document.getElementById('configModalFechamento').value=''; document.getElementById('configModalVencimento').value=''; document.getElementById('configModalLimiteCartao').value='0'; }
   if(mode==='categoria'){
     document.getElementById('configModalLimite').value='0';
@@ -5920,7 +6004,11 @@ async function saveConfigItem(){
   const uid = currentUser.id;
 
   if(configMode==='conta'){
-    const tipo = document.getElementById('configModalTipo').value;
+    let tipo = document.getElementById('configModalTipo').value;
+    if(tipo === 'Investimento'){
+      const subtipo = document.getElementById('configModalTipoInvestimento')?.value || 'Cofrinho';
+      tipo = `Investimento: ${subtipo}`;
+    }
     if(configEditTarget){
       const saldoEdit = parseFloat(document.getElementById('configModalSaldo')?.value)||null;
       configEditTarget.conta = nome; configEditTarget.tipo = tipo;
@@ -5935,6 +6023,7 @@ async function saveConfigItem(){
         updatePayload.saldo_atual = configEditTarget.saldoAtual;
       }
       await db.from('contas').update(updatePayload).eq('id', configEditTarget._dbId);
+      renderSidebar();
       showToast('Conta atualizada.');
     } else {
       const saldo = parseFloat(document.getElementById('configModalSaldo')?.value)||0;
@@ -6291,9 +6380,11 @@ function renderMetas(){
     return;
   }
   grid.innerHTML = DATA.metas.map(m => {
-    const pct = m.valorMeta > 0 ? Math.min((m.valorAtual/m.valorMeta)*100, 100) : 0;
+    const isLinked = m.contasVinculadas && m.contasVinculadas.length > 0;
+    const valorAtual = metaValorAtual(m);
+    const pct = m.valorMeta > 0 ? Math.min((valorAtual/m.valorMeta)*100, 100) : 0;
     const color = metaColor(pct);
-    const falta = Math.max(m.valorMeta - m.valorAtual, 0);
+    const falta = Math.max(m.valorMeta - valorAtual, 0);
     const movs = (m.movimentacoes||[]).slice().reverse().slice(0,5);
     const extrato = movs.map(mv => `<div class="extrato-row"><div><div style="font-weight:500">${mv.tipo==='deposito'?'Depósito':'Retirada'} <span style="color:var(--text-3);font-weight:400">· ${fmtDateBR(mv.data)}</span></div><div style="font-size:11px;color:var(--text-3)">${mv.conta}${mv.obs?' · '+mv.obs:''}</div></div><div class="extrato-val ${mv.tipo==='deposito'?'in':'out'}">${mv.tipo==='deposito'?'+':'-'}${fmtBRL(mv.valor)}</div></div>`).join('');
     return `<div class="meta-card" data-id="${m._id}">
@@ -6305,15 +6396,16 @@ function renderMetas(){
         <div class="meta-ring">${progressRing(pct, color)}</div>
         <div class="meta-ring-info">
           <div class="pct">${pct.toFixed(0)}%</div>
-          <div class="sub">${fmtBRL(m.valorAtual)} de ${fmtBRL(m.valorMeta)}</div>
+          <div class="sub">${fmtBRL(valorAtual)} de ${fmtBRL(m.valorMeta)}</div>
           ${m.dataAlvo?`<div style="font-size:11px;color:var(--text-3);margin-top:4px">Até ${fmtDateBR(m.dataAlvo)}</div>`:''}
           ${m.descricao?`<div style="font-size:11px;color:var(--text-3);margin-top:2px">${m.descricao}</div>`:''}
         </div>
       </div>
       ${falta>0?`<div style="font-size:12px;color:var(--text-2);margin-bottom:12px">Faltam <strong style="color:var(--text-1)">${fmtBRL(falta)}</strong></div>`:''}
+      ${isLinked?`<div class="invest-linked-note">Vinculada a: ${m.contasVinculadas.join(', ')} — progresso automático pelo saldo</div>`:''}
       <div class="meta-actions">
-        <button class="meta-action-btn deposit" data-metaid="${m._id}" data-tipo="deposito">+ Depositar</button>
-        <button class="meta-action-btn withdraw" data-metaid="${m._id}" data-tipo="retirada">− Retirar</button>
+        ${isLinked ? '' : `<button class="meta-action-btn deposit" data-metaid="${m._id}" data-tipo="deposito">+ Depositar</button>
+        <button class="meta-action-btn withdraw" data-metaid="${m._id}" data-tipo="retirada">− Retirar</button>`}
         <button class="meta-action-btn" data-edit="${m._id}">✎</button>
       </div>
       <div class="meta-extrato" id="extrato-${m._id}">
@@ -6347,12 +6439,34 @@ function openMetaModal(id=null){
   document.getElementById('mValorMeta').value = metaEditTarget?.valorMeta||'';
   document.getElementById('mValorAtual').value = metaEditTarget ? '' : '';
   document.getElementById('mDescricao').value = metaEditTarget?.descricao||'';
+  const investContas = DATA.contas.filter(c=>!c.arquivado && isInvestConta(c));
+  const linkWrap = document.getElementById('mContasVinculadasWrap');
+  const linkList = document.getElementById('mContasVinculadasList');
+  if(investContas.length){
+    linkWrap.style.display = '';
+    const linked = metaEditTarget?.contasVinculadas||[];
+    linkList.innerHTML = investContas.map(c => `
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+        <input type="checkbox" class="m-conta-vinculada" value="${c.conta}" ${linked.includes(c.conta)?'checked':''}>
+        ${c.conta} <span style="color:var(--text-3);font-size:11.5px">(${fmtBRL(c.saldoAtual)})</span>
+      </label>`).join('');
+  } else {
+    linkWrap.style.display = 'none';
+    linkList.innerHTML = '';
+  }
   document.getElementById('metaModalOverlay').classList.add('open');
 }
 function closeMeta(){ document.getElementById('metaModalOverlay').classList.remove('open'); metaEditTarget=null; }
+function metaValorAtual(m){
+  if(m.contasVinculadas && m.contasVinculadas.length){
+    return m.contasVinculadas.reduce((s,nome)=>{ const c=DATA.contas.find(x=>x.conta===nome); return s + (c?c.saldoAtual:0); }, 0);
+  }
+  return m.valorAtual;
+}
 function saveMeta(){
   const nome = document.getElementById('mNome').value.trim();
   const valorMeta = parseFloat(document.getElementById('mValorMeta').value)||0;
+  const contasVinculadas = [...document.querySelectorAll('.m-conta-vinculada:checked')].map(el=>el.value);
   if(!nome){ showToast('Informe o nome da meta.','error'); return; }
   if(valorMeta<=0){ showToast('Informe o valor alvo.','error'); return; }
   if(metaEditTarget){
@@ -6361,10 +6475,11 @@ function saveMeta(){
     metaEditTarget.dataAlvo = document.getElementById('mDataAlvo').value||null;
     metaEditTarget.valorMeta = valorMeta;
     metaEditTarget.descricao = document.getElementById('mDescricao').value.trim()||null;
+    metaEditTarget.contasVinculadas = contasVinculadas;
     showToast('Meta atualizada.');
   } else {
     const valorAtual = parseFloat(document.getElementById('mValorAtual').value)||0;
-    DATA.metas.push({ _id:_nextId++, nome, status:document.getElementById('mStatus').value, dataAlvo:document.getElementById('mDataAlvo').value||null, valorMeta, valorAtual, descricao:document.getElementById('mDescricao').value.trim()||null, criadaEm:localDateStr(), movimentacoes:[] });
+    DATA.metas.push({ _id:_nextId++, nome, status:document.getElementById('mStatus').value, dataAlvo:document.getElementById('mDataAlvo').value||null, valorMeta, valorAtual, descricao:document.getElementById('mDescricao').value.trim()||null, contasVinculadas, criadaEm:localDateStr(), movimentacoes:[] });
     showToast(`Meta "${nome}" criada.`);
   }
   dbSaveMeta(metaEditTarget || DATA.metas[DATA.metas.length-1]);
@@ -6428,6 +6543,97 @@ function saveMov(){
   closeMov();
   showToast(`${movTipo==='deposito'?'Depósito':'Retirada'} de ${fmtBRL(valor)} registrado.`);
   renderMetas(); renderSidebar();
+}
+
+// ===================== Investimentos / Cofrinhos =====================
+let investMovContaId = null, investMovTipo = null;
+
+function renderInvestimentos(){
+  const grid = document.getElementById('investGrid');
+  const totalRow = document.getElementById('investTotalRow');
+  if(!grid) return;
+  const contas = DATA.contas.filter(c=>!c.arquivado && isInvestConta(c));
+  const total = contas.reduce((s,c)=>s+c.saldoAtual,0);
+  if(totalRow){
+    totalRow.innerHTML = `
+      <div class="kpi-card">
+        <div class="kpi-top"><span class="kpi-label">Total guardado</span>
+          <div class="kpi-icon gold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></div>
+        </div>
+        <div class="kpi-value num">${fmtBRL(total)}</div>
+        <span class="kpi-delta flat">${contas.length} cofrinho${contas.length===1?'':'s'}</span>
+      </div>`;
+  }
+  if(contas.length === 0){
+    grid.innerHTML = '<div class="meta-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg><div style="font-size:15px;font-weight:600;color:var(--text-2);margin-bottom:6px">Nenhum cofrinho cadastrado</div><div>Clique em "+ Novo Cofrinho" para guardar dinheiro com um propósito</div></div>';
+    return;
+  }
+  grid.innerHTML = contas.map(c => {
+    const subtipo = investSubtipo(c);
+    const linkedMetas = DATA.metas.filter(m => (m.contasVinculadas||[]).includes(c.conta));
+    return `<div class="meta-card" style="cursor:default" data-id="${c._dbId}">
+      <div class="meta-card-top">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="invest-card-icon">${INVEST_ICONS[subtipo]||'💼'}</div>
+          <div class="meta-name">${c.conta}</div>
+        </div>
+        <span class="invest-tipo-badge">${subtipo}</span>
+      </div>
+      <div class="invest-card-saldo">${fmtBRL(c.saldoAtual)}</div>
+      <div class="invest-card-sub">${linkedMetas.length ? 'Vinculado à meta: '+linkedMetas.map(m=>m.nome).join(', ') : 'Sem meta vinculada'}</div>
+      <div class="meta-actions">
+        <button class="meta-action-btn deposit" data-id="${c._dbId}" data-tipo="aportar">+ Aportar</button>
+        <button class="meta-action-btn withdraw" data-id="${c._dbId}" data-tipo="resgatar">− Resgatar</button>
+        <button class="invest-card-edit" data-edit="${c._dbId}" title="Editar">✎</button>
+      </div>
+    </div>`;
+  }).join('');
+  grid.querySelectorAll('.meta-action-btn[data-id]').forEach(btn=>{
+    btn.onclick = () => openInvestMovModal(parseInt(btn.dataset.id), btn.dataset.tipo);
+  });
+  grid.querySelectorAll('.invest-card-edit[data-edit]').forEach(btn=>{
+    btn.onclick = () => editConfigConta(parseInt(btn.dataset.edit));
+  });
+}
+
+function openInvestMovModal(dbId, tipo){
+  investMovContaId = dbId; investMovTipo = tipo;
+  const c = DATA.contas.find(x=>x._dbId===dbId);
+  if(!c) return;
+  document.getElementById('investMovModalTitle').textContent = tipo==='aportar' ? `Aportar em "${c.conta}"` : `Resgatar de "${c.conta}"`;
+  document.getElementById('investMovContaLabel').textContent = tipo==='aportar' ? 'Conta de origem' : 'Conta de destino';
+  document.getElementById('investMovData').value = localDateStr();
+  document.getElementById('investMovValor').value = '';
+  const outrasContas = DATA.contas.filter(x=>!x.arquivado && !isInvestConta(x));
+  document.getElementById('investMovConta').innerHTML = outrasContas.map(x=>`<option value="${x.conta}">${x.conta} (${fmtBRL(x.saldoAtual)})</option>`).join('') || '<option value="">Nenhuma conta disponível</option>';
+  document.getElementById('investMovModalOverlay').classList.add('open');
+}
+function closeInvestMov(){ document.getElementById('investMovModalOverlay').classList.remove('open'); investMovContaId=null; }
+function saveInvestMov(){
+  const cofrinho = DATA.contas.find(x=>x._dbId===investMovContaId);
+  if(!cofrinho) return;
+  const valor = parseFloat(document.getElementById('investMovValor').value)||0;
+  const data = document.getElementById('investMovData').value;
+  const outraConta = document.getElementById('investMovConta').value;
+  if(valor<=0){ showToast('Informe um valor maior que zero.','error'); return; }
+  if(!data){ showToast('Informe a data.','error'); return; }
+  if(!outraConta){ showToast('Cadastre uma conta bancária para aportar/resgatar.','error'); return; }
+  const isAporte = investMovTipo === 'aportar';
+  const origem = isAporte ? outraConta : cofrinho.conta;
+  const destino = isAporte ? cofrinho.conta : outraConta;
+  const desc = isAporte ? `Aporte: ${cofrinho.conta}` : `Resgate: ${cofrinho.conta}`;
+  const entry = { data, descricao:desc, tipo:'Transferência', categoria:'Transferência entre Contas', subcategoria:null, conta:origem, contaDestino:destino, formaPagamento:'Transferência', status:'Pago', valor, obs:null, _source:'transacoes', _new:true };
+  entry._id = _nextId++;
+  DATA.transacoes.push(entry);
+  const origemObj = DATA.contas.find(c=>c.conta===origem);
+  const destinoObj = DATA.contas.find(c=>c.conta===destino);
+  if(origemObj) origemObj.saldoAtual = Math.round((origemObj.saldoAtual - valor)*100)/100;
+  if(destinoObj) destinoObj.saldoAtual = Math.round((destinoObj.saldoAtual + valor)*100)/100;
+  pendingSync.push(entry); updateSyncBar();
+  dbSaveTransaction(entry);
+  closeInvestMov();
+  showToast(`${isAporte?'Aporte':'Resgate'} de ${fmtBRL(valor)} registrado.`);
+  renderInvestimentos(); renderSidebar(); renderMetas();
 }
 
 // ===================== Dívidas (Debts) =====================
@@ -8348,11 +8554,21 @@ renderAll();
     <div id="configModalContaFields" style="display:none">
       <div class="form-group">
         <label class="form-label">Tipo</label>
-        <select class="form-select" id="configModalTipo">
+        <select class="form-select" id="configModalTipo" onchange="toggleConfigTipoInvest()">
           <option value="Conta Corrente">Conta Corrente</option>
           <option value="Poupança">Poupança</option>
           <option value="Carteira / Dinheiro">Carteira / Dinheiro</option>
           <option value="Investimento">Investimento</option>
+          <option value="Outro">Outro</option>
+        </select>
+      </div>
+      <div class="form-group" id="configModalTipoInvestWrap" style="display:none">
+        <label class="form-label">Tipo de investimento</label>
+        <select class="form-select" id="configModalTipoInvestimento">
+          <option value="Cofrinho">Cofrinho</option>
+          <option value="CDB">CDB</option>
+          <option value="Tesouro Direto">Tesouro Direto</option>
+          <option value="Ações">Ações</option>
           <option value="Outro">Outro</option>
         </select>
       </div>
@@ -8451,6 +8667,10 @@ renderAll();
     <a class="mob-more-item" onclick="mobileNavigate('dividas');var _ov=document.getElementById('mobMoreOverlay'),_dr=document.getElementById('mobMoreDrawer');if(_ov){_ov.classList.remove('open');_ov.style.display='none';}if(_dr){_dr.classList.remove('open');_dr.style.display='none';}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/><path d="M14 15l1.5 1.5L18 13"/></svg>
       Dívidas
+    </a>
+    <a class="mob-more-item" onclick="mobileNavigate('investimentos');var _ov=document.getElementById('mobMoreOverlay'),_dr=document.getElementById('mobMoreDrawer');if(_ov){_ov.classList.remove('open');_ov.style.display='none';}if(_dr){_dr.classList.remove('open');_dr.style.display='none';}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>
+      Investimentos
     </a>
     <a class="mob-more-item" onclick="mobileNavigate('configuracoes');var _ov=document.getElementById('mobMoreOverlay'),_dr=document.getElementById('mobMoreDrawer');if(_ov){_ov.classList.remove('open');_ov.style.display='none';}if(_dr){_dr.classList.remove('open');_dr.style.display='none';}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
