@@ -7948,6 +7948,59 @@ function saveEntry(){
 
   // EDIT MODE
   if(editTarget){
+    // Switching the type tab to/from "Cartão" moves the record between tables
+    // (transacoes ↔ cartao_compras), so it can't be patched in place — it has
+    // to be deleted from the old table and recreated in the new one.
+    if(formType === 'Cartão' && editTarget._source !== 'cartaoCompras'){
+      const cartaoNome = document.getElementById('fCartao').value;
+      if(!cartaoNome){ showToast('Selecione o cartão.', 'error'); return; }
+      deleteEntry(editTarget);
+      const novo = {
+        _id: _nextId++, data, descricao,
+        categoria: document.getElementById('fCategoria').value,
+        subcategoria: document.getElementById('fSubcategoria')?.value || null,
+        cartao: cartaoNome, parcela: document.getElementById('fParcela')?.value || null,
+        valor, conferido: 'Não', obs,
+        _source: 'cartaoCompras', _new: true
+      };
+      DATA.cartaoCompras.push(novo);
+      pendingSync.push(novo); updateSyncBar();
+      dbSaveCartaoCompra(novo);
+      const currMonthCard = monthKey(parseDate(data));
+      if(!months.includes(currMonthCard)){ months.push(currMonthCard); months.sort(); }
+      closeDrawer();
+      showToast(`"${descricao}" movido para compra no cartão.`);
+      renderAll();
+      return;
+    }
+    if(formType !== 'Cartão' && editTarget._source === 'cartaoCompras'){
+      const contaVal = document.getElementById('fConta').value;
+      if(!contaVal){ showToast('Selecione a conta.', 'error'); return; }
+      deleteEntry(editTarget);
+      const isTransfNovo = formType === 'Transferência';
+      const novo = {
+        _id: _nextId++, data, descricao,
+        tipo: formType,
+        categoria: isTransfNovo ? 'Transferência entre Contas' : document.getElementById('fCategoria').value,
+        subcategoria: isTransfNovo ? null : (document.getElementById('fSubcategoria')?.value || null),
+        conta: contaVal,
+        contaDestino: isTransfNovo ? document.getElementById('fContaDestino').value : null,
+        formaPagamento: isTransfNovo ? 'Transferência' : document.getElementById('fFormaPagto').value,
+        status: isTransfNovo ? document.getElementById('fStatusTransf').value : document.getElementById('fStatus').value,
+        valor, obs, recorrente:false, recorrenciaId:null, recorrenciaFreq:null,
+        _source: 'transacoes', _new: true
+      };
+      DATA.transacoes.push(novo);
+      pendingSync.push(novo); updateSyncBar();
+      applyImpact(novo);
+      dbSaveTransaction(novo);
+      const currMonthConv = monthKey(parseDate(data));
+      if(!months.includes(currMonthConv)){ months.push(currMonthConv); months.sort(); }
+      closeDrawer();
+      showToast(`"${descricao}" atualizado com sucesso.`);
+      renderAll();
+      return;
+    }
     const isTransf = editTarget.tipo === 'Transferência';
     const changes = {
       data, descricao, valor, obs,
