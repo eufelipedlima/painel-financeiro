@@ -7241,6 +7241,7 @@ async function deleteEntry(entry){
   if(entry._source === 'cartaoCompras'){
     const idx = DATA.cartaoCompras.findIndex(t=>t._id===entry._id);
     if(idx>-1) DATA.cartaoCompras.splice(idx,1);
+    reduceFaturaForRemovedCompra(entry);
     if(entry._dbId){
       const {error} = await db.from('cartao_compras').delete().eq('id',entry._dbId);
       if(error) console.error('Delete cartao error:', error);
@@ -7339,7 +7340,7 @@ function clearTxSelection(){
   renderAllTable();
 }
 function buildTxPayContaOptions(includeCartoes){
-  let html = `<optgroup label="Contas">${DATA.contas.filter(c=>!c.arquivado).map(c=>`<option value="${c.conta}">${c.conta} (${fmtBRL(c.saldoAtual)})</option>`).join('')}</optgroup>`;
+  let html = `<optgroup label="Contas">${DATA.contas.filter(c=>!c.arquivado && !isInvestConta(c)).map(c=>`<option value="${c.conta}">${c.conta} (${fmtBRL(c.saldoAtual)})</option>`).join('')}</optgroup>`;
   if(includeCartoes && DATA.cartoes.length){
     html += `<optgroup label="Cartão de crédito (lança na fatura)">${DATA.cartoes.map(c=>`<option value="${c.cartao}" data-cartao="true">${c.cartao}</option>`).join('')}</optgroup>`;
   }
@@ -7395,13 +7396,36 @@ function closeTxPayModal(){
   _txPayBulkIds = null;
   document.getElementById('txPayValor').disabled = false;
 }
+// DATA.faturas.valorTotal tracks the REMAINING balance owed on an invoice
+// (not the total charged). It starts implicit (= totalCompras) while no
+// "faturas_cartao" row exists, and only becomes a real row once a partial
+// payment is made. From that point on, ANY new purchase added to that same
+// card/month must bump this remaining value by the same amount — otherwise
+// the invoice silently looks "more paid" than it really is as new purchases
+// come in. Call this right after pushing a new row into DATA.cartaoCompras.
+function bumpFaturaForNewCompra(compra){
+  const fm = getCartaoFaturaMonth(compra);
+  const fat = DATA.faturas.find(f => f.cartao === compra.cartao && f.competencia && f.competencia.slice(0,7) === fm);
+  if(!fat) return; // no invoice row yet — totalCompras alone already reflects it correctly
+  fat.valorTotal = Math.round(((fat.valorTotal||0) + compra.valor) * 100) / 100;
+  if(fat.status === 'Pago' && fat.valorTotal > 0) fat.status = 'Pendente'; // reopen if it had been marked paid
+  dbUpdateFatura(fat);
+}
+// Symmetric to bumpFaturaForNewCompra: call when a cartaoCompras row is removed
+// (delete or edited away) so the remaining balance doesn't silently overstate
+// what's actually owed.
+function reduceFaturaForRemovedCompra(compra){
+  const fm = getCartaoFaturaMonth(compra);
+  const fat = DATA.faturas.find(f => f.cartao === compra.cartao && f.competencia && f.competencia.slice(0,7) === fm);
+  if(!fat) return;
+  fat.valorTotal = Math.max(0, Math.round(((fat.valorTotal||0) - compra.valor) * 100) / 100);
+  dbUpdateFatura(fat);
+}
 function applyPaymentToContaOrCartao(conta, valor, tipo, dataStr, entry){
   const cartaoObj = DATA.cartoes.find(c=>c.cartao===conta);
   if(cartaoObj){
     // Register this as a real card purchase, so it correctly joins that card's
-    // invoice total for the month (DATA.faturas.valorTotal tracks the REMAINING
-    // balance owed on an invoice, not the total charged — it must never be
-    // incremented directly here, only totalCompras via a cartaoCompras row).
+    // invoice total for the month.
     const compra = {
       _id: _nextId++, data: dataStr,
       descricao: entry?.descricao || 'Pagamento via cartão',
@@ -7412,6 +7436,7 @@ function applyPaymentToContaOrCartao(conta, valor, tipo, dataStr, entry){
     };
     DATA.cartaoCompras.push(compra);
     dbSaveCartaoCompra(compra);
+    bumpFaturaForNewCompra(compra);
     // Re-route the original lançamento to the "Pagamento Fatura Cartão" bucket
     // so it isn't ALSO counted as a despesa in its original category — the real
     // expense now lives in the cartaoCompras row created above.
@@ -7508,7 +7533,7 @@ function openParcPayModal(dividaId, parcNum){
   document.getElementById('parcPayData').value = localDateStr();
   document.getElementById('parcPayValor').value = p.valorParcela.toFixed(2);
   document.getElementById('parcPayConta').innerHTML =
-    DATA.contas.filter(c=>!c.arquivado).map(c=>`<option value="${c.conta}">${c.conta} (${fmtBRL(c.saldoAtual)})</option>`).join('');
+    DATA.contas.filter(c=>!c.arquivado && !isInvestConta(c)).map(c=>`<option value="${c.conta}">${c.conta} (${fmtBRL(c.saldoAtual)})</option>`).join('');
   // Default to debt's account
   if(d.conta) document.getElementById('parcPayConta').value = d.conta;
   const overlay = document.getElementById('parcPayOverlay');
@@ -7886,6 +7911,15 @@ function updateSyncBar(){
   document.getElementById('syncBar').classList.toggle('visible', n > 0);
 }
 function setFormType(type){
+  // Preserve whatever the user already filled in (categoria, subcategoria, conta,
+  // cartão, parcela) so switching the type tab doesn't wipe the form — only the
+  // fields that don't make sense for the new type are actually cleared.
+  const prevCategoria = document.getElementById('fCategoria')?.value || '';
+  const prevSubcategoria = document.getElementById('fSubcategoria')?.value || '';
+  const prevConta = document.getElementById('fConta')?.value || '';
+  const prevCartao = document.getElementById('fCartao')?.value || '';
+  const prevParcela = document.getElementById('fParcela')?.value || '';
+
   formType = type;
   document.querySelectorAll('.type-tab').forEach(t =>
     t.classList.toggle('active', t.dataset.type === type)
@@ -7900,33 +7934,46 @@ function setFormType(type){
     );
     document.getElementById('fCategoria').innerHTML =
       cats.map(c => `<option value="${c.categoria}">${c.categoria}</option>`).join('');
+    // Manter a categoria já selecionada, se ela ainda existir na nova lista
+    // (ex.: Despesa ↔ Cartão usam a mesma lista de categorias)
+    if(prevCategoria && cats.some(c => c.categoria === prevCategoria)){
+      document.getElementById('fCategoria').value = prevCategoria;
+    }
   }
   document.getElementById('fContaGroup').style.display = isCartao ? 'none' : '';
   document.getElementById('fCartaoGroup').style.display = isCartao ? '' : 'none';
   document.getElementById('fContaDestinoGroup').style.display = isTransf ? '' : 'none';
-  const contaOpts = DATA.contas.filter(c=>!c.arquivado).map(c =>
+  // Contas de investimento (cofrinhos) não aparecem aqui — elas só recebem
+  // movimentações via "Aportar"/"Resgatar" na tela de Investimentos.
+  const contaOpts = DATA.contas.filter(c=>!c.arquivado && !isInvestConta(c)).map(c =>
     `<option value="${c.conta}">${c.conta}  (${fmtBRL(c.saldoAtual)})</option>`
   ).join('');
   document.getElementById('fConta').innerHTML = contaOpts;
   document.getElementById('fContaDestino').innerHTML = contaOpts;
+  if(prevConta && DATA.contas.some(c=>c.conta===prevConta && !c.arquivado && !isInvestConta(c))){
+    document.getElementById('fConta').value = prevConta;
+  }
   document.getElementById('fCartao').innerHTML = DATA.cartoes.map(c =>
     `<option value="${c.cartao}">${c.cartao}</option>`
   ).join('');
+  if(prevCartao && DATA.cartoes.some(c=>c.cartao===prevCartao)){
+    document.getElementById('fCartao').value = prevCartao;
+  }
   document.getElementById('rowStatusFormaPagto').style.display = (isCartao || isTransf) ? 'none' : '';
   document.getElementById('fStatusTransfGroup').style.display = isTransf ? '' : 'none';
   const isDespOrCartao = isCartao || type==='Despesa';
   document.getElementById('fParcelaGroup').style.display = isDespOrCartao ? '' : 'none';
+  if(isDespOrCartao && prevParcela) document.getElementById('fParcela').value = prevParcela;
   // Hide recurring toggle for cartão (installments handle it)
   const recRow = document.getElementById('rowRecorrente');
   if(recRow) recRow.style.display = (isCartao||isTransf) ? 'none' : '';
-  // Reset subcategoria
-  document.getElementById('fSubcategoriaGroup').style.display = 'none';
   const parcLbl = document.getElementById('parceladaLabel');
   if(parcLbl) parcLbl.textContent = isCartao ? '💳 Compra parcelada?' : '📋 Despesa parcelada?';
+  document.getElementById('fSubcategoriaGroup').style.display = 'none';
   document.getElementById('fSubcategoria').innerHTML = '';
-  if(!isTransf) setTimeout(updateSubcategorias, 50);
+  if(!isTransf) setTimeout(() => updateSubcategorias(prevSubcategoria), 50);
 }
-function updateSubcategorias(){
+function updateSubcategorias(desiredSub){
   const cat = document.getElementById('fCategoria')?.value;
   const grp = document.getElementById('fSubcategoriaGroup');
   const sel = document.getElementById('fSubcategoria');
@@ -7935,6 +7982,7 @@ function updateSubcategorias(){
   if(subs.length === 0){ grp.style.display='none'; return; }
   grp.style.display = '';
   sel.innerHTML = '<option value="">— Nenhuma —</option>' + subs.map(s=>`<option value="${s.nome}">${s.nome}</option>`).join('');
+  if(desiredSub && subs.some(s=>s.nome===desiredSub)) sel.value = desiredSub;
 }
 function saveEntry(){
   const data = document.getElementById('fData').value;
@@ -7966,6 +8014,7 @@ function saveEntry(){
       DATA.cartaoCompras.push(novo);
       pendingSync.push(novo); updateSyncBar();
       dbSaveCartaoCompra(novo);
+      bumpFaturaForNewCompra(novo);
       const currMonthCard = monthKey(parseDate(data));
       if(!months.includes(currMonthCard)){ months.push(currMonthCard); months.sort(); }
       closeDrawer();
@@ -8079,6 +8128,7 @@ function saveEntry(){
         DATA.cartaoCompras.push(futEntry);
         pendingSync.push(futEntry);
         dbSaveCartaoCompra(futEntry);
+        bumpFaturaForNewCompra(futEntry);
         const fm = `${futDate.getFullYear()}-${String(futDate.getMonth()+1).padStart(2,'0')}`;
         if(!months.includes(fm)){ months.push(fm); months.sort(); }
       }
@@ -8101,9 +8151,7 @@ function saveEntry(){
       _source: 'cartaoCompras', _new: true
     };
     DATA.cartaoCompras.push(entry);
-    const mk = monthKey(parseDate(data));
-    const fat = DATA.faturas.find(f => f.cartao === entry.cartao && f.competencia && f.competencia.slice(0,7) === mk);
-    if(fat) fat.valorTotal = Math.round((fat.valorTotal + valor) * 100) / 100;
+    bumpFaturaForNewCompra(entry);
   } else {
     const isTransf = formType === 'Transferência';
     const conta = document.getElementById('fConta').value;
