@@ -4172,10 +4172,21 @@ function computeKPIs(key){
   const receitaAReceber = Math.max(0, receita - receitaRecebida);
   const despesaContaTrans = trans.filter(t => t.tipo === 'Despesa' && t.categoria !== 'Pagamento Fatura Cartão');
   const despesaConta = despesaContaTrans.reduce((s,t)=>s+t.valor,0);
-  const despesaPaga = despesaContaTrans.filter(t=>t.status==='Pago').reduce((s,t)=>s+t.valor,0);
-  const despesaAPagar = Math.max(0, despesaConta - despesaPaga);
+  const despesaContaPaga = despesaContaTrans.filter(t=>t.status==='Pago').reduce((s,t)=>s+t.valor,0);
   const despesaCartao = cartao.reduce((s,t)=>s+t.valor,0);
   const despesa = despesaConta + despesaCartao;
+  // Cartão: o que já foi pago de cada fatura do mês (faturas.valorTotal = valor RESTANTE).
+  const porCartao = {};
+  cartao.forEach(t => { porCartao[t.cartao] = (porCartao[t.cartao]||0) + t.valor; });
+  let cartaoPago = 0;
+  Object.entries(porCartao).forEach(([nome,total]) => {
+    const fat = DATA.faturas.find(f => f.cartao===nome && f.competencia && f.competencia.slice(0,7)===key);
+    if(!fat) return; // sem registro de fatura = nada pago ainda
+    if(fat.status==='Pago' || fat.valorTotal <= 0) cartaoPago += total;
+    else if(fat.valorTotal < total) cartaoPago += total - fat.valorTotal;
+  });
+  const despesaPaga = Math.round((despesaContaPaga + cartaoPago)*100)/100;
+  const despesaAPagar = Math.max(0, Math.round((despesa - despesaPaga)*100)/100);
   return {receita, despesa, resultado: receita - despesa, saldoTotal: saldoContasCorrentes(),
     receitaRecebida, receitaAReceber, despesaPaga, despesaAPagar};
 }
