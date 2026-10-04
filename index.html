@@ -813,6 +813,21 @@
   .invest-card-sub{ font-size:11.5px; color:var(--text-3); margin-bottom:14px; }
   .invest-card-edit{ background:none; border:none; cursor:pointer; color:var(--text-3); font-size:13px; padding:2px 4px; flex-shrink:0; }
   .invest-card-edit:hover{ color:var(--text-1); }
+  .invest-rend-line{ font-size:11.5px; color:var(--text-3); margin:-8px 0 14px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .invest-rend-line .pos{ color:var(--positive); font-weight:600; font-variant-numeric:tabular-nums; }
+  .invest-rend-line .neg{ color:var(--negative); font-weight:600; font-variant-numeric:tabular-nums; }
+  .invest-rend-btn{ width:100%; margin-top:8px; padding:8px; border-radius:8px; font-size:12.5px; font-weight:600; cursor:pointer;
+    border:1.5px solid rgba(156,107,29,0.3); color:var(--accent-2); background:var(--accent-soft); font-family:'Inter',sans-serif; transition:.15s ease; }
+  .invest-rend-btn:hover{ background:var(--accent); color:#fff; }
+  .rend-hist{ margin-top:18px; border-top:1px solid var(--border-soft); padding-top:14px; }
+  .rend-hist-head{ display:flex; justify-content:space-between; align-items:baseline; font-size:12.5px; font-weight:700; color:var(--text-2); margin-bottom:8px; }
+  .rend-hist-list{ max-height:220px; overflow-y:auto; }
+  .rend-hist-row{ display:grid; grid-template-columns:auto 1fr auto auto; gap:10px; align-items:center; padding:7px 0; border-bottom:1px solid var(--border-soft); font-size:12.5px; }
+  .rend-hist-row .d{ color:var(--text-3); font-variant-numeric:tabular-nums; }
+  .rend-hist-row .o{ color:var(--text-3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .rend-hist-row .v{ font-weight:600; font-variant-numeric:tabular-nums; text-align:right; }
+  .rend-hist-del{ background:none; border:none; cursor:pointer; color:var(--text-3); font-size:14px; padding:2px 4px; }
+  .rend-hist-del:hover{ color:var(--negative); }
   .invest-linked-note{ font-size:11px; color:var(--accent-2); background:var(--accent-soft); border-radius:8px; padding:6px 10px; margin-bottom:12px; line-height:1.4; }
 
   /* ---------- Generic centered modal ---------- */
@@ -3239,6 +3254,48 @@
     <div class="cmodal-actions">
       <button class="btn btn-ghost" onclick="closeInvestMov()">Cancelar</button>
       <button class="btn btn-primary" onclick="saveInvestMov()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- RENDIMENTO DE COFRINHO MODAL -->
+<div class="cmodal-overlay" id="investRendModalOverlay" onclick="if(event.target===this)closeInvestRend()">
+  <div class="cmodal" style="width:420px">
+    <div class="cmodal-head">
+      <div class="cmodal-title" id="investRendModalTitle">Rendimento</div>
+      <button class="drawer-close" onclick="closeInvestRend()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:10px 14px;background:var(--surface-2);border-radius:8px">
+      <span style="font-size:12px;color:var(--text-3)">Saldo no app:</span>
+      <span id="investRendAtual" style="font-size:15px;font-weight:700;font-variant-numeric:tabular-nums"></span>
+    </div>
+    <div class="pay-type-tabs">
+      <div class="pay-type-tab active" id="investRendTabSaldo" onclick="setInvestRendMode('saldo')">Informar saldo do banco</div>
+      <div class="pay-type-tab" id="investRendTabValor" onclick="setInvestRendMode('valor')">Informar quanto rendeu</div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Data</label>
+        <input type="date" class="form-input" id="investRendData">
+      </div>
+      <div class="form-group">
+        <label class="form-label" id="investRendValorLabel">Saldo no banco (R$)</label>
+        <input type="number" step="0.01" class="form-input" id="investRendValor" placeholder="0,00" oninput="updateInvestRendPreview()">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Observação <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
+      <input type="text" class="form-input" id="investRendObs" placeholder="Ex.: 102% do CDI">
+    </div>
+    <div id="investRendPreview" style="display:none;margin:4px 0 12px;padding:10px 14px;border-radius:9px;font-size:12.5px;font-weight:600"></div>
+    <div style="font-size:11.5px;color:var(--text-3);margin-bottom:4px">O rendimento atualiza o saldo do cofrinho e não entra como receita do mês. Para rendimento negativo, informe um valor com sinal de menos.</div>
+    <div class="cmodal-actions">
+      <button class="btn btn-ghost" onclick="closeInvestRend()">Fechar</button>
+      <button class="btn btn-primary" onclick="saveInvestRend()">Registrar rendimento</button>
+    </div>
+    <div class="rend-hist">
+      <div class="rend-hist-head"><span>Histórico de rendimentos</span><span id="investRendTotal" style="font-weight:600"></span></div>
+      <div class="rend-hist-list" id="investRendHist"></div>
     </div>
   </div>
 </div>
@@ -6583,11 +6640,13 @@ function renderInvestimentos(){
       </div>
       <div class="invest-card-saldo">${fmtBRL(c.saldoAtual)}</div>
       <div class="invest-card-sub">${linkedMetas.length ? 'Vinculado à meta: '+linkedMetas.map(m=>m.nome).join(', ') : 'Sem meta vinculada'}</div>
+      ${investRendLineHTML(c)}
       <div class="meta-actions">
         <button class="meta-action-btn deposit" data-id="${c._dbId}" data-tipo="aportar">+ Aportar</button>
         <button class="meta-action-btn withdraw" data-id="${c._dbId}" data-tipo="resgatar">− Resgatar</button>
         <button class="invest-card-edit" data-edit="${c._dbId}" title="Editar">✎</button>
       </div>
+      <button class="invest-rend-btn" data-rend="${c._dbId}">↻ Atualizar rendimento</button>
     </div>`;
   }).join('');
   grid.querySelectorAll('.meta-action-btn[data-id]').forEach(btn=>{
@@ -6595,6 +6654,134 @@ function renderInvestimentos(){
   });
   grid.querySelectorAll('.invest-card-edit[data-edit]').forEach(btn=>{
     btn.onclick = () => editConfigConta(btn.dataset.edit);
+  });
+  grid.querySelectorAll('.invest-rend-btn[data-rend]').forEach(btn=>{
+    btn.onclick = () => openInvestRendModal(btn.dataset.rend);
+  });
+}
+
+// ---- Rendimentos de cofrinho ----
+// Cada rendimento é uma transação tipo 'Ajuste', categoria 'Rendimento', direção em formaPagamento
+// ('Ajuste (+)' / 'Ajuste (-)'). Entra no saldo do cofrinho, mas não em receita/despesa.
+const RENDIMENTO_CAT = 'Rendimento';
+let investRendContaId = null, investRendMode = 'saldo';
+
+function isRendimento(t){ return t && t.tipo==='Ajuste' && t.categoria===RENDIMENTO_CAT; }
+function rendSigned(t){ return (t.formaPagamento==='Ajuste (-)' ? -1 : 1) * t.valor; }
+function getRendimentos(conta){
+  return DATA.transacoes.filter(t=>isRendimento(t) && t.conta===conta)
+    .sort((a,b)=> b.data.localeCompare(a.data) || (b._id||0)-(a._id||0));
+}
+function investRendLineHTML(c){
+  const rends = getRendimentos(c.conta);
+  if(!rends.length) return `<div class="invest-rend-line">Nenhum rendimento registrado</div>`;
+  const total = Math.round(rends.reduce((s,t)=>s+rendSigned(t),0)*100)/100;
+  const cls = total<0 ? 'neg' : 'pos';
+  return `<div class="invest-rend-line">Rendeu <span class="${cls}">${total<0?'−':'+'}${fmtBRL(Math.abs(total))}</span> no total, última atualização em ${fmtDateBR(rends[0].data)}</div>`;
+}
+
+function openInvestRendModal(dbId){
+  const c = DATA.contas.find(x=>x._dbId===dbId);
+  if(!c) return;
+  investRendContaId = dbId;
+  document.getElementById('investRendModalTitle').textContent = `Rendimento de "${c.conta}"`;
+  document.getElementById('investRendData').value = localDateStr();
+  document.getElementById('investRendObs').value = '';
+  setInvestRendMode('saldo');
+  renderInvestRendHist();
+  document.getElementById('investRendModalOverlay').classList.add('open');
+  setTimeout(()=>document.getElementById('investRendValor').focus(), 150);
+}
+function closeInvestRend(){ document.getElementById('investRendModalOverlay').classList.remove('open'); investRendContaId=null; }
+function setInvestRendMode(mode){
+  investRendMode = mode;
+  document.getElementById('investRendTabSaldo').classList.toggle('active', mode==='saldo');
+  document.getElementById('investRendTabValor').classList.toggle('active', mode==='valor');
+  document.getElementById('investRendValorLabel').textContent = mode==='saldo' ? 'Saldo no banco (R$)' : 'Quanto rendeu (R$)';
+  document.getElementById('investRendValor').value = '';
+  updateInvestRendPreview();
+}
+function calcInvestRendDiff(){
+  const c = DATA.contas.find(x=>x._dbId===investRendContaId);
+  const v = parseFloat(document.getElementById('investRendValor').value);
+  if(!c || isNaN(v)) return null;
+  const diff = investRendMode==='saldo' ? v - c.saldoAtual : v;
+  return { c, diff: Math.round(diff*100)/100 };
+}
+function updateInvestRendPreview(){
+  const prev = document.getElementById('investRendPreview');
+  const c = DATA.contas.find(x=>x._dbId===investRendContaId);
+  if(c) document.getElementById('investRendAtual').textContent = fmtBRL(c.saldoAtual);
+  const r = calcInvestRendDiff();
+  if(!r){ prev.style.display='none'; return; }
+  prev.style.display='block';
+  if(r.diff===0){ prev.style.background='var(--surface-3)'; prev.style.color='var(--text-3)'; prev.textContent='Sem diferença: o saldo já está igual.'; return; }
+  const pos = r.diff>0;
+  prev.style.background = pos ? 'var(--positive-soft)' : 'var(--negative-soft)';
+  prev.style.color = pos ? 'var(--positive)' : 'var(--negative)';
+  const novo = Math.round((r.c.saldoAtual + r.diff)*100)/100;
+  prev.textContent = `Rendimento de ${pos?'+':'−'}${fmtBRL(Math.abs(r.diff))}. Novo saldo: ${fmtBRL(novo)}.`;
+}
+function saveInvestRend(){
+  const r = calcInvestRendDiff();
+  const data = document.getElementById('investRendData').value;
+  if(!r){ showToast(investRendMode==='saldo' ? 'Informe o saldo do banco.' : 'Informe quanto rendeu.','error'); return; }
+  if(!data){ showToast('Informe a data.','error'); return; }
+  if(r.diff===0){ showToast('Sem diferença para registrar.'); return; }
+  const obs = document.getElementById('investRendObs').value.trim() || null;
+  const entry = {
+    _id: _nextId++, data, descricao: `Rendimento: ${r.c.conta}`,
+    tipo: 'Ajuste', categoria: RENDIMENTO_CAT, subcategoria: null,
+    conta: r.c.conta, contaDestino: null,
+    formaPagamento: r.diff>0 ? 'Ajuste (+)' : 'Ajuste (-)',
+    status: 'Pago', valor: Math.abs(r.diff), obs,
+    recorrente:false, recorrenciaId:null, recorrenciaFreq:null,
+    _source: 'transacoes', _new: true
+  };
+  DATA.transacoes.push(entry);
+  r.c.saldoAtual = Math.round((r.c.saldoAtual + r.diff)*100)/100;
+  DATA.saldoTotal = DATA.contas.filter(c=>!c.arquivado).reduce((s,c)=>s+c.saldoAtual,0);
+  if(typeof monthSet!=='undefined'){ const mk = monthKey(parseDate(data)); if(!monthSet.has(mk)){ monthSet.add(mk); months.length=0; months.push(...Array.from(monthSet).sort()); } }
+  pendingSync.push(entry); updateSyncBar();
+  dbSaveTransaction(entry);
+  showToast(`Rendimento de ${r.diff>0?'+':'−'}${fmtBRL(Math.abs(r.diff))} registrado em "${r.c.conta}".`);
+  document.getElementById('investRendValor').value = '';
+  document.getElementById('investRendObs').value = '';
+  updateInvestRendPreview();
+  renderInvestRendHist();
+  renderInvestimentos(); renderSidebar(); renderMetas();
+}
+function renderInvestRendHist(){
+  const c = DATA.contas.find(x=>x._dbId===investRendContaId);
+  const list = document.getElementById('investRendHist');
+  const totEl = document.getElementById('investRendTotal');
+  if(!c){ list.innerHTML=''; totEl.textContent=''; return; }
+  const rends = getRendimentos(c.conta);
+  if(!rends.length){
+    totEl.textContent = '';
+    list.innerHTML = '<div style="font-size:12px;color:var(--text-3);padding:8px 0">Nenhum rendimento ainda. Registre o primeiro acima.</div>';
+    return;
+  }
+  const total = Math.round(rends.reduce((s,t)=>s+rendSigned(t),0)*100)/100;
+  totEl.innerHTML = `Total: <span style="color:${total<0?'var(--negative)':'var(--positive)'}">${total<0?'−':'+'}${fmtBRL(Math.abs(total))}</span>`;
+  list.innerHTML = rends.map(t=>{
+    const v = rendSigned(t);
+    return `<div class="rend-hist-row">
+      <span class="d">${fmtDateBR(t.data)}</span>
+      <span class="o" title="${(t.obs||'').replace(/"/g,'&quot;')}">${t.obs||''}</span>
+      <span class="v" style="color:${v<0?'var(--negative)':'var(--positive)'}">${v<0?'−':'+'}${fmtBRL(Math.abs(v))}</span>
+      <button class="rend-hist-del" data-rid="${t._id}" title="Excluir rendimento">×</button>
+    </div>`;
+  }).join('');
+  list.querySelectorAll('.rend-hist-del[data-rid]').forEach(btn=>{
+    btn.onclick = async () => {
+      const t = DATA.transacoes.find(x=>x._id===parseInt(btn.dataset.rid));
+      if(!t) return;
+      if(!confirm(`Excluir o rendimento de ${fmtBRL(t.valor)} de ${fmtDateBR(t.data)}?`)) return;
+      await deleteEntry(t);
+      renderInvestRendHist(); updateInvestRendPreview();
+      showToast('Rendimento excluído.');
+    };
   });
 }
 
@@ -7252,9 +7439,16 @@ async function deleteEntry(entry){
     // Reverse balance if paid
     const contaObj = DATA.contas.find(c=>c.conta===entry.conta);
     if(contaObj && entry.status==='Pago'){
-      const delta = entry.tipo==='Receita' ? -entry.valor : entry.valor;
+      let delta;
+      if(entry.tipo==='Receita') delta = -entry.valor;
+      else if(entry.tipo==='Ajuste') delta = entry.formaPagamento==='Ajuste (-)' ? entry.valor : -entry.valor;
+      else delta = entry.valor; // Despesa e origem da Transferência
       contaObj.saldoAtual = Math.round((contaObj.saldoAtual+delta)*100)/100;
-      DATA.saldoTotal = Math.round((DATA.saldoTotal+delta)*100)/100;
+      if(entry.tipo==='Transferência' && entry.contaDestino){
+        const destObj = DATA.contas.find(c=>c.conta===entry.contaDestino);
+        if(destObj) destObj.saldoAtual = Math.round((destObj.saldoAtual-entry.valor)*100)/100;
+      }
+      DATA.saldoTotal = DATA.contas.filter(c=>!c.arquivado).reduce((s,c)=>s+c.saldoAtual,0);
     }
     if(entry._dbId){
       const {error} = await db.from('transacoes').delete().eq('id',entry._dbId);
