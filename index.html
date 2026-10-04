@@ -1306,6 +1306,22 @@
   .acct-item-name{ font-size:12.5px; font-weight:500; color:var(--text-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .acct-item-val{ font-family:'Inter',sans-serif; font-variant-numeric:tabular-nums; font-size:11.5px; font-weight:600; white-space:nowrap; flex-shrink:0; color:var(--text-2); }
 
+  /* ── Sidebar: saldo por data ── */
+  .acct-date-bar{ position:relative; display:flex; align-items:center; gap:4px; margin:0 0 6px; padding:0 4px; }
+  .acct-date-chip{ flex:1; min-width:0; display:flex; align-items:center; justify-content:center; gap:6px; padding:6px 8px;
+    border:1.5px solid var(--border); border-radius:8px; background:var(--surface-2); color:var(--text-2);
+    font-family:'Inter',sans-serif; font-size:11.5px; font-weight:600; cursor:pointer; transition:.12s ease; white-space:nowrap; }
+  .acct-date-chip svg{ width:13px; height:13px; flex-shrink:0; }
+  .acct-date-chip span{ overflow:hidden; text-overflow:ellipsis; }
+  .acct-date-chip:hover{ border-color:var(--border-hover); color:var(--text-1); }
+  .acct-date-chip.past{ border-color:var(--accent); color:var(--accent-2); background:var(--accent-soft); }
+  .acct-date-step{ width:26px; height:28px; flex-shrink:0; border:1.5px solid var(--border); border-radius:8px; background:var(--surface-2);
+    color:var(--text-2); font-size:15px; line-height:1; cursor:pointer; font-family:'Inter',sans-serif; }
+  .acct-date-step:hover{ border-color:var(--border-hover); color:var(--text-1); }
+  .acct-date-input{ position:absolute; left:50%; bottom:0; width:1px; height:1px; opacity:0; pointer-events:none; border:0; padding:0; }
+  .acct-date-reset{ display:block; margin:-2px 0 6px 8px; background:none; border:none; padding:2px 4px; font-size:11px; font-weight:600;
+    color:var(--accent-2); cursor:pointer; font-family:'Inter',sans-serif; text-decoration:underline; text-underline-offset:2px; }
+
   /* ── Sidebar saldo block ── */
   .sidebar-saldo-block{
     padding:10px 12px; margin:10px 0 6px;
@@ -2307,11 +2323,21 @@
 
     <div class="sidebar-divider"></div>
     <div class="sidebar-section-label">Contas</div>
+    <div class="acct-date-bar">
+      <button class="acct-date-step" onclick="stepSaldoDate(-1)" title="Dia anterior" aria-label="Dia anterior">‹</button>
+      <button class="acct-date-chip" id="acctDateChip" onclick="openSaldoDatePicker()" title="Ver o saldo de um dia específico">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        <span id="acctDateLabel">Saldo atual agora</span>
+      </button>
+      <button class="acct-date-step" onclick="stepSaldoDate(1)" title="Próximo dia" aria-label="Próximo dia">›</button>
+      <input type="date" id="acctDateInput" class="acct-date-input" onchange="setSaldoDate(this.value)" tabindex="-1" aria-hidden="true">
+    </div>
+    <button class="acct-date-reset" id="acctDateReset" onclick="setSaldoDate(null)" style="display:none">Voltar para agora</button>
     <div id="acctList"></div>
 
     <!-- Saldo total (logo abaixo das contas) -->
     <div class="sidebar-saldo-block">
-      <div class="lbl">Saldo atual</div>
+      <div class="lbl" id="sidebarSaldoLbl">Saldo atual</div>
       <div class="val num" id="sidebarSaldo">—</div>
     </div>
 
@@ -4150,7 +4176,7 @@ function computeKPIs(key){
   const despesaAPagar = Math.max(0, despesaConta - despesaPaga);
   const despesaCartao = cartao.reduce((s,t)=>s+t.valor,0);
   const despesa = despesaConta + despesaCartao;
-  return {receita, despesa, resultado: receita - despesa, saldoTotal: DATA.saldoTotal,
+  return {receita, despesa, resultado: receita - despesa, saldoTotal: saldoContasCorrentes(),
     receitaRecebida, receitaAReceber, despesaPaga, despesaAPagar};
 }
 
@@ -4176,9 +4202,59 @@ function toggleConfigTipoInvest(){
   if(wrap) wrap.style.display = (tipo === 'Investimento') ? '' : 'none';
 }
 
+// Saldo em conta corrente: ignora cofrinhos/investimentos e contas arquivadas.
+function saldoContasCorrentes(){
+  return Math.round(DATA.contas.filter(c=>!c.arquivado && !isInvestConta(c)).reduce((s,c)=>s+c.saldoAtual,0)*100)/100;
+}
+// Saldo de uma conta no fim do dia `dateStr` (AAAA-MM-DD): saldo inicial + lançamentos pagos até essa data.
+function saldoContaEm(conta, dateStr){
+  const c = DATA.contas.find(x=>x.conta===conta);
+  let s = c ? (+c.saldoInicial||0) : 0;
+  DATA.transacoes.forEach(t=>{
+    if(t.status!=='Pago' || !t.data || t.data > dateStr) return;
+    if(t.tipo==='Receita' && t.conta===conta) s += t.valor;
+    else if(t.tipo==='Despesa' && t.conta===conta) s -= t.valor;
+    else if(t.tipo==='Transferência'){ if(t.conta===conta) s -= t.valor; if(t.contaDestino===conta) s += t.valor; }
+    else if(t.tipo==='Ajuste' && t.conta===conta) s += (t.formaPagamento==='Ajuste (-)' ? -1 : 1) * t.valor;
+  });
+  return Math.round(s*100)/100;
+}
+let sidebarSaldoDate = null; // null = saldo atual agora
+function setSaldoDate(v){
+  sidebarSaldoDate = v || null;
+  renderSidebar();
+}
+function openSaldoDatePicker(){
+  const inp = document.getElementById('acctDateInput');
+  inp.value = sidebarSaldoDate || localDateStr();
+  try { if(inp.showPicker){ inp.showPicker(); return; } } catch(e){}
+  inp.style.pointerEvents='auto'; inp.focus(); inp.click(); inp.style.pointerEvents='none';
+}
+function stepSaldoDate(dir){
+  const hoje = localDateStr();
+  const base = parseDate(sidebarSaldoDate || hoje);
+  base.setDate(base.getDate()+dir);
+  const next = localDateStr(base);
+  // Avançar além de hoje volta para "agora"
+  setSaldoDate(next > hoje ? null : next);
+}
+
 function renderSidebar(){
   const _saldo = document.getElementById('sidebarSaldo');
-  if(_saldo) _saldo.textContent = fmtBRL(DATA.saldoTotal);
+  const _lbl = document.getElementById('sidebarSaldoLbl');
+  const _chip = document.getElementById('acctDateChip');
+  const _chipLbl = document.getElementById('acctDateLabel');
+  const _reset = document.getElementById('acctDateReset');
+  const dt = sidebarSaldoDate;
+  const isHoje = dt === localDateStr();
+  const dtBR = dt ? fmtDateBR(dt) : '';
+  if(_chipLbl) _chipLbl.textContent = dt ? (isHoje ? `Fim do dia de hoje (${dtBR.slice(0,5)})` : `Saldo em ${dtBR}`) : 'Saldo atual agora';
+  if(_chip) _chip.classList.toggle('past', !!dt);
+  if(_reset) _reset.style.display = dt ? 'block' : 'none';
+  if(_lbl) _lbl.textContent = dt ? `Saldo em ${dtBR}` : 'Saldo atual';
+  const contasCorr = DATA.contas.filter(c=>!c.arquivado && !isInvestConta(c));
+  const saldoDe = c => dt ? saldoContaEm(c.conta, dt) : c.saldoAtual;
+  if(_saldo) _saldo.textContent = fmtBRL(Math.round(contasCorr.reduce((s,c)=>s+saldoDe(c),0)*100)/100);
   // Update user display
   if(currentUser){
     const email = currentUser.email || '';
@@ -4199,7 +4275,7 @@ function renderSidebar(){
       <div class="acct-item-info">
         <div class="acct-item-name">${c.conta}</div>
       </div>
-      <div class="acct-item-val" style="color:${c.saldoAtual<0?'var(--negative)':'var(--text-2)'}">${fmtBRL(c.saldoAtual)}</div>
+      <div class="acct-item-val" style="color:${saldoDe(c)<0?'var(--negative)':'var(--text-2)'}">${fmtBRL(saldoDe(c))}</div>
     </div>
   `).join('') || '<div style="font-size:12px;color:var(--text-3);padding:6px 10px">Nenhuma conta ativa</div>';
 }
@@ -4239,7 +4315,7 @@ function renderKPIs(key){
   const receitaPct = k.receita > 0 ? Math.min(100, (k.receitaRecebida/k.receita)*100) : 0;
   const despesaPct = k.despesa > 0 ? Math.min(100, (k.despesaPaga/(k.despesaPaga+k.despesaAPagar||1))*100) : 0;
   const cards = [
-    {label:'Saldo Atual', value:k.saldoTotal, icon:'blue', deltaHtml:'<span class="kpi-delta flat">Soma de todas as contas</span>',
+    {label:'Saldo Atual', value:k.saldoTotal, icon:'blue', deltaHtml:'<span class="kpi-delta flat">Soma das contas correntes</span>',
      svg:'<path d="M3 10h18M3 6h18v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6z"/>'},
     {label:'Receita do Mês', value:k.receita, icon:'green', deltaHtml: deltaHTML(k.receita, kPrev?kPrev.receita:null, true),
      svg:'<path d="M12 19V5M5 12l7-7 7 7"/>',
