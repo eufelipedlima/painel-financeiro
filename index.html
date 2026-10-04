@@ -4489,6 +4489,7 @@ function getCombinedAll(){
     _id:t._id, _source:'transacoes',
     data:t.data, descricao:t.descricao, tipo:t.tipo, categoria:t.categoria,
     conta: t.tipo==='Transferência' ? (t.conta+' → '+t.contaDestino) : t.conta,
+    _contaOrig: t.conta||'', _contaDest: t.tipo==='Transferência' ? (t.contaDestino||'') : '',
     status:t.status, valor:t.valor
   }));
   const cartao = DATA.cartaoCompras.map(t => ({
@@ -4511,7 +4512,8 @@ function renderAllTable(){
   updateLastEntryNote();
   let rows = getCombinedAll();
   // Filter by currentMonth (same global selector as all other views)
-  rows = rows.filter(r => {
+  // Com "Dia específico" preenchido, o dia manda: ignora o mês selecionado no topo.
+  if(!txFilterDia) rows = rows.filter(r => {
     if(r._source === 'cartaoCompras'){
       const orig = DATA.cartaoCompras.find(t => t._id === r._id);
       return orig ? getCartaoFaturaMonth(orig) === currentMonth : inMonth(r.data, currentMonth);
@@ -4519,7 +4521,8 @@ function renderAllTable(){
     return inMonth(r.data, currentMonth);
   });
   if(typeFilter !== 'Todos') rows = rows.filter(r => r.tipo === typeFilter);
-  if(txFilterConta !== 'Todos') rows = rows.filter(r => (r.conta||'') === txFilterConta || (r.conta||'').startsWith(txFilterConta+' →'));
+  // Conta: inclui transferências que saem OU entram nessa conta.
+  if(txFilterConta !== 'Todos') rows = rows.filter(r => (r._contaOrig ?? r.conta ?? '') === txFilterConta || r._contaDest === txFilterConta || (r.conta||'') === txFilterConta);
   if(txFilterCategoria !== 'Todos') rows = rows.filter(r => r.categoria === txFilterCategoria);
   if(txFilterDia) rows = rows.filter(r => r.data === txFilterDia);
   const q = document.getElementById('searchInput').value.trim().toLowerCase();
@@ -4598,7 +4601,7 @@ function renderAllTable(){
   const receitas = rows.filter(r=>r.tipo==='Receita').reduce((s,r)=>s+r.valor,0);
   const despesas = rows.filter(r=>r.tipo!=='Receita'&&r.tipo!=='Transferência'&&r.tipo!=='Ajuste').reduce((s,r)=>s+r.valor,0);
   const sumEl = document.getElementById('allTableSummary');
-  if(sumEl) sumEl.innerHTML = `${rows.length} lançamento${rows.length===1?'':'s'} · <strong style="color:var(--positive)">${fmtBRL(receitas)}</strong> entradas · <strong style="color:var(--negative)">${fmtBRL(despesas)}</strong> saídas`;
+  if(sumEl) sumEl.innerHTML = `${rows.length} lançamento${rows.length===1?'':'s'} · <strong style="color:var(--positive)">${fmtBRL(receitas)}</strong> entradas · <strong style="color:var(--negative)">${fmtBRL(despesas)}</strong> saídas${txFilterDia ? ` · dia ${fmtDateBR(txFilterDia)} (independe do mês do topo)` : ''}`;
 
   // ── Mobile card list ──────────────────────────────────────
   const mobList = document.getElementById('mobileTransList');
