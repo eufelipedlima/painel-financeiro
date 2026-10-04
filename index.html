@@ -830,6 +830,56 @@
   .rend-hist-del:hover{ color:var(--negative); }
   .invest-linked-note{ font-size:11px; color:var(--accent-2); background:var(--accent-soft); border-radius:8px; padding:6px 10px; margin-bottom:12px; line-height:1.4; }
 
+  /* ---------- Admin da plataforma ---------- */
+  .adm-top-actions{ display:flex; align-items:flex-end; gap:8px; flex-wrap:wrap; }
+  .adm-month-wrap{ display:flex; flex-direction:column; gap:4px; font-size:11px; font-weight:600; color:var(--text-3); }
+  .adm-month-wrap .form-input{ padding:8px 10px; min-width:170px; }
+  .adm-refresh{ flex:none; padding:9px 14px; font-size:12.5px; }
+  .adm-msg{ text-align:center; padding:40px 24px; color:var(--text-2); font-size:13.5px; line-height:1.6; }
+  .adm-msg strong{ color:var(--text-1); }
+  .adm-tab{ padding:6px 14px; border-radius:7px; font-size:12.5px; font-weight:600; cursor:pointer; border:none; background:none; color:var(--text-3); font-family:'Inter',sans-serif; transition:.12s ease; white-space:nowrap; }
+  .adm-tab:hover{ color:var(--text-1); }
+  .adm-tab.active{ background:var(--surface); color:var(--text-1); box-shadow:0 1px 3px rgba(0,0,0,0.15); }
+  .adm-tab .n{ font-weight:500; color:var(--text-3); margin-left:4px; }
+  .adm-toolbar{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+  .adm-search{ flex:1; min-width:200px; }
+  .adm-toolbar .subtab-bar{ margin-bottom:0; }
+  .adm-toolbar .btn{ flex:none; padding:9px 16px; font-size:13px; }
+  .adm-table-wrap{ overflow-x:auto; }
+  .adm-table-wrap table.data-table{ min-width:760px; }
+  .adm-user-cell .nm{ font-weight:600; color:var(--text-1); }
+  .adm-user-cell .em{ font-size:11.5px; color:var(--text-3); margin-top:2px; }
+  .adm-role{ font-size:9.5px; font-weight:700; padding:1px 6px; border-radius:4px; margin-left:6px; background:var(--accent-soft); color:var(--accent-2); vertical-align:1px; }
+  .adm-pill{ display:inline-block; font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px; white-space:nowrap; }
+  .adm-pill.ativa{ background:var(--positive-soft); color:var(--positive); }
+  .adm-pill.teste{ background:var(--accent-soft); color:var(--accent-2); }
+  .adm-pill.vencida{ background:var(--warning-soft); color:var(--warning); }
+  .adm-pill.cancelada{ background:var(--negative-soft); color:var(--negative); }
+  .adm-pill.inativa, .adm-pill.sem, .adm-pill.oculto{ background:var(--surface-3); color:var(--text-3); }
+  .adm-muted{ color:var(--text-3); font-size:12px; }
+  .adm-num{ font-variant-numeric:tabular-nums; }
+  .adm-row-btn{ background:var(--surface-2); border:1.5px solid var(--border); color:var(--text-2); border-radius:7px; padding:5px 11px; font-size:12px; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif; white-space:nowrap; }
+  .adm-row-btn:hover{ border-color:var(--border-hover); color:var(--text-1); }
+  .adm-row-del{ background:none; border:none; color:var(--text-3); cursor:pointer; font-size:15px; padding:2px 6px; }
+  .adm-row-del:hover{ color:var(--negative); }
+  .adm-hint{ font-size:11.5px; color:var(--text-3); line-height:1.5; margin:-4px 0 12px; }
+  .adm-section-title{ font-size:12.5px; font-weight:700; color:var(--text-2); margin:6px 0 10px; padding-top:12px; border-top:1px solid var(--border-soft); }
+  .adm-user-info{ display:grid; grid-template-columns:1fr 1fr; gap:8px 16px; font-size:12px; color:var(--text-3); background:var(--surface-2); border-radius:9px; padding:10px 14px; margin-bottom:14px; }
+  .adm-user-info b{ display:block; color:var(--text-1); font-weight:600; font-size:12.5px; margin-top:1px; word-break:break-all; }
+  .adm-user-info:empty{ display:none; }
+  .adm-check{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-2); cursor:pointer; padding-top:8px; }
+  .adm-check input{ width:16px; height:16px; accent-color:var(--accent); }
+  .adm-danger{ color:var(--negative) !important; }
+  .adm-chart-box{ position:relative; height:220px; margin-bottom:22px; }
+  .adm-sub-head{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+  .adm-sub-head h3{ font-size:14.5px; font-weight:700; color:var(--text-1); margin:0; }
+  .adm-admin-add{ display:flex; gap:8px; flex-wrap:wrap; margin:6px 0 16px; }
+  .adm-admin-add .form-input{ flex:1; min-width:220px; }
+  .adm-admin-add .btn{ flex:none; padding:9px 16px; font-size:13px; }
+  .adm-pag-list{ margin-top:4px; }
+  .adm-pag-row{ display:flex; justify-content:space-between; gap:10px; padding:7px 0; border-bottom:1px solid var(--border-soft); font-size:12.5px; }
+  @media (max-width:640px){ .adm-user-info{ grid-template-columns:1fr; } .adm-month-wrap .form-input{ min-width:0; } }
+
   /* ---------- Generic centered modal ---------- */
   .cmodal-overlay{
     position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px);
@@ -2319,6 +2369,11 @@
         </div>
       </div>
 
+      <div class="nav-item adm-only" data-view="admin" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 3v6c0 5-3.5 9.3-8 11-4.5-1.7-8-6-8-11V5l8-3z"/><path d="M9 12l2 2 4-4"/></svg>
+        Admin da plataforma
+      </div>
+
     </nav>
 
     <div class="sidebar-divider"></div>
@@ -2622,6 +2677,29 @@
       <div class="kpi-grid" style="grid-template-columns:repeat(1,1fr);margin-bottom:20px" id="investTotalRow"></div>
       <div class="metas-grid" id="investGrid">
         <div class="meta-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg><div style="font-size:15px;font-weight:600;color:var(--text-2);margin-bottom:6px">Nenhum cofrinho cadastrado</div><div>Clique em "+ Novo Cofrinho" para guardar dinheiro com um propósito</div></div>
+      </div>
+    </div>
+
+    <!-- ADMIN DA PLATAFORMA -->
+    <div class="view" id="view-admin">
+      <div class="topbar">
+        <div>
+          <div class="page-title">Admin da plataforma</div>
+          <div class="page-sub">Assinantes, planos e faturamento do Duna.app. Só administradores veem esta página.</div>
+        </div>
+        <div class="adm-top-actions">
+          <label class="adm-month-wrap" title="Mês de referência para os números do mês">
+            <span>Mês de referência</span>
+            <input type="month" class="form-input" id="admMes">
+          </label>
+          <button class="btn btn-ghost adm-refresh" onclick="renderAdmin(true)" title="Recarregar dados">↻ Atualizar</button>
+        </div>
+      </div>
+      <div id="admMsg" class="panel adm-msg" style="display:none"></div>
+      <div id="admBody" style="display:none">
+        <div class="kpi-grid" id="admKpis"></div>
+        <div class="subtab-bar" id="admTabs" style="margin:6px 0 16px"></div>
+        <div class="panel" id="admPanel"></div>
       </div>
     </div>
 
@@ -3326,6 +3404,112 @@
   </div>
 </div>
 
+<!-- ADMIN: USUÁRIO / ASSINATURA -->
+<div class="cmodal-overlay" id="admUserOverlay" onclick="if(event.target===this)admCloseModal('admUserOverlay')">
+  <div class="cmodal" style="width:560px">
+    <div class="cmodal-head">
+      <div class="cmodal-title" id="admUserTitle">Novo usuário</div>
+      <button class="drawer-close" onclick="admCloseModal('admUserOverlay')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div id="admUserInfo" class="adm-user-info"></div>
+    <div id="admUserNewFields">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">E-mail</label><input type="email" class="form-input" id="admUEmail" placeholder="nome@email.com" autocomplete="off"></div>
+        <div class="form-group"><label class="form-label">Senha inicial</label><input type="text" class="form-input" id="admUSenha" placeholder="Mínimo 6 caracteres" autocomplete="off"></div>
+      </div>
+      <div class="adm-hint">A pessoa recebe um e-mail de confirmação do Supabase e entra com essa senha. Ela pode trocar a senha depois.</div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Nome</label><input type="text" class="form-input" id="admUNome"></div>
+      <div class="form-group"><label class="form-label">Sobrenome</label><input type="text" class="form-input" id="admUSobrenome"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Telefone</label><input type="tel" class="form-input" id="admUTelefone" placeholder="(00) 00000-0000"></div>
+    <div class="adm-section-title">Assinatura</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Plano</label><select class="form-select" id="admUPlano" onchange="admSugerirVencimento()"></select></div>
+      <div class="form-group"><label class="form-label">Situação</label>
+        <select class="form-select" id="admUStatus" onchange="admSugerirVencimento()">
+          <option value="ativa">Ativa</option>
+          <option value="teste">Em teste</option>
+          <option value="inativa">Inativa</option>
+          <option value="cancelada">Cancelada</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Início</label><input type="date" class="form-input" id="admUInicio"></div>
+      <div class="form-group"><label class="form-label">Expira em <span style="font-weight:400;text-transform:none;letter-spacing:0">(vazio = sem prazo)</span></label><input type="date" class="form-input" id="admUExpira"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Observações</label><input type="text" class="form-input" id="admUObs" placeholder="Ex.: cliente indicado, desconto combinado"></div>
+    <div id="admUserPags"></div>
+    <div class="cmodal-actions">
+      <button class="btn btn-ghost" onclick="admCloseModal('admUserOverlay')">Cancelar</button>
+      <button class="btn btn-primary" id="admUserSaveBtn" onclick="admSalvarUsuario()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN: PLANO -->
+<div class="cmodal-overlay" id="admPlanoOverlay" onclick="if(event.target===this)admCloseModal('admPlanoOverlay')">
+  <div class="cmodal" style="width:460px">
+    <div class="cmodal-head">
+      <div class="cmodal-title" id="admPlanoTitle">Novo plano</div>
+      <button class="drawer-close" onclick="admCloseModal('admPlanoOverlay')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="form-group"><label class="form-label">Nome do plano</label><input type="text" class="form-input" id="admPNome" placeholder="Ex.: Duna Mensal"></div>
+    <div class="form-group"><label class="form-label">Descrição <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label><input type="text" class="form-input" id="admPDesc" placeholder="O que está incluído"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Preço (R$)</label><input type="number" step="0.01" min="0" class="form-input" id="admPPreco" placeholder="0,00"></div>
+      <div class="form-group"><label class="form-label">Cobrança</label>
+        <select class="form-select" id="admPPeriodo">
+          <option value="mensal">Mensal</option><option value="trimestral">Trimestral</option>
+          <option value="semestral">Semestral</option><option value="anual">Anual</option>
+          <option value="vitalicio">Vitalício (pagamento único)</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Dias de teste grátis</label><input type="number" min="0" step="1" class="form-input" id="admPTeste" placeholder="0"></div>
+      <div class="form-group"><label class="form-label">Disponível para venda</label>
+        <label class="adm-check"><input type="checkbox" id="admPAtivo" checked> Plano ativo</label>
+      </div>
+    </div>
+    <div class="cmodal-actions">
+      <button class="btn btn-ghost adm-danger" id="admPlanoDelBtn" onclick="admExcluirPlano()" style="display:none;flex:none">Excluir</button>
+      <button class="btn btn-ghost" onclick="admCloseModal('admPlanoOverlay')">Cancelar</button>
+      <button class="btn btn-primary" onclick="admSalvarPlano()">Salvar plano</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN: PAGAMENTO -->
+<div class="cmodal-overlay" id="admPagOverlay" onclick="if(event.target===this)admCloseModal('admPagOverlay')">
+  <div class="cmodal" style="width:460px">
+    <div class="cmodal-head">
+      <div class="cmodal-title">Registrar pagamento</div>
+      <button class="drawer-close" onclick="admCloseModal('admPagOverlay')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="form-group"><label class="form-label">Assinante</label><select class="form-select" id="admGUser" onchange="admPagUserChange()"></select></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Plano</label><select class="form-select" id="admGPlano" onchange="admPagPlanoChange()"></select></div>
+      <div class="form-group"><label class="form-label">Valor (R$)</label><input type="number" step="0.01" min="0.01" class="form-input" id="admGValor" placeholder="0,00"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Data do pagamento</label><input type="date" class="form-input" id="admGData"></div>
+      <div class="form-group"><label class="form-label">Forma</label>
+        <select class="form-select" id="admGMetodo"><option>Pix</option><option>Cartão</option><option>Boleto</option><option>Dinheiro</option><option>Outro</option></select>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Observação <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label><input type="text" class="form-input" id="admGObs"></div>
+    <label class="adm-check" style="margin-top:4px"><input type="checkbox" id="admGRenovar" checked onchange="admPagPreview()"> Renovar a assinatura com este pagamento</label>
+    <div id="admGPreview" class="adm-hint" style="margin-top:6px"></div>
+    <div class="cmodal-actions">
+      <button class="btn btn-ghost" onclick="admCloseModal('admPagOverlay')">Cancelar</button>
+      <button class="btn btn-primary" onclick="admSalvarPagamento()">Registrar pagamento</button>
+    </div>
+  </div>
+</div>
+
 <!-- DÍVIDA MODAL -->
 <div class="cmodal-overlay" id="dividaModalOverlay" onclick="if(event.target===this)closeDivida()">
   <div class="cmodal">
@@ -3550,6 +3734,7 @@ async function handleLogout() {
 // ── App show/hide ────────────────────────────────────
 function showAppScreen() {
   document.getElementById('loginOverlay').style.display='none';
+  if(typeof checkAdminAccess==='function') checkAdminAccess();
   document.getElementById('appRoot').style.display='flex';
   if(currentUser){
     const email = currentUser.email||'';
@@ -5846,6 +6031,7 @@ function isMobile(){ return window.innerWidth <= 768; }
 
 // ===================== Master render =====================
 function renderView(view){
+  if(view === 'admin'){ renderAdmin(); return; }
   if(view === 'overview'){
     document.getElementById('ovSubtitle').textContent = 'Referente a ' + monthLabel(currentMonth);
     renderOnboarding();
@@ -6913,6 +7099,489 @@ function saveInvestMov(){
   closeInvestMov();
   showToast(`${isAporte?'Aporte':'Resgate'} de ${fmtBRL(valor)} registrado.`);
   renderInvestimentos(); renderSidebar(); renderMetas();
+}
+
+// ===================== Admin da plataforma =====================
+// Requer o SQL admin-plataforma.sql (tabelas plataforma_admins, planos, assinaturas,
+// pagamentos_assinatura e RPCs admin_*). Sem o SQL, o menu simplesmente não aparece.
+const ADM = { isAdmin:false, isDono:false, loaded:false, usuarios:[], planos:[], pagamentos:[],
+  tab:'assinantes', filtro:'todos', busca:'', mes:null, chart:null, editUserId:null, editPlanoId:null, pagUserPreset:null };
+const ADM_PERIODOS = { mensal:{label:'Mensal',meses:1}, trimestral:{label:'Trimestral',meses:3}, semestral:{label:'Semestral',meses:6}, anual:{label:'Anual',meses:12}, vitalicio:{label:'Vitalício',meses:null} };
+const ADM_STATUS_LBL = { ativa:'Ativa', teste:'Em teste', vencida:'Vencida', inativa:'Inativa', cancelada:'Cancelada', sem:'Sem assinatura' };
+let _admSignupClient = null;
+
+function admEsc(s){ return String(s??'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function admAddMonths(dateStr, n){
+  const d = parseDate(dateStr); const dia = d.getDate();
+  d.setDate(1); d.setMonth(d.getMonth()+n);
+  const ult = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
+  d.setDate(Math.min(dia, ult));
+  return localDateStr(d);
+}
+function admAddDays(dateStr, n){ const d = parseDate(dateStr); d.setDate(d.getDate()+n); return localDateStr(d); }
+function admFmtDT(ts){ if(!ts) return '—'; const d = new Date(ts); return d.toLocaleDateString('pt-BR'); }
+function admNome(u){ const n = [u.nome,u.sobrenome].filter(Boolean).join(' ').trim(); return n || (u.email||'').split('@')[0]; }
+function admPlano(id){ return ADM.planos.find(p=>p.id===id) || null; }
+function admStatus(u){
+  if(!u.status) return 'sem';
+  if((u.status==='ativa'||u.status==='teste') && u.expira_em && u.expira_em < localDateStr()) return 'vencida';
+  return u.status;
+}
+function admIsAtivo(u){ const s = admStatus(u); return s==='ativa' || s==='teste'; }
+function admPill(st){ return `<span class="adm-pill ${st}">${ADM_STATUS_LBL[st]||st}</span>`; }
+function admOpenModal(id){ document.getElementById(id).classList.add('open'); }
+function admCloseModal(id){ document.getElementById(id).classList.remove('open'); }
+
+async function checkAdminAccess(){
+  let ok = false, dono = false;
+  try{
+    const r = await db.rpc('is_plataforma_admin');
+    ok = !r.error && r.data === true;
+    if(ok){ const r2 = await db.rpc('is_plataforma_dono'); dono = !r2.error && r2.data === true; }
+  } catch(e){ ok = false; }
+  ADM.isAdmin = ok; ADM.isDono = dono;
+  document.querySelectorAll('.adm-only').forEach(el => el.style.display = ok ? '' : 'none');
+  if(!ok && typeof currentView!=='undefined' && currentView==='admin') mobileNavigate('overview');
+}
+
+async function loadAdminData(){
+  const [u, p, g] = await Promise.all([
+    db.rpc('admin_listar_usuarios'),
+    db.from('planos').select('*').order('preco', {ascending:true}),
+    db.from('pagamentos_assinatura').select('*').order('data_pagamento', {ascending:false})
+  ]);
+  if(u.error || p.error || g.error){
+    console.error('Admin load error:', u.error || p.error || g.error);
+    return (u.error || p.error || g.error).message || 'erro';
+  }
+  ADM.usuarios = (u.data||[]).map(r => ({...r, qtd_lancamentos: +r.qtd_lancamentos||0}));
+  ADM.planos = (p.data||[]).map(r => ({...r, preco:+r.preco||0, dias_teste:+r.dias_teste||0}));
+  ADM.pagamentos = (g.data||[]).map(r => ({...r, valor:+r.valor||0}));
+  ADM.loaded = true;
+  return null;
+}
+
+async function renderAdmin(force){
+  const msg = document.getElementById('admMsg'), body = document.getElementById('admBody');
+  if(!msg || !body) return;
+  const mesInp = document.getElementById('admMes');
+  if(!ADM.mes) ADM.mes = localDateStr().slice(0,7);
+  if(mesInp){ mesInp.value = ADM.mes; mesInp.onchange = () => { if(mesInp.value){ ADM.mes = mesInp.value; admRenderAll(); } }; }
+  if(!ADM.isAdmin){
+    body.style.display='none'; msg.style.display='block';
+    msg.innerHTML = 'Esta página é restrita a administradores da plataforma.';
+    return;
+  }
+  if(!ADM.loaded || force){
+    body.style.display='none'; msg.style.display='block';
+    msg.innerHTML = 'Carregando dados da plataforma…';
+    const err = await loadAdminData();
+    if(err){
+      msg.innerHTML = `Não foi possível carregar os dados do admin.<br><span class="adm-muted">${admEsc(err)}</span><br><br>Confira se o arquivo <strong>admin-plataforma.sql</strong> foi rodado inteiro no Supabase.`;
+      return;
+    }
+  }
+  msg.style.display='none'; body.style.display='block';
+  admRenderAll();
+}
+
+function admRenderAll(){ admRenderKpis(); admRenderTabs(); admRenderPanel(); }
+
+function admMRR(){
+  // Receita recorrente mensal estimada: assinaturas ATIVAS (não teste) com plano recorrente
+  return ADM.usuarios.reduce((s,u)=>{
+    if(admStatus(u)!=='ativa') return s;
+    const p = admPlano(u.plano_id); if(!p) return s;
+    const m = ADM_PERIODOS[p.periodicidade]?.meses; if(!m) return s;
+    return s + p.preco/m;
+  },0);
+}
+
+function admRenderKpis(){
+  const el = document.getElementById('admKpis'); if(!el) return;
+  const mes = ADM.mes;
+  const total = ADM.usuarios.length;
+  const novos = ADM.usuarios.filter(u => (u.criado_em||'').slice(0,7)===mes).length;
+  const ativos = ADM.usuarios.filter(admIsAtivo);
+  const emTeste = ativos.filter(u=>admStatus(u)==='teste').length;
+  const inativos = ADM.usuarios.filter(u=>!admIsAtivo(u));
+  const vencidas = inativos.filter(u=>admStatus(u)==='vencida').length;
+  const semAss = inativos.filter(u=>admStatus(u)==='sem').length;
+  const fatMes = ADM.pagamentos.filter(p=>(p.data_pagamento||'').slice(0,7)===mes).reduce((s,p)=>s+p.valor,0);
+  const [yy,mm] = mes.split('-').map(Number);
+  const mesLbl = MESES_PT[mm-1] + ' de ' + yy;
+  const card = (label, value, sub, cls='') => `
+    <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">${label}</span></div>
+      <div class="kpi-value num ${cls}">${value}</div>
+      <span class="kpi-delta flat">${sub}</span></div>`;
+  el.innerHTML =
+    card('Assinantes', total, `+${novos} cadastrado${novos===1?'':'s'} em ${MESES_PT[mm-1]}`) +
+    card('Ativos', `<span style="color:var(--positive)">${ativos.length}</span>`, emTeste ? `${emTeste} em teste grátis` : 'Assinatura em dia') +
+    card('Inativos', `<span style="color:${inativos.length?'var(--negative)':'inherit'}">${inativos.length}</span>`, `${vencidas} vencida${vencidas===1?'':'s'}, ${semAss} sem assinatura`) +
+    card(`Faturamento em ${MESES_PT[mm-1]}`, fmtBRL(fatMes), `Recorrente estimado: ${fmtBRL(admMRR())}/mês`);
+  void mesLbl;
+}
+
+function admRenderTabs(){
+  const el = document.getElementById('admTabs'); if(!el) return;
+  const tabs = [['assinantes','Assinantes',ADM.usuarios.length],['planos','Planos',ADM.planos.length],['pagamentos','Pagamentos',null],['admins','Administradores',ADM.usuarios.filter(u=>u.papel_admin).length]];
+  el.innerHTML = tabs.map(([k,l,n]) => `<button class="adm-tab ${ADM.tab===k?'active':''}" data-admtab="${k}">${l}${n!==null?`<span class="n">${n}</span>`:''}</button>`).join('');
+  el.querySelectorAll('.adm-tab').forEach(b => b.onclick = () => { ADM.tab = b.dataset.admtab; admRenderTabs(); admRenderPanel(); });
+}
+
+function admRenderPanel(){
+  const el = document.getElementById('admPanel'); if(!el) return;
+  if(ADM.chart){ try{ ADM.chart.destroy(); }catch(e){} ADM.chart = null; }
+  if(ADM.tab==='assinantes') admRenderAssinantes(el);
+  else if(ADM.tab==='planos') admRenderPlanos(el);
+  else if(ADM.tab==='pagamentos') admRenderPagamentos(el);
+  else admRenderAdmins(el);
+}
+
+// ---- Aba Assinantes ----
+function admRenderAssinantes(el){
+  el.innerHTML = `
+    <div class="adm-toolbar">
+      <input type="search" class="form-input adm-search" id="admBusca" placeholder="Buscar por nome, e-mail ou telefone" value="${admEsc(ADM.busca)}">
+      <div class="subtab-bar" id="admFiltro">
+        ${[['todos','Todos'],['ativos','Ativos'],['inativos','Inativos']].map(([k,l])=>`<button class="adm-tab ${ADM.filtro===k?'active':''}" data-f="${k}">${l}</button>`).join('')}
+      </div>
+      <button class="btn btn-primary" onclick="admAbrirUsuario(null)">+ Novo usuário</button>
+    </div>
+    <div class="adm-table-wrap" id="admUsersTable"></div>`;
+  const busca = document.getElementById('admBusca');
+  busca.oninput = () => { ADM.busca = busca.value; admRenderUsersTable(); };
+  el.querySelectorAll('#admFiltro .adm-tab').forEach(b => b.onclick = () => {
+    ADM.filtro = b.dataset.f;
+    el.querySelectorAll('#admFiltro .adm-tab').forEach(x=>x.classList.toggle('active', x===b));
+    admRenderUsersTable();
+  });
+  admRenderUsersTable();
+}
+function admRenderUsersTable(){
+  const box = document.getElementById('admUsersTable'); if(!box) return;
+  const q = ADM.busca.trim().toLowerCase();
+  let rows = ADM.usuarios.filter(u => ADM.filtro==='todos' ? true : ADM.filtro==='ativos' ? admIsAtivo(u) : !admIsAtivo(u));
+  if(q) rows = rows.filter(u => [admNome(u), u.email, u.telefone].some(v => (v||'').toLowerCase().includes(q)));
+  if(!rows.length){ box.innerHTML = `<div class="empty-note">${ADM.usuarios.length ? 'Nenhum assinante com esse filtro.' : 'Nenhum usuário cadastrado ainda.'}</div>`; return; }
+  box.innerHTML = `<table class="data-table"><thead><tr>
+      <th>Assinante</th><th>Cadastro</th><th>Último acesso</th><th>Plano</th><th>Situação</th><th>Expira em</th><th style="text-align:right">Lançamentos</th><th></th>
+    </tr></thead><tbody>
+    ${rows.map(u => {
+      const p = admPlano(u.plano_id);
+      const role = u.papel_admin ? `<span class="adm-role">${u.papel_admin==='dono'?'DONO':'ADMIN'}</span>` : '';
+      return `<tr>
+        <td class="adm-user-cell"><div class="nm">${admEsc(admNome(u))}${role}</div><div class="em">${admEsc(u.email)}${u.email_confirmado?'':' (e-mail não confirmado)'}</div></td>
+        <td class="adm-num">${admFmtDT(u.criado_em)}</td>
+        <td class="adm-num">${admFmtDT(u.ultimo_acesso)}</td>
+        <td>${p ? admEsc(p.nome) : '<span class="adm-muted">Sem plano</span>'}</td>
+        <td>${admPill(admStatus(u))}</td>
+        <td class="adm-num">${u.expira_em ? fmtDateBR(u.expira_em) : '<span class="adm-muted">—</span>'}</td>
+        <td class="adm-num" style="text-align:right">${u.qtd_lancamentos}</td>
+        <td style="text-align:right"><button class="adm-row-btn" data-uid="${u.user_id}">Gerenciar</button></td>
+      </tr>`;
+    }).join('')}
+    </tbody></table>`;
+  box.querySelectorAll('.adm-row-btn[data-uid]').forEach(b => b.onclick = () => admAbrirUsuario(b.dataset.uid));
+}
+
+function admPlanoOptions(selId, incluirSem=true){
+  const opts = ADM.planos.map(p => `<option value="${p.id}" ${p.id===selId?'selected':''}>${admEsc(p.nome)} (${fmtBRL(p.preco)} ${ADM_PERIODOS[p.periodicidade]?.label.toLowerCase()||''})${p.ativo?'':' [oculto]'}</option>`).join('');
+  return (incluirSem ? `<option value="">Sem plano</option>` : '') + opts;
+}
+
+function admAbrirUsuario(uid){
+  const u = uid ? ADM.usuarios.find(x=>x.user_id===uid) : null;
+  ADM.editUserId = uid || null;
+  document.getElementById('admUserTitle').textContent = u ? admNome(u) : 'Novo usuário';
+  document.getElementById('admUserNewFields').style.display = u ? 'none' : 'block';
+  document.getElementById('admUserInfo').innerHTML = u ? `
+    <div>E-mail<b>${admEsc(u.email)}</b></div>
+    <div>E-mail confirmado<b>${u.email_confirmado?'Sim':'Ainda não'}</b></div>
+    <div>Cadastro<b>${admFmtDT(u.criado_em)}</b></div>
+    <div>Último acesso<b>${admFmtDT(u.ultimo_acesso)}</b></div>` : '';
+  document.getElementById('admUEmail').value = '';
+  document.getElementById('admUSenha').value = '';
+  document.getElementById('admUNome').value = u?.nome || '';
+  document.getElementById('admUSobrenome').value = u?.sobrenome || '';
+  document.getElementById('admUTelefone').value = u?.telefone || '';
+  document.getElementById('admUPlano').innerHTML = admPlanoOptions(u?.plano_id || '');
+  document.getElementById('admUStatus').value = u?.status || (u ? 'inativa' : 'ativa');
+  document.getElementById('admUInicio').value = u?.inicio || localDateStr();
+  document.getElementById('admUExpira').value = u?.expira_em || '';
+  document.getElementById('admUObs').value = u?.observacoes || '';
+  document.getElementById('admUserSaveBtn').textContent = u ? 'Salvar alterações' : 'Criar usuário';
+  // Histórico de pagamentos do usuário
+  const pagBox = document.getElementById('admUserPags');
+  if(u){
+    const pags = ADM.pagamentos.filter(p=>p.user_id===u.user_id);
+    const tot = pags.reduce((s,p)=>s+p.valor,0);
+    pagBox.innerHTML = `<div class="adm-section-title" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Pagamentos ${pags.length?`<span class="adm-muted" style="font-weight:500">(${fmtBRL(tot)} no total)</span>`:''}</span>
+        <button class="adm-row-btn" onclick="admAbrirPagamento('${u.user_id}')">+ Registrar pagamento</button></div>
+      <div class="adm-pag-list">${pags.length ? pags.slice(0,8).map(p=>`<div class="adm-pag-row"><span class="adm-num">${fmtDateBR(p.data_pagamento)} <span class="adm-muted">${admEsc(p.metodo||'')}</span></span><span>${admEsc(admPlano(p.plano_id)?.nome||'')}</span><b class="adm-num">${fmtBRL(p.valor)}</b></div>`).join('') : '<div class="adm-muted" style="padding:4px 0 8px">Nenhum pagamento registrado.</div>'}</div>`;
+  } else pagBox.innerHTML = '';
+  admOpenModal('admUserOverlay');
+}
+
+function admSugerirVencimento(){
+  // Preenche "Expira em" só se estiver vazio, a partir do plano e da situação
+  const exp = document.getElementById('admUExpira');
+  if(exp.value) return;
+  const p = admPlano(document.getElementById('admUPlano').value);
+  const st = document.getElementById('admUStatus').value;
+  const ini = document.getElementById('admUInicio').value || localDateStr();
+  if(!p) return;
+  if(st==='teste' && p.dias_teste>0) exp.value = admAddDays(ini, p.dias_teste);
+  else if(st==='ativa'){ const m = ADM_PERIODOS[p.periodicidade]?.meses; if(m) exp.value = admAddMonths(ini, m); }
+}
+
+async function admSalvarUsuario(){
+  const btn = document.getElementById('admUserSaveBtn');
+  const nome = document.getElementById('admUNome').value.trim();
+  const payload = {
+    p_nome: nome || null,
+    p_sobrenome: document.getElementById('admUSobrenome').value.trim() || null,
+    p_telefone: document.getElementById('admUTelefone').value.trim() || null,
+    p_plano_id: document.getElementById('admUPlano').value || null,
+    p_status: document.getElementById('admUStatus').value,
+    p_inicio: document.getElementById('admUInicio').value || null,
+    p_expira_em: document.getElementById('admUExpira').value || null,
+    p_observacoes: document.getElementById('admUObs').value.trim() || null
+  };
+  let userId = ADM.editUserId;
+  btn.disabled = true;
+  try{
+    if(!userId){
+      const email = document.getElementById('admUEmail').value.trim();
+      const senha = document.getElementById('admUSenha').value;
+      if(!email || !/^\S+@\S+\.\S+$/.test(email)){ showToast('Informe um e-mail válido.','error'); return; }
+      if(senha.length < 6){ showToast('A senha precisa ter pelo menos 6 caracteres.','error'); return; }
+      if(!nome){ showToast('Informe o nome.','error'); return; }
+      // Cliente separado, sem guardar sessão: criar o usuário não desloga você.
+      if(!_admSignupClient) _admSignupClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth:{ persistSession:false, autoRefreshToken:false, detectSessionInUrl:false, storageKey:'duna-admin-signup' } });
+      const { data, error } = await _admSignupClient.auth.signUp({ email, password: senha });
+      if(error){
+        const m = error.message||'';
+        showToast(/rate limit|too many/i.test(m) ? 'Limite de e-mails do Supabase atingido. Tente mais tarde ou configure um SMTP próprio.' : /registered/i.test(m) ? 'Este e-mail já tem cadastro.' : 'Erro ao criar usuário: '+m, 'error');
+        return;
+      }
+      if(!data.user || (Array.isArray(data.user.identities) && data.user.identities.length===0)){ showToast('Este e-mail já tem cadastro.','error'); return; }
+      userId = data.user.id;
+      try{ await _admSignupClient.auth.signOut(); }catch(e){}
+    }
+    const { error } = await db.rpc('admin_salvar_usuario', { p_user_id: userId, ...payload });
+    if(error){ console.error(error); showToast('Erro ao salvar: '+(error.message||''),'error'); return; }
+    admCloseModal('admUserOverlay');
+    showToast(ADM.editUserId ? 'Assinante atualizado.' : 'Usuário criado. Ele vai receber o e-mail de confirmação.');
+    await loadAdminData(); admRenderAll();
+  } finally { btn.disabled = false; }
+}
+
+// ---- Aba Planos ----
+function admRenderPlanos(el){
+  const ativosPorPlano = {};
+  ADM.usuarios.filter(admIsAtivo).forEach(u => { if(u.plano_id) ativosPorPlano[u.plano_id] = (ativosPorPlano[u.plano_id]||0)+1; });
+  el.innerHTML = `
+    <div class="adm-sub-head"><h3>Planos à venda</h3><button class="btn btn-primary" style="flex:none;padding:9px 16px;font-size:13px" onclick="admAbrirPlano(null)">+ Novo plano</button></div>
+    ${ADM.planos.length ? `<div class="adm-table-wrap"><table class="data-table"><thead><tr>
+      <th>Plano</th><th style="text-align:right">Preço</th><th>Cobrança</th><th>Teste grátis</th><th style="text-align:right">Assinantes ativos</th><th>Situação</th><th></th>
+    </tr></thead><tbody>
+    ${ADM.planos.map(p=>`<tr>
+      <td class="adm-user-cell"><div class="nm">${admEsc(p.nome)}</div>${p.descricao?`<div class="em">${admEsc(p.descricao)}</div>`:''}</td>
+      <td class="adm-num" style="text-align:right">${fmtBRL(p.preco)}</td>
+      <td>${ADM_PERIODOS[p.periodicidade]?.label||p.periodicidade}</td>
+      <td>${p.dias_teste ? p.dias_teste+' dias' : '<span class="adm-muted">Não</span>'}</td>
+      <td class="adm-num" style="text-align:right">${ativosPorPlano[p.id]||0}</td>
+      <td>${p.ativo ? '<span class="adm-pill ativa">À venda</span>' : '<span class="adm-pill oculto">Oculto</span>'}</td>
+      <td style="text-align:right"><button class="adm-row-btn" data-pid="${p.id}">Editar</button></td>
+    </tr>`).join('')}
+    </tbody></table></div>` : '<div class="empty-note">Nenhum plano ainda. Crie o primeiro para começar a vincular assinantes.</div>'}`;
+  el.querySelectorAll('.adm-row-btn[data-pid]').forEach(b => b.onclick = () => admAbrirPlano(b.dataset.pid));
+}
+function admAbrirPlano(pid){
+  const p = pid ? admPlano(pid) : null;
+  ADM.editPlanoId = pid || null;
+  document.getElementById('admPlanoTitle').textContent = p ? 'Editar plano' : 'Novo plano';
+  document.getElementById('admPNome').value = p?.nome || '';
+  document.getElementById('admPDesc').value = p?.descricao || '';
+  document.getElementById('admPPreco').value = p ? p.preco : '';
+  document.getElementById('admPPeriodo').value = p?.periodicidade || 'mensal';
+  document.getElementById('admPTeste').value = p ? p.dias_teste : 0;
+  document.getElementById('admPAtivo').checked = p ? !!p.ativo : true;
+  document.getElementById('admPlanoDelBtn').style.display = p ? '' : 'none';
+  admOpenModal('admPlanoOverlay');
+}
+async function admSalvarPlano(){
+  const row = {
+    nome: document.getElementById('admPNome').value.trim(),
+    descricao: document.getElementById('admPDesc').value.trim() || null,
+    preco: parseFloat(document.getElementById('admPPreco').value) || 0,
+    periodicidade: document.getElementById('admPPeriodo').value,
+    dias_teste: parseInt(document.getElementById('admPTeste').value) || 0,
+    ativo: document.getElementById('admPAtivo').checked
+  };
+  if(!row.nome){ showToast('Informe o nome do plano.','error'); return; }
+  const q = ADM.editPlanoId ? db.from('planos').update(row).eq('id', ADM.editPlanoId) : db.from('planos').insert(row);
+  const { error } = await q;
+  if(error){ console.error(error); showToast('Erro ao salvar plano: '+(error.message||''),'error'); return; }
+  admCloseModal('admPlanoOverlay');
+  showToast(ADM.editPlanoId ? 'Plano atualizado.' : 'Plano criado.');
+  await loadAdminData(); admRenderAll();
+}
+async function admExcluirPlano(){
+  const p = admPlano(ADM.editPlanoId); if(!p) return;
+  const usando = ADM.usuarios.filter(u=>u.plano_id===p.id).length;
+  if(!confirm(usando ? `${usando} assinante(s) usam "${p.nome}" e ficarão sem plano. Excluir mesmo assim? Para só tirar de venda, desmarque "Plano ativo".` : `Excluir o plano "${p.nome}"?`)) return;
+  const { error } = await db.from('planos').delete().eq('id', p.id);
+  if(error){ showToast('Erro ao excluir: '+(error.message||''),'error'); return; }
+  admCloseModal('admPlanoOverlay'); showToast('Plano excluído.');
+  await loadAdminData(); admRenderAll();
+}
+
+// ---- Aba Pagamentos ----
+function admRenderPagamentos(el){
+  const mes = ADM.mes;
+  const [yy,mm] = mes.split('-').map(Number);
+  const pagsMes = ADM.pagamentos.filter(p=>(p.data_pagamento||'').slice(0,7)===mes);
+  const totMes = pagsMes.reduce((s,p)=>s+p.valor,0);
+  el.innerHTML = `
+    <div class="adm-sub-head"><h3>Faturamento por mês</h3><span class="adm-muted">Últimos 12 meses até ${MESES_PT[mm-1]} de ${yy}</span></div>
+    <div class="adm-chart-box"><canvas id="admChart"></canvas></div>
+    <div class="adm-sub-head"><h3>Pagamentos de ${MESES_PT[mm-1]}: ${fmtBRL(totMes)}</h3>
+      <button class="btn btn-primary" style="flex:none;padding:9px 16px;font-size:13px" onclick="admAbrirPagamento(null)">+ Registrar pagamento</button></div>
+    ${pagsMes.length ? `<div class="adm-table-wrap"><table class="data-table"><thead><tr>
+      <th>Data</th><th>Assinante</th><th>Plano</th><th>Forma</th><th>Observação</th><th style="text-align:right">Valor</th><th></th></tr></thead><tbody>
+      ${pagsMes.map(p=>{ const u = ADM.usuarios.find(x=>x.user_id===p.user_id); return `<tr>
+        <td class="adm-num">${fmtDateBR(p.data_pagamento)}</td>
+        <td class="adm-user-cell"><div class="nm">${admEsc(u?admNome(u):'Usuário removido')}</div><div class="em">${admEsc(u?.email||'')}</div></td>
+        <td>${admEsc(admPlano(p.plano_id)?.nome||'—')}</td>
+        <td>${admEsc(p.metodo||'—')}</td>
+        <td class="adm-muted">${admEsc(p.observacoes||'')}</td>
+        <td class="adm-num" style="text-align:right;font-weight:600">${fmtBRL(p.valor)}</td>
+        <td style="text-align:right"><button class="adm-row-del" data-gid="${p.id}" title="Excluir pagamento">×</button></td></tr>`; }).join('')}
+      </tbody></table></div>` : '<div class="empty-note">Nenhum pagamento registrado neste mês.</div>'}`;
+  el.querySelectorAll('.adm-row-del[data-gid]').forEach(b => b.onclick = async () => {
+    const p = ADM.pagamentos.find(x=>x.id===b.dataset.gid); if(!p) return;
+    if(!confirm(`Excluir o pagamento de ${fmtBRL(p.valor)} de ${fmtDateBR(p.data_pagamento)}? A data de expiração da assinatura não é alterada.`)) return;
+    const { error } = await db.from('pagamentos_assinatura').delete().eq('id', p.id);
+    if(error){ showToast('Erro ao excluir: '+(error.message||''),'error'); return; }
+    showToast('Pagamento excluído.'); await loadAdminData(); admRenderAll();
+  });
+  // Gráfico
+  try{
+    const labels = [], vals = [];
+    for(let i=11;i>=0;i--){
+      const d = new Date(yy, mm-1-i, 1); const k = monthKey(d);
+      labels.push(MESES_PT[d.getMonth()].slice(0,3)+'/'+String(d.getFullYear()).slice(2));
+      vals.push(Math.round(ADM.pagamentos.filter(p=>(p.data_pagamento||'').slice(0,7)===k).reduce((s,p)=>s+p.valor,0)*100)/100);
+    }
+    const cc = chartColors();
+    ADM.chart = new Chart(document.getElementById('admChart').getContext('2d'), {
+      type:'bar',
+      data:{ labels, datasets:[{ data: vals, backgroundColor: vals.map((_,i)=> i===11 ? cc.lineColor : cc.lineColor+'66'), borderRadius:6, maxBarThickness:38 }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:(c)=>fmtBRL(c.raw) } } },
+        scales:{ x:{ grid:{display:false}, ticks:{color:cc.tickColor, font:{size:10.5}} }, y:{ beginAtZero:true, grid:{color:cc.gridColor}, ticks:{color:cc.tickColor, font:{size:10.5}, callback:(v)=>fmtBRL(v)} } } }
+    });
+  } catch(e){ console.warn('Admin chart:', e.message); }
+}
+
+function admAbrirPagamento(uid){
+  if(!ADM.usuarios.length){ showToast('Nenhum usuário cadastrado.','error'); return; }
+  const sel = document.getElementById('admGUser');
+  const ord = [...ADM.usuarios].sort((a,b)=>admNome(a).localeCompare(admNome(b),'pt-BR'));
+  sel.innerHTML = ord.map(u=>`<option value="${u.user_id}">${admEsc(admNome(u))} (${admEsc(u.email)})</option>`).join('');
+  if(uid) sel.value = uid;
+  document.getElementById('admGData').value = localDateStr();
+  document.getElementById('admGMetodo').value = 'Pix';
+  document.getElementById('admGObs').value = '';
+  document.getElementById('admGRenovar').checked = true;
+  admPagUserChange();
+  admOpenModal('admPagOverlay');
+}
+function admPagUserChange(){
+  const u = ADM.usuarios.find(x=>x.user_id===document.getElementById('admGUser').value);
+  document.getElementById('admGPlano').innerHTML = admPlanoOptions(u?.plano_id || '', true);
+  admPagPlanoChange();
+}
+function admPagPlanoChange(){
+  const p = admPlano(document.getElementById('admGPlano').value);
+  document.getElementById('admGValor').value = p ? p.preco.toFixed(2) : '';
+  admPagPreview();
+}
+function admCalcRenovacao(){
+  const u = ADM.usuarios.find(x=>x.user_id===document.getElementById('admGUser').value);
+  const p = admPlano(document.getElementById('admGPlano').value);
+  const data = document.getElementById('admGData').value || localDateStr();
+  if(!u || !p) return null;
+  const meses = ADM_PERIODOS[p.periodicidade]?.meses;
+  if(!meses) return { u, p, expira:null }; // vitalício
+  const base = (u.expira_em && u.expira_em > data) ? u.expira_em : data;
+  return { u, p, expira: admAddMonths(base, meses) };
+}
+function admPagPreview(){
+  const box = document.getElementById('admGPreview');
+  if(!document.getElementById('admGRenovar').checked){ box.textContent = 'A assinatura não será alterada, só o pagamento fica registrado.'; return; }
+  const r = admCalcRenovacao();
+  if(!r){ box.textContent = 'Escolha um plano para renovar a assinatura.'; return; }
+  box.textContent = r.expira ? `A assinatura fica ativa no plano "${r.p.nome}" até ${fmtDateBR(r.expira)}.` : `A assinatura fica ativa no plano "${r.p.nome}" sem data de expiração.`;
+}
+async function admSalvarPagamento(){
+  const userId = document.getElementById('admGUser').value;
+  const planoId = document.getElementById('admGPlano').value || null;
+  const valor = parseFloat(document.getElementById('admGValor').value) || 0;
+  const data = document.getElementById('admGData').value;
+  if(!userId){ showToast('Escolha o assinante.','error'); return; }
+  if(valor <= 0){ showToast('Informe o valor.','error'); return; }
+  if(!data){ showToast('Informe a data.','error'); return; }
+  const { error } = await db.from('pagamentos_assinatura').insert({
+    user_id:userId, plano_id:planoId, valor, data_pagamento:data,
+    metodo: document.getElementById('admGMetodo').value, observacoes: document.getElementById('admGObs').value.trim() || null
+  });
+  if(error){ console.error(error); showToast('Erro ao registrar: '+(error.message||''),'error'); return; }
+  if(document.getElementById('admGRenovar').checked){
+    const r = admCalcRenovacao();
+    if(r){
+      const { error: e2 } = await db.rpc('admin_salvar_usuario', {
+        p_user_id: r.u.user_id, p_nome: r.u.nome||null, p_sobrenome: r.u.sobrenome||null, p_telefone: r.u.telefone||null,
+        p_plano_id: r.p.id, p_status: 'ativa', p_inicio: r.u.inicio || data, p_expira_em: r.expira, p_observacoes: r.u.observacoes||null
+      });
+      if(e2){ console.error(e2); showToast('Pagamento salvo, mas a assinatura não foi renovada: '+(e2.message||''),'error'); }
+    }
+  }
+  admCloseModal('admPagOverlay');
+  const userOpen = document.getElementById('admUserOverlay').classList.contains('open');
+  showToast(`Pagamento de ${fmtBRL(valor)} registrado.`);
+  await loadAdminData(); admRenderAll();
+  if(userOpen && ADM.editUserId) admAbrirUsuario(ADM.editUserId);
+}
+
+// ---- Aba Administradores ----
+function admRenderAdmins(el){
+  const admins = ADM.usuarios.filter(u=>u.papel_admin).sort((a,b)=> (a.papel_admin==='dono'?-1:1) - (b.papel_admin==='dono'?-1:1));
+  el.innerHTML = `
+    <div class="adm-sub-head"><h3>Quem acessa esta página</h3></div>
+    ${ADM.isDono ? `<div class="adm-admin-add">
+        <input type="email" class="form-input" id="admNovoAdmin" placeholder="E-mail de um usuário já cadastrado">
+        <button class="btn btn-primary" onclick="admDefinirAdmin(document.getElementById('admNovoAdmin').value, true)">Dar acesso de admin</button>
+      </div>` : '<div class="adm-hint" style="margin:0 0 12px">Só o dono da plataforma pode adicionar ou remover administradores.</div>'}
+    <div class="adm-table-wrap"><table class="data-table" style="min-width:0"><thead><tr><th>Usuário</th><th>Papel</th><th></th></tr></thead><tbody>
+      ${admins.map(u=>`<tr>
+        <td class="adm-user-cell"><div class="nm">${admEsc(admNome(u))}</div><div class="em">${admEsc(u.email)}</div></td>
+        <td>${u.papel_admin==='dono' ? '<span class="adm-pill teste">Dono</span>' : '<span class="adm-pill ativa">Admin</span>'}</td>
+        <td style="text-align:right">${ADM.isDono && u.papel_admin!=='dono' ? `<button class="adm-row-btn adm-danger" data-rm="${admEsc(u.email)}">Remover acesso</button>` : ''}</td>
+      </tr>`).join('')}
+    </tbody></table></div>`;
+  el.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => admDefinirAdmin(b.dataset.rm, false));
+}
+async function admDefinirAdmin(email, dar){
+  email = (email||'').trim();
+  if(!email){ showToast('Informe o e-mail.','error'); return; }
+  if(!dar && !confirm(`Remover o acesso de admin de ${email}?`)) return;
+  const { error } = await db.rpc('admin_definir_admin', { p_email: email, p_admin: dar });
+  if(error){ showToast(error.message || 'Erro ao alterar administrador.','error'); return; }
+  showToast(dar ? `${email} agora é administrador.` : `Acesso de ${email} removido.`);
+  await loadAdminData(); admRenderAll();
 }
 
 // ===================== Dívidas (Debts) =====================
@@ -9070,6 +9739,10 @@ renderAll();
     <a class="mob-more-item" onclick="mobileNavigate('configuracoes');var _ov=document.getElementById('mobMoreOverlay'),_dr=document.getElementById('mobMoreDrawer');if(_ov){_ov.classList.remove('open');_ov.style.display='none';}if(_dr){_dr.classList.remove('open');_dr.style.display='none';}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
       Configurações
+    </a>
+    <a class="mob-more-item adm-only" style="display:none" onclick="mobileNavigate('admin');var _ov=document.getElementById('mobMoreOverlay'),_dr=document.getElementById('mobMoreDrawer');if(_ov){_ov.classList.remove('open');_ov.style.display='none';}if(_dr){_dr.classList.remove('open');_dr.style.display='none';}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 3v6c0 5-3.5 9.3-8 11-4.5-1.7-8-6-8-11V5l8-3z"/><path d="M9 12l2 2 4-4"/></svg>
+      Admin da plataforma
     </a>
   </div>
 
