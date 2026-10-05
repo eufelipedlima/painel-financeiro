@@ -977,6 +977,30 @@
   .sup-toast .st-txt span{ display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .sup-toast .st-btn{ flex:none; padding:8px 14px; font-size:12.5px; }
   @media (max-width:640px){ .sup-toast{ left:12px; right:12px; bottom:84px; max-width:none; } }
+  .anx-bar{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:0 0 8px; }
+  .anx-btn{ display:inline-flex; align-items:center; gap:6px; min-height:38px; padding:0 12px; border-radius:9px; border:1.5px dashed var(--border); background:var(--surface-2); color:var(--accent-2); font:600 12.5px 'Inter',sans-serif; cursor:pointer; }
+  .anx-btn:hover{ border-color:var(--accent); background:var(--accent-soft); }
+  .anx-tip{ font-size:11.5px; color:var(--text-3); }
+  .anx-list{ display:flex; flex-wrap:wrap; gap:6px; margin:0 0 10px; }
+  .anx-list:empty{ display:none; }
+  .anx-chip{ display:inline-flex; align-items:center; gap:6px; padding:5px 10px; border-radius:8px; background:var(--surface-3); color:var(--text-1); font-size:12px; text-decoration:none; max-width:100%; }
+  a.anx-chip:hover{ background:var(--accent-soft); color:var(--accent-2); }
+  .anx-chip button{ background:none; border:none; color:var(--text-3); cursor:pointer; font-size:15px; line-height:1; padding:0 2px; }
+  .anx-view{ display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+  .anx-thumb{ display:block; width:120px; height:84px; border-radius:8px; overflow:hidden; border:1px solid var(--border); background:var(--surface-3); }
+  .anx-thumb img{ width:100%; height:100%; object-fit:cover; display:block; transition:transform .2s; }
+  .anx-thumb:hover img{ transform:scale(1.04); }
+  .anx-ico{ flex:none; width:40px; border-radius:9px; border:1.5px solid var(--border); background:var(--surface-2); color:var(--accent-2); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .anx-ico:hover{ border-color:var(--accent); }
+  .ch-card .anx-list{ margin:8px 0 0; }
+  .nav-new{ margin-left:auto; font-size:10px; font-weight:700; color:#fff; background:var(--negative); border-radius:6px; padding:2px 6px; white-space:nowrap; animation:navpulse 1.8s ease-in-out infinite; }
+  #supBadge{ display:none !important; }
+  .nav-item.has-news{ color:var(--text-1); font-weight:600; background:var(--negative-soft); }
+  .nav-item.has-news .nav-badge{ animation:navpulse 1.8s ease-in-out infinite; }
+  @keyframes navpulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(166,67,43,.55); } 50%{ box-shadow:0 0 0 6px rgba(166,67,43,0); } }
+  .nav-badge.mob{ position:static; transform:none; margin-left:auto; }
+  .mob-dot{ position:absolute; top:6px; right:calc(50% - 16px); width:9px; height:9px; border-radius:50%; background:var(--negative); box-shadow:0 0 0 2px var(--surface); animation:navpulse 1.8s ease-in-out infinite; }
+  @media (prefers-reduced-motion:reduce){ .nav-new, .nav-item.has-news .nav-badge, .mob-dot{ animation:none; } }
   .ch-msg{ background:var(--surface-2); border-radius:10px; padding:12px 14px; font-size:13.5px; line-height:1.6; color:var(--text-1); margin-bottom:14px; max-height:220px; overflow-y:auto; }
   .ind-link{ display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
   .ind-link .form-input{ flex:1; min-width:220px; font-family:'IBM Plex Mono',monospace; font-size:12.5px; }
@@ -2490,9 +2514,10 @@
         Indique e ganhe
       </div>
       <div class="nav-item" data-view="suporte">
-        <span class="nav-badge" id="supBadge" style="display:none"></span>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/><path d="M8 9h8M8 13h5"/></svg>
         Suporte
+        <span class="nav-new" id="supNew" style="display:none">Nova resposta</span>
+        <span id="supBadge" style="display:none"></span>
       </div>
       <div class="nav-item adm-only" data-view="admin" style="display:none">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 3v6c0 5-3.5 9.3-8 11-4.5-1.7-8-6-8-11V5l8-3z"/><path d="M9 12l2 2 4-4"/></svg>
@@ -2816,7 +2841,13 @@
             <div class="pay-type-tab" id="supTipoProb" onclick="setSupTipo('problema')">🛠️ Relatar problema</div>
           </div>
           <div class="form-group"><label class="form-label">Assunto</label><input type="text" class="form-input" id="supAssunto" maxlength="120" placeholder="Resumo em poucas palavras"></div>
-          <div class="form-group"><label class="form-label">Mensagem</label><textarea class="form-input" id="supMensagem" rows="5" maxlength="4000" placeholder="Conte com detalhes. Em problemas, diga o que fez, o que esperava e o que aconteceu."></textarea></div>
+          <div class="form-group"><label class="form-label">Mensagem</label><textarea class="form-input" id="supMensagem" rows="5" maxlength="4000" onpaste="anxColar('novo', event)" placeholder="Conte com detalhes. Em problemas, diga o que fez, o que esperava e o que aconteceu."></textarea></div>
+          <div class="anx-bar">
+            <button type="button" class="anx-btn" onclick="document.getElementById('anxIn-novo').click()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.4 11.1l-8.5 8.5a5.5 5.5 0 01-7.8-7.8l8.5-8.5a3.7 3.7 0 015.2 5.2l-8.5 8.5a1.8 1.8 0 01-2.6-2.6l7.8-7.8"/></svg> Anexar print ou PDF</button>
+            <span class="anx-tip">ou cole um print com Ctrl+V na mensagem</span>
+            <input type="file" id="anxIn-novo" accept="image/*,application/pdf" multiple hidden onchange="anxAdd('novo', this.files); this.value=''">
+          </div>
+          <div class="anx-list" id="anxList-novo"></div>
           <div class="adm-hint" id="supPrazoHint" style="margin:0 0 12px">Sugestões não têm prazo, mas todas são lidas pelo time.</div>
           <button class="btn btn-primary" id="supEnviarBtn" onclick="enviarChamado()" style="width:100%">Enviar</button>
         </div>
@@ -3760,7 +3791,12 @@
     <div class="ch-status-seg" id="admChStatusSeg"></div>
     <div class="form-label" style="margin:14px 0 6px">Conversa</div>
     <div class="ch-thread" id="admChThread"></div>
-    <div class="form-group" style="margin-top:12px"><label class="form-label">Responder</label><textarea class="form-input" id="admChResposta" rows="3" placeholder="Escreva sua resposta. O usuário recebe um aviso no app."></textarea></div>
+    <div class="form-group" style="margin-top:12px"><label class="form-label">Responder</label><textarea class="form-input" id="admChResposta" rows="3" onpaste="anxColar('adm', event)" placeholder="Escreva sua resposta. O usuário recebe um aviso no app."></textarea></div>
+    <div class="anx-bar" style="margin-top:-6px">
+      <button type="button" class="anx-btn" onclick="document.getElementById('anxIn-adm').click()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.4 11.1l-8.5 8.5a5.5 5.5 0 01-7.8-7.8l8.5-8.5a3.7 3.7 0 015.2 5.2l-8.5 8.5a1.8 1.8 0 01-2.6-2.6l7.8-7.8"/></svg> Anexar arquivo</button>
+      <input type="file" id="anxIn-adm" accept="image/*,application/pdf" multiple hidden onchange="anxAdd('adm', this.files); this.value=''">
+    </div>
+    <div class="anx-list" id="anxList-adm"></div>
     <label class="adm-check" style="padding-top:0"><input type="checkbox" id="admChResolver"> Marcar como resolvido ao enviar</label>
     <div class="cmodal-actions">
       <button class="btn btn-ghost" onclick="admFecharChamado()">Fechar</button>
@@ -7554,8 +7590,65 @@ function setSupTipo(t){
     : 'Sugestões não têm prazo, mas todas são lidas pelo time.';
 }
 function fmtDataHora(ts){ if(!ts) return '—'; const d = new Date(ts); return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
-function bolha(autor, texto, quando, nomeAdmin){
-  return `<div class="ch-bub ${autor}"><div class="ch-bub-h">${autor==='admin' ? (nomeAdmin||'Time do Duna') : 'Você'}<span>${fmtDataHora(quando)}</span></div>${admEsc(texto).replace(/\n/g,'<br>')}</div>`;
+// ---- Anexos do suporte (bucket privado "suporte") ----
+const ANX = {};                // arquivos escolhidos por campo: { novo:[File], adm:[File], 'r-<id>':[File] }
+const ANX_MAX = 3, ANX_TAM = 10*1024*1024;
+let ANX_URLS = {};             // caminho -> link temporário
+function anxAdd(slot, files){
+  ANX[slot] = ANX[slot] || [];
+  for(const f of Array.from(files||[])){
+    if(!/^image\/|application\/pdf/.test(f.type)){ showToast('Envie imagens ou PDF.','error'); continue; }
+    if(f.size > ANX_TAM){ showToast(`"${f.name}" passa de 10 MB.`,'error'); continue; }
+    if(ANX[slot].length >= ANX_MAX){ showToast(`Até ${ANX_MAX} arquivos por mensagem.`,'error'); break; }
+    ANX[slot].push(f);
+  }
+  anxRender(slot);
+}
+function anxRemover(slot, i){ (ANX[slot]||[]).splice(i,1); anxRender(slot); }
+function anxRender(slot){
+  const box = document.getElementById('anxList-'+slot); if(!box) return;
+  box.innerHTML = (ANX[slot]||[]).map((f,i)=>`<span class="anx-chip">${f.type.startsWith('image/')?'🖼️':'📄'} ${admEsc(f.name.length>28 ? f.name.slice(0,25)+'…' : f.name)}<button type="button" aria-label="Remover anexo" onclick="anxRemover('${slot}',${i})">×</button></span>`).join('');
+}
+function anxColar(slot, ev){
+  const itens = Array.from(ev.clipboardData?.items||[]).filter(it => it.kind==='file');
+  if(!itens.length) return;
+  ev.preventDefault();
+  anxAdd(slot, itens.map((it,i) => { const f = it.getAsFile(); return new File([f], f.name && f.name!=='image.png' ? f.name : `print-${Date.now()}-${i}.png`, { type: f.type }); }));
+  showToast('Print anexado.');
+}
+async function anxEnviar(slot, pasta){
+  const lista = ANX[slot]||[]; const out = [];
+  for(const f of lista){
+    const limpo = f.name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^\w.\-]+/g,'_').slice(-60);
+    const path = `${pasta}/${Date.now()}-${Math.random().toString(36).slice(2,7)}-${limpo}`;
+    const { error } = await db.storage.from('suporte').upload(path, f, { contentType: f.type, upsert:false });
+    if(error){ console.error('upload:', error); throw new Error(`Não foi possível enviar "${f.name}".`); }
+    out.push({ path, name: f.name, type: f.type, size: f.size });
+  }
+  return out;
+}
+function anxLimpar(slot){ ANX[slot] = []; anxRender(slot); }
+async function anxAssinar(listas){
+  const paths = [...new Set(listas.flat().filter(a=>a && a.path && !ANX_URLS[a.path]).map(a=>a.path))];
+  if(!paths.length) return;
+  try{
+    const { data } = await db.storage.from('suporte').createSignedUrls(paths, 3600);
+    (data||[]).forEach(d => { if(d.signedUrl) ANX_URLS[d.path] = d.signedUrl; });
+  }catch(e){ console.warn('signed urls:', e); }
+}
+function anxHTML(anexos){
+  if(!anexos || !anexos.length) return '';
+  return `<div class="anx-view">${anexos.map(a => {
+    const url = ANX_URLS[a.path];
+    if(!url) return `<span class="anx-chip">📎 ${admEsc(a.name)}</span>`;
+    return a.type && a.type.startsWith('image/')
+      ? `<a href="${url}" target="_blank" rel="noopener" class="anx-thumb" title="${admEsc(a.name)}"><img src="${url}" alt="${admEsc(a.name)}" loading="lazy"></a>`
+      : `<a href="${url}" target="_blank" rel="noopener" class="anx-chip">📄 ${admEsc(a.name)}</a>`;
+  }).join('')}</div>`;
+}
+
+function bolha(autor, texto, quando, nomeAdmin, anexos){
+  return `<div class="ch-bub ${autor}"><div class="ch-bub-h">${autor==='admin' ? (nomeAdmin||'Time do Duna') : 'Você'}<span>${fmtDataHora(quando)}</span></div>${texto ? admEsc(texto).replace(/\n/g,'<br>') : ''}${anxHTML(anexos)}</div>`;
 }
 async function renderSuporte(){
   fillMascots(document.getElementById('view-suporte'));
@@ -7567,6 +7660,7 @@ async function renderSuporte(){
   let msgs = [];
   const r = await db.from('suporte_mensagens').select('*').in('chamado_id', data.map(c=>c.id)).order('created_at');
   if(!r.error) msgs = r.data || [];
+  await anxAssinar([...data.map(c=>c.anexos||[]), ...msgs.map(m=>m.anexos||[])]);
   box.innerHTML = data.map(c => {
     const conv = msgs.filter(m=>m.chamado_id===c.id);
     const antigos = (!conv.length && c.resposta) ? [{autor:'admin', texto:c.resposta, created_at:c.updated_at}] : [];
@@ -7575,20 +7669,31 @@ async function renderSuporte(){
       <div class="ch-assunto">${admEsc(c.assunto)}</div>
       <div class="ch-meta">Aberto em ${fmtDataHora(c.created_at)}${c.prazo && c.status!=='resolvido' ? ', prazo até ' + fmtDataHora(c.prazo) : ''}${c.resolvido_em ? ', resolvido em ' + fmtDataHora(c.resolvido_em) : ''}</div>
       <div class="ch-steps">${chEtapas(c)}</div>
-      <div class="ch-thread">${bolha('usuario', c.mensagem, c.created_at)}${[...antigos, ...conv].map(m=>bolha(m.autor, m.texto, m.created_at)).join('')}</div>
-      <div class="ch-reply"><input type="text" class="form-input" id="chr-${c.id}" placeholder="${c.status==='resolvido' ? 'Algo mais? Escreva aqui' : 'Responder ao time'}" maxlength="2000"><button class="btn btn-primary" onclick="responderChamado('${c.id}')">Enviar</button></div>
+      <div class="ch-thread">${bolha('usuario', c.mensagem, c.created_at, null, c.anexos)}${[...antigos, ...conv].map(m=>bolha(m.autor, m.texto, m.created_at, null, m.anexos)).join('')}</div>
+      <div class="ch-reply">
+        <button type="button" class="anx-ico" title="Anexar print ou PDF" aria-label="Anexar print ou PDF" onclick="document.getElementById('anxIn-r-${c.id}').click()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.4 11.1l-8.5 8.5a5.5 5.5 0 01-7.8-7.8l8.5-8.5a3.7 3.7 0 015.2 5.2l-8.5 8.5a1.8 1.8 0 01-2.6-2.6l7.8-7.8"/></svg></button>
+        <input type="file" id="anxIn-r-${c.id}" accept="image/*,application/pdf" multiple hidden onchange="anxAdd('r-${c.id}', this.files); this.value=''">
+        <input type="text" class="form-input" id="chr-${c.id}" placeholder="${c.status==='resolvido' ? 'Algo mais? Escreva aqui' : 'Responder ao time'}" maxlength="2000" onpaste="anxColar('r-${c.id}', event)">
+        <button class="btn btn-primary" onclick="responderChamado('${c.id}')">Enviar</button>
+      </div>
+      <div class="anx-list" id="anxList-r-${c.id}"></div>
     </div>`;
   }).join('');
   if(data.some(c=>c.nao_lido_usuario)){
     try{ await db.rpc('marcar_suporte_lido'); }catch(e){}
     setTimeout(checarAvisosSuporte, 300);
   }
+  Object.keys(ANX).filter(k=>k.startsWith('r-')).forEach(anxRender);
 }
 async function responderChamado(id){
   const inp = document.getElementById('chr-'+id); const texto = (inp?.value||'').trim();
-  if(!texto){ showToast('Escreva sua mensagem.','error'); return; }
-  const { error } = await db.from('suporte_mensagens').insert({ chamado_id:id, autor:'usuario', texto });
+  const slot = 'r-'+id;
+  if(!texto && !(ANX[slot]||[]).length){ showToast('Escreva sua mensagem ou anexe um arquivo.','error'); return; }
+  let anexos = [];
+  try{ anexos = await anxEnviar(slot, `${currentUser.id}/${id}`); }catch(e){ showToast(e.message,'error'); return; }
+  const { error } = await db.from('suporte_mensagens').insert({ chamado_id:id, autor:'usuario', texto: texto || '(anexo)', anexos });
   if(error){ showToast('Não foi possível enviar. Tente de novo.','error'); return; }
+  anxLimpar(slot);
   showToast('Mensagem enviada ao time.');
   renderSuporte();
 }
@@ -7601,6 +7706,10 @@ async function checarAvisosSuporte(){
   const n = (data||[]).length;
   const badge = document.getElementById('supBadge');
   if(badge){ badge.textContent = n; badge.style.display = n ? '' : 'none'; }
+  const novo = document.getElementById('supNew'); if(novo){ novo.textContent = n===1 ? 'Nova resposta' : `${n} novidades`; novo.style.display = n ? '' : 'none'; }
+  document.querySelector('.nav-item[data-view="suporte"]')?.classList.toggle('has-news', !!n);
+  const mb = document.getElementById('supMobBadge'); if(mb){ mb.textContent = n; mb.style.display = n ? '' : 'none'; }
+  const md = document.getElementById('supMobDot'); if(md) md.style.display = n ? '' : 'none';
   if(!n || currentView==='suporte') return;
   const c = data[0]; const chave = 'duna-aviso-' + c.id + '-' + c.updated_at;
   try{ if(sessionStorage.getItem(chave)) return; sessionStorage.setItem(chave,'1'); }catch(e){}
@@ -7620,10 +7729,14 @@ async function enviarChamado(){
   const mensagem = document.getElementById('supMensagem').value.trim();
   if(!assunto){ showToast('Informe o assunto.','error'); return; }
   if(mensagem.length < 5){ showToast('Escreva sua mensagem.','error'); return; }
-  const btn = document.getElementById('supEnviarBtn'); btn.disabled = true;
-  const { error } = await db.from('suporte_chamados').insert({ user_id: currentUser.id, tipo: supTipo, assunto, mensagem });
-  btn.disabled = false;
+  const btn = document.getElementById('supEnviarBtn'); btn.disabled = true; btn.textContent = 'Enviando…';
+  let anexos = [];
+  try{ anexos = await anxEnviar('novo', `${currentUser.id}/novo-${Date.now()}`); }
+  catch(e){ btn.disabled = false; btn.textContent = 'Enviar'; showToast(e.message,'error'); return; }
+  const { error } = await db.from('suporte_chamados').insert({ user_id: currentUser.id, tipo: supTipo, assunto, mensagem, anexos });
+  btn.disabled = false; btn.textContent = 'Enviar';
   if(error){ console.error(error); showToast('Não foi possível enviar. Tente de novo.','error'); return; }
+  anxLimpar('novo');
   document.getElementById('supAssunto').value = '';
   document.getElementById('supMensagem').value = '';
   showToast(supTipo==='problema' ? 'Problema enviado. Prazo: até 24 horas úteis.' : 'Sugestão enviada. Obrigado!');
@@ -8126,14 +8239,16 @@ async function admAbrirChamado(id){
   admPintarStatusSeg(c.status);
   document.getElementById('admChResposta').value = '';
   document.getElementById('admChResolver').checked = false;
+  anxLimpar('adm');
   const th = document.getElementById('admChThread');
   th.innerHTML = '<div class="adm-muted">Carregando conversa…</div>';
   admOpenModal('admChamadoOverlay');
   const { data } = await db.from('suporte_mensagens').select('*').eq('chamado_id', id).order('created_at');
   const conv = data || [];
   const antigos = (!conv.length && c.resposta) ? [{autor:'admin', texto:c.resposta, created_at:c.updated_at}] : [];
-  th.innerHTML = `<div class="ch-bub usuario"><div class="ch-bub-h">${admEsc(c.nome||c.email||'Usuário')}<span>${fmtDataHora(c.created_at)}</span></div>${admEsc(c.mensagem).replace(/\n/g,'<br>')}</div>`
-    + [...antigos, ...conv].map(m => `<div class="ch-bub ${m.autor}"><div class="ch-bub-h">${m.autor==='admin' ? 'Time do Duna' : admEsc(c.nome||'Usuário')}<span>${fmtDataHora(m.created_at)}</span></div>${admEsc(m.texto).replace(/\n/g,'<br>')}</div>`).join('');
+  await anxAssinar([c.anexos||[], ...conv.map(m=>m.anexos||[])]);
+  th.innerHTML = `<div class="ch-bub usuario"><div class="ch-bub-h">${admEsc(c.nome||c.email||'Usuário')}<span>${fmtDataHora(c.created_at)}</span></div>${admEsc(c.mensagem).replace(/\n/g,'<br>')}${anxHTML(c.anexos)}</div>`
+    + [...antigos, ...conv].map(m => `<div class="ch-bub ${m.autor}"><div class="ch-bub-h">${m.autor==='admin' ? 'Time do Duna' : admEsc(c.nome||'Usuário')}<span>${fmtDataHora(m.created_at)}</span></div>${m.texto ? admEsc(m.texto).replace(/\n/g,'<br>') : ''}${anxHTML(m.anexos)}</div>`).join('');
   th.scrollTop = th.scrollHeight;
   if(c.nao_lido_admin){ await db.from('suporte_chamados').update({ nao_lido_admin:false }).eq('id', id); c.nao_lido_admin = false; }
 }
@@ -8147,9 +8262,13 @@ function admPintarStatusSeg(atual){
 async function admEnviarResposta(){
   const texto = document.getElementById('admChResposta').value.trim();
   const resolver = document.getElementById('admChResolver').checked;
-  if(!texto && !resolver){ showToast('Escreva a resposta.','error'); return; }
-  if(texto){
-    const { error } = await db.from('suporte_mensagens').insert({ chamado_id: ADM.editChamadoId, autor:'admin', texto });
+  const temAnexo = (ANX['adm']||[]).length > 0;
+  if(!texto && !resolver && !temAnexo){ showToast('Escreva a resposta.','error'); return; }
+  if(texto || temAnexo){
+    const ch = ADM.chamados.find(x=>x.id===ADM.editChamadoId);
+    let anexos = [];
+    try{ anexos = await anxEnviar('adm', `${ch.user_id}/${ch.id}`); }catch(e){ showToast(e.message,'error'); return; }
+    const { error } = await db.from('suporte_mensagens').insert({ chamado_id: ADM.editChamadoId, autor:'admin', texto: texto || '(anexo)', anexos });
     if(error){ showToast('Erro ao enviar: '+(error.message||''),'error'); return; }
   }
   if(resolver) await admMudarStatus(ADM.editChamadoId, 'resolvido', true);
@@ -10587,7 +10706,8 @@ renderAll();
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
       <span>Metas</span>
     </a>
-    <a class="mob-nav-item" id="mobMoreBtn">
+    <a class="mob-nav-item" id="mobMoreBtn" style="position:relative">
+      <span class="mob-dot" id="supMobDot" style="display:none"></span>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
       <span>Mais</span>
     </a>
@@ -10619,7 +10739,7 @@ renderAll();
     </a>
     <a class="mob-more-item" onclick="mobileNavigate('suporte');var _ov=document.getElementById('mobMoreOverlay'),_dr=document.getElementById('mobMoreDrawer');if(_ov){_ov.classList.remove('open');_ov.style.display='none';}if(_dr){_dr.classList.remove('open');_dr.style.display='none';}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-      Suporte
+      Suporte <span class="nav-badge mob" id="supMobBadge" style="display:none"></span>
     </a>
     <a class="mob-more-item adm-only" style="display:none" onclick="mobileNavigate('admin');var _ov=document.getElementById('mobMoreOverlay'),_dr=document.getElementById('mobMoreDrawer');if(_ov){_ov.classList.remove('open');_ov.style.display='none';}if(_dr){_dr.classList.remove('open');_dr.style.display='none';}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 3v6c0 5-3.5 9.3-8 11-4.5-1.7-8-6-8-11V5l8-3z"/><path d="M9 12l2 2 4-4"/></svg>
