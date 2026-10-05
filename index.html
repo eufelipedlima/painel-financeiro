@@ -4238,7 +4238,10 @@ async function loadAllData() {
     DATA.cartaoCompras = (ccDb||[]).map(r => {
       const obs = r.observacoes||'';
       const pgMatch = obs.match(/PARC:[^ |]+/);
-      return { _dbId:r.id, _id:nextId++, _source:'cartaoCompras', data:r.data, descricao:r.descricao, categoria:r.categoria, subcategoria:r.subcategoria||null, cartao:r.cartao, parcela:r.parcela, valor:+r.valor||0, conferido:r.conferido, obs, parcGroupId: pgMatch?pgMatch[0]:null };
+      const fxMatch = obs.match(/FIXO:([^ |]+)\|([a-z]+)/);
+      return { _dbId:r.id, _id:nextId++, _source:'cartaoCompras', data:r.data, descricao:r.descricao, categoria:r.categoria, subcategoria:r.subcategoria||null, cartao:r.cartao, parcela:r.parcela, valor:+r.valor||0, conferido:r.conferido, obs,
+        parcGroupId: pgMatch ? pgMatch[0] : (fxMatch ? 'FIXO:' + fxMatch[1] : null),
+        recorrente: !!fxMatch, recorrenciaFreq: fxMatch ? fxMatch[2] : null };
     });
     DATA.faturas = (fatDb||[]).map(r => ({ _dbId:r.id, cartao:r.cartao, competencia:r.competencia, valorTotal:+r.valor_total||0, fechamento:r.data_fechamento, vencimento:r.data_vencimento, status:r.status, dataPagamento:r.data_pagamento||null, contaPagamento:r.conta_pagamento||null }));
 
@@ -5181,9 +5184,10 @@ document.getElementById('searchInput').addEventListener('input', renderAllTable)
 // ===================== Despesas Fixas =====================
 let fixasCatFilter = null; // null = mostrar todas; Set = mostrar só essas
 function renderDespesasFixas(){
-  const allFixas = DATA.transacoes.filter(t =>
-    t.tipo === 'Despesa' && t.recorrente === true && inMonth(t.data, currentMonth)
-  ).sort((a,b) => parseDate(a.data) - parseDate(b.data));
+  const allFixas = [
+    ...DATA.transacoes.filter(t => t.tipo === 'Despesa' && t.recorrente === true && inMonth(t.data, currentMonth)),
+    ...DATA.cartaoCompras.filter(c => c.recorrente === true && inMonth(c.data, currentMonth))
+  ].sort((a,b) => parseDate(a.data) - parseDate(b.data));
 
   // Category checklist (built from categories present this month)
   const cats = [...new Set(allFixas.map(t=>t.categoria).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
@@ -5220,8 +5224,9 @@ function renderDespesasFixas(){
   const total = fixas.reduce((s,t)=>s+t.valor,0);
   document.getElementById('fixasTotalVal').textContent = fmtBRL(total);
   const paidCount = fixas.filter(t=>t.status==='Pago').length;
+  const cartaoCount = fixas.filter(t=>t._source==='cartaoCompras').length;
   document.getElementById('fixasTotalSub').innerHTML =
-    `<span class="kpi-delta flat">${fixas.length} lançamento${fixas.length===1?'':'s'} fixo${fixas.length===1?'':'s'} · ${paidCount} já pago${paidCount===1?'':'s'}${filtered?` · de ${fmtBRL(allFixas.reduce((s,t)=>s+t.valor,0))} no total`:''}</span>`;
+    `<span class="kpi-delta flat">${fixas.length} lançamento${fixas.length===1?'':'s'} fixo${fixas.length===1?'':'s'} · ${paidCount} já pago${paidCount===1?'':'s'}${cartaoCount?` · ${cartaoCount} no cartão`:''}${filtered?` · de ${fmtBRL(allFixas.reduce((s,t)=>s+t.valor,0))} no total`:''}</span>`;
 
   const body = document.getElementById('fixasTableBody');
   const empty = document.getElementById('fixasTableEmpty');
@@ -5237,6 +5242,21 @@ function renderDespesasFixas(){
   empty.style.display = 'none';
   document.getElementById('fixasTable').style.display = '';
   body.innerHTML = fixas.map(r => {
+    if(r._source === 'cartaoCompras'){
+      return `<tr>
+      <td class="mono">${fmtDateBR(r.data)}</td>
+      <td>${r.descricao||''}<span style="font-size:9.5px;background:var(--accent-soft);color:var(--accent-2);padding:1px 5px;border-radius:4px;margin-left:5px;font-weight:700">FIXO</span></td>
+      <td>${r.categoria||''}</td>
+      <td>💳 ${r.cartao||''}</td>
+      <td><span class="tx-status Pendente" style="background:var(--surface-3);color:var(--text-2)">Na fatura de ${MESES_PT[parseInt(getCartaoFaturaMonth(r).split('-')[1])-1]}</span></td>
+      <td class="val-cell">${fmtBRL(r.valor)}</td>
+      <td class="tbl-action-cell" style="white-space:nowrap;width:120px">
+        <div style="display:flex;align-items:center;justify-content:flex-end;gap:5px">
+          <button class="tbl-edit-btn" data-id="${r._id}" data-src="cartaoCompras" title="Editar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+        </div>
+      </td>
+    </tr>`;
+    }
     const isPend = r.status === 'Pendente';
     const statusLabel = r.status === 'Pago' ? '✓ Pago' : r.status === 'Pendente' ? '⏱ Pendente' : '⚠ ' + r.status;
     return `<tr>
@@ -9422,7 +9442,9 @@ function openDeleteConfirm(entry){
     const futuras = allParc.length - 1;
     const modal = document.getElementById('deleteRecModal');
     document.getElementById('deleteRecDesc').textContent = `"${entry.descricao}" — ${fmtBRL(entry.valor)}`;
-    document.getElementById('deleteRecFuturas').textContent = futuras > 0 ? `Existem ${futuras} parcelas futuras deste parcelamento.` : 'Esta é a última parcela.';
+    document.getElementById('deleteRecFuturas').textContent = entry.recorrente
+      ? (futuras > 0 ? `Existem ${futuras} lançamentos futuros desta compra fixa.` : 'Este é o último desta compra fixa.')
+      : (futuras > 0 ? `Existem ${futuras} parcelas futuras deste parcelamento.` : 'Esta é a última parcela.');
     document.getElementById('deleteRecBtnFuturas').style.display = futuras > 0 ? 'inline-flex' : 'none';
     modal.style.display='flex'; requestAnimationFrame(()=>modal.classList.add('open'));
   } else {
@@ -10188,9 +10210,9 @@ function setFormType(type){
   const isDespOrCartao = isCartao || type==='Despesa';
   document.getElementById('fParcelaGroup').style.display = isDespOrCartao ? '' : 'none';
   if(isDespOrCartao && prevParcela) document.getElementById('fParcela').value = prevParcela;
-  // Hide recurring toggle for cartão (installments handle it)
+  // Fixo/recorrente: Receita, Despesa e Cartão (ex.: assinatura cobrada todo mês no cartão)
   const recRow = document.getElementById('rowRecorrente');
-  if(recRow) recRow.style.display = (isCartao||isTransf) ? 'none' : '';
+  if(recRow) recRow.style.display = isTransf ? 'none' : '';
   const parcLbl = document.getElementById('parceladaLabel');
   if(parcLbl) parcLbl.textContent = isCartao ? '💳 Compra parcelada?' : '📋 Despesa parcelada?';
   document.getElementById('fSubcategoriaGroup').style.display = 'none';
@@ -10320,6 +10342,34 @@ function saveEntry(){
   if(formType === 'Cartão'){
     const cartaoNome = document.getElementById('fCartao').value;
     const catVal = document.getElementById('fCategoria').value;
+
+    if(_parcelada && _recorrente){ showToast('Escolha parcelada ou fixa, não as duas.','error'); return; }
+
+    // Compra fixa no cartão: repete na mesma data, cada uma na fatura do seu mês
+    if(_recorrente){
+      const fixoId = 'FIXO:' + Date.now() + '-' + Math.random().toString(36).slice(2,7);
+      const marca = `${fixoId}|${_recorrenciaFreq}`;
+      const datas = [data, ...gerarDatasFuturas(data, _recorrenciaFreq)];
+      datas.forEach(dt => {
+        const c = {
+          _id: _nextId++, data: dt, descricao, categoria: catVal, cartao: cartaoNome, parcela: null,
+          valor, conferido: 'Não', obs: [obs, marca].filter(Boolean).join(' | '),
+          parcGroupId: fixoId, recorrente: true, recorrenciaFreq: _recorrenciaFreq,
+          _source: 'cartaoCompras', _new: true
+        };
+        DATA.cartaoCompras.push(c);
+        pendingSync.push(c);
+        dbSaveCartaoCompra(c);
+        bumpFaturaForNewCompra(c);
+        const fm = monthKey(parseDate(dt));
+        if(!months.includes(fm)){ months.push(fm); months.sort(); }
+      });
+      updateSyncBar();
+      showToast(`Compra fixa criada no ${cartaoNome}: ${datas.length} lançamentos, um em cada fatura.`);
+      _recorrente = false; resetParcelada();
+      finishNewEntrySave(); renderAll();
+      return;
+    }
 
     // Parcelamento: generate all installments
     if(_parcelada){
