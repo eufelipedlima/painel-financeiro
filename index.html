@@ -949,6 +949,34 @@
   .ch-steps span.on{ color:var(--positive); border-top-color:var(--positive); }
   .ch-resp{ margin-top:10px; background:var(--surface); border:1px solid var(--border-soft); border-radius:10px; padding:10px 12px; font-size:13px; line-height:1.55; color:var(--text-1); }
   .ch-resp b{ display:block; font-size:11.5px; color:var(--accent-2); margin-bottom:3px; }
+  .ch-st.em_implementacao{ background:var(--accent-soft); color:var(--accent-2); }
+  .ch-novo{ font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:6px; background:var(--negative); color:#fff; margin-left:auto; margin-right:6px; }
+  .adm-user-cell .nm .ch-novo{ margin-left:6px; vertical-align:1px; }
+  .ch-card.novo{ border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+  .ch-thread{ display:flex; flex-direction:column; gap:8px; margin-top:12px; max-height:340px; overflow-y:auto; }
+  .ch-bub{ max-width:88%; padding:9px 12px; border-radius:12px; font-size:13px; line-height:1.5; color:var(--text-1); }
+  .ch-bub.usuario{ align-self:flex-start; background:var(--surface); border:1px solid var(--border-soft); border-bottom-left-radius:4px; }
+  .ch-bub.admin{ align-self:flex-end; background:var(--accent-soft); border:1px solid var(--border); border-bottom-right-radius:4px; }
+  .ch-bub-h{ font-size:11px; font-weight:700; color:var(--accent-2); margin-bottom:2px; display:flex; gap:8px; justify-content:space-between; }
+  .ch-bub-h span{ font-weight:400; color:var(--text-3); }
+  .ch-reply{ display:flex; gap:8px; margin-top:10px; }
+  .ch-reply .form-input{ flex:1; min-width:0; }
+  .ch-reply .btn{ flex:none; padding:9px 14px; font-size:12.5px; }
+  .ch-status-seg{ display:flex; gap:6px; flex-wrap:wrap; }
+  .ch-status-seg button{ min-height:40px; padding:0 14px; border-radius:10px; border:1.5px solid var(--border); background:var(--surface-2); color:var(--text-2); font:600 12.5px 'Inter',sans-serif; cursor:pointer; }
+  .ch-status-seg button.on{ border-color:var(--accent); color:var(--accent-2); background:var(--accent-soft); }
+  .ch-status-seg button.on.resolvido{ border-color:var(--positive); color:var(--positive); background:var(--positive-soft); }
+  .ch-sel{ min-width:150px; padding:6px 10px; font-size:12.5px; font-weight:600; }
+  .ch-sel.resolvido{ color:var(--positive); } .ch-sel.em_analise{ color:var(--warning); } .ch-sel.em_implementacao{ color:var(--accent-2); }
+  .nav-item{ position:relative; }
+  .nav-badge{ position:absolute; right:10px; top:50%; transform:translateY(-50%); min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:var(--negative); color:#fff; font-size:10.5px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+  .sup-toast{ position:fixed; right:22px; bottom:96px; z-index:250; max-width:380px; display:flex; align-items:center; gap:12px; background:var(--surface); border:1.5px solid var(--accent); border-radius:16px; padding:12px 14px; box-shadow:0 18px 40px -16px rgba(0,0,0,.45); animation:supin .45s cubic-bezier(.2,.8,.3,1); }
+  @keyframes supin{ from{ opacity:0; transform:translateY(16px) scale(.97); } to{ opacity:1; transform:none; } }
+  .sup-toast .st-txt{ flex:1; min-width:0; font-size:12.5px; color:var(--text-2); }
+  .sup-toast .st-txt b{ display:block; font-size:13.5px; color:var(--text-1); }
+  .sup-toast .st-txt span{ display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .sup-toast .st-btn{ flex:none; padding:8px 14px; font-size:12.5px; }
+  @media (max-width:640px){ .sup-toast{ left:12px; right:12px; bottom:84px; max-width:none; } }
   .ch-msg{ background:var(--surface-2); border-radius:10px; padding:12px 14px; font-size:13.5px; line-height:1.6; color:var(--text-1); margin-bottom:14px; max-height:220px; overflow-y:auto; }
   .ind-link{ display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
   .ind-link .form-input{ flex:1; min-width:220px; font-family:'IBM Plex Mono',monospace; font-size:12.5px; }
@@ -2462,6 +2490,7 @@
         Indique e ganhe
       </div>
       <div class="nav-item" data-view="suporte">
+        <span class="nav-badge" id="supBadge" style="display:none"></span>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/><path d="M8 9h8M8 13h5"/></svg>
         Suporte
       </div>
@@ -3675,6 +3704,9 @@
   </div>
 </div>
 
+<!-- AVISO DO SUPORTE (balão) -->
+<div class="sup-toast" id="supToast" style="display:none" role="status" aria-live="polite"></div>
+
 <!-- PAYWALL -->
 <div id="paywall" class="paywall" style="display:none" role="dialog" aria-modal="true" aria-labelledby="pwTitle">
   <div class="pw-box">
@@ -3716,22 +3748,23 @@
   </div>
 </div>
 
-<!-- ADMIN: RESPONDER CHAMADO -->
-<div class="cmodal-overlay" id="admChamadoOverlay" onclick="if(event.target===this)admCloseModal('admChamadoOverlay')">
-  <div class="cmodal" style="width:560px">
+<!-- ADMIN: CHAMADO (conversa + status) -->
+<div class="cmodal-overlay" id="admChamadoOverlay" onclick="if(event.target===this)admFecharChamado()">
+  <div class="cmodal" style="width:600px">
     <div class="cmodal-head">
       <div class="cmodal-title" id="admChTitle">Chamado</div>
-      <button class="drawer-close" onclick="admCloseModal('admChamadoOverlay')" aria-label="Fechar"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      <button class="drawer-close" onclick="admFecharChamado()" aria-label="Fechar"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
     </div>
     <div class="adm-user-info" id="admChInfo"></div>
-    <div class="ch-msg" id="admChMsg"></div>
-    <div class="form-group"><label class="form-label">Situação</label>
-      <select class="form-select" id="admChStatus"><option value="recebido">Recebido</option><option value="em_analise">Em análise</option><option value="resolvido">Resolvido</option></select>
-    </div>
-    <div class="form-group"><label class="form-label">Resposta para o usuário</label><textarea class="form-input" id="admChResposta" rows="5" placeholder="O usuário vê esta resposta na tela de Suporte."></textarea></div>
+    <div class="form-label" style="margin-bottom:6px">Situação</div>
+    <div class="ch-status-seg" id="admChStatusSeg"></div>
+    <div class="form-label" style="margin:14px 0 6px">Conversa</div>
+    <div class="ch-thread" id="admChThread"></div>
+    <div class="form-group" style="margin-top:12px"><label class="form-label">Responder</label><textarea class="form-input" id="admChResposta" rows="3" placeholder="Escreva sua resposta. O usuário recebe um aviso no app."></textarea></div>
+    <label class="adm-check" style="padding-top:0"><input type="checkbox" id="admChResolver"> Marcar como resolvido ao enviar</label>
     <div class="cmodal-actions">
-      <button class="btn btn-ghost" onclick="admCloseModal('admChamadoOverlay')">Cancelar</button>
-      <button class="btn btn-primary" onclick="admSalvarChamado()">Salvar</button>
+      <button class="btn btn-ghost" onclick="admFecharChamado()">Fechar</button>
+      <button class="btn btn-primary" onclick="admEnviarResposta()">Enviar resposta</button>
     </div>
   </div>
 </div>
@@ -3969,6 +4002,7 @@ function showAppScreen() {
   document.getElementById('loginOverlay').style.display='none';
   if(typeof checkAdminAccess==='function') checkAdminAccess();
   if(typeof checkAssinatura==='function') checkAssinatura();
+  if(typeof checarAvisosSuporte==='function') setTimeout(checarAvisosSuporte, 1500);
   if(typeof fillMascots==='function') fillMascots();
   registrarAcesso(true);
   document.getElementById('appRoot').style.display='flex';
@@ -7504,8 +7538,13 @@ function renderMinhaAssinatura(){
 
 // ===================== Suporte (usuário) =====================
 let supTipo = 'sugestao';
-const CH_STATUS_LBL = { recebido:'Recebido', em_analise:'Em análise', resolvido:'Resolvido' };
+const CH_STATUS_LBL = { recebido:'Recebido', em_analise:'Em análise', em_implementacao:'Em implementação', resolvido:'Resolvido' };
 const CH_TIPO_LBL = { sugestao:'Sugestão', problema:'Problema', assinatura:'Assinatura', outro:'Mensagem' };
+function chEtapas(c){
+  const base = (c.tipo==='sugestao' || c.status==='em_implementacao') ? ['recebido','em_analise','em_implementacao','resolvido'] : ['recebido','em_analise','resolvido'];
+  const idx = base.indexOf(c.status);
+  return base.map((k,i) => `<span class="${i<=idx?'on':''}">${CH_STATUS_LBL[k]}</span>`).join('');
+}
 function setSupTipo(t){
   supTipo = t;
   document.getElementById('supTipoSug').classList.toggle('active', t==='sugestao');
@@ -7515,21 +7554,67 @@ function setSupTipo(t){
     : 'Sugestões não têm prazo, mas todas são lidas pelo time.';
 }
 function fmtDataHora(ts){ if(!ts) return '—'; const d = new Date(ts); return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
+function bolha(autor, texto, quando, nomeAdmin){
+  return `<div class="ch-bub ${autor}"><div class="ch-bub-h">${autor==='admin' ? (nomeAdmin||'Time do Duna') : 'Você'}<span>${fmtDataHora(quando)}</span></div>${admEsc(texto).replace(/\n/g,'<br>')}</div>`;
+}
 async function renderSuporte(){
   fillMascots(document.getElementById('view-suporte'));
+  const _st = document.getElementById('supToast'); if(_st) _st.style.display = 'none';
   const box = document.getElementById('supLista'); if(!box || !currentUser) return;
-  const { data, error } = await db.from('suporte_chamados').select('*').eq('user_id', currentUser.id).order('created_at', {ascending:false});
+  const { data, error } = await db.from('suporte_chamados').select('*').eq('user_id', currentUser.id).order('updated_at', {ascending:false});
   if(error){ box.innerHTML = '<div class="empty-note">Não foi possível carregar seus chamados.</div>'; return; }
   if(!data.length){ box.innerHTML = '<div class="empty-note">Você ainda não abriu nenhum chamado.</div>'; return; }
-  box.innerHTML = data.map(c => `
-    <div class="ch-card">
-      <div class="ch-top"><span class="ch-tipo ${c.tipo}">${CH_TIPO_LBL[c.tipo]||c.tipo}</span><span class="ch-st ${c.status}">${CH_STATUS_LBL[c.status]||c.status}</span></div>
+  let msgs = [];
+  const r = await db.from('suporte_mensagens').select('*').in('chamado_id', data.map(c=>c.id)).order('created_at');
+  if(!r.error) msgs = r.data || [];
+  box.innerHTML = data.map(c => {
+    const conv = msgs.filter(m=>m.chamado_id===c.id);
+    const antigos = (!conv.length && c.resposta) ? [{autor:'admin', texto:c.resposta, created_at:c.updated_at}] : [];
+    return `<div class="ch-card ${c.nao_lido_usuario?'novo':''}">
+      <div class="ch-top"><span class="ch-tipo ${c.tipo}">${CH_TIPO_LBL[c.tipo]||c.tipo}</span>${c.nao_lido_usuario?'<span class="ch-novo">Novidade</span>':''}<span class="ch-st ${c.status}">${CH_STATUS_LBL[c.status]||c.status}</span></div>
       <div class="ch-assunto">${admEsc(c.assunto)}</div>
-      <div class="ch-meta">Aberto em ${fmtDataHora(c.created_at)}${c.prazo && c.status!=='resolvido' ? ' · prazo até ' + fmtDataHora(c.prazo) : ''}${c.resolvido_em ? ' · resolvido em ' + fmtDataHora(c.resolvido_em) : ''}</div>
-      <div class="ch-steps"><span class="on">Recebido</span><span class="${c.status!=='recebido'?'on':''}">Em análise</span><span class="${c.status==='resolvido'?'on':''}">Resolvido</span></div>
-      ${c.resposta ? `<div class="ch-resp"><b>Resposta do time</b>${admEsc(c.resposta).replace(/\n/g,'<br>')}</div>` : ''}
-    </div>`).join('');
+      <div class="ch-meta">Aberto em ${fmtDataHora(c.created_at)}${c.prazo && c.status!=='resolvido' ? ', prazo até ' + fmtDataHora(c.prazo) : ''}${c.resolvido_em ? ', resolvido em ' + fmtDataHora(c.resolvido_em) : ''}</div>
+      <div class="ch-steps">${chEtapas(c)}</div>
+      <div class="ch-thread">${bolha('usuario', c.mensagem, c.created_at)}${[...antigos, ...conv].map(m=>bolha(m.autor, m.texto, m.created_at)).join('')}</div>
+      <div class="ch-reply"><input type="text" class="form-input" id="chr-${c.id}" placeholder="${c.status==='resolvido' ? 'Algo mais? Escreva aqui' : 'Responder ao time'}" maxlength="2000"><button class="btn btn-primary" onclick="responderChamado('${c.id}')">Enviar</button></div>
+    </div>`;
+  }).join('');
+  if(data.some(c=>c.nao_lido_usuario)){
+    try{ await db.rpc('marcar_suporte_lido'); }catch(e){}
+    setTimeout(checarAvisosSuporte, 300);
+  }
 }
+async function responderChamado(id){
+  const inp = document.getElementById('chr-'+id); const texto = (inp?.value||'').trim();
+  if(!texto){ showToast('Escreva sua mensagem.','error'); return; }
+  const { error } = await db.from('suporte_mensagens').insert({ chamado_id:id, autor:'usuario', texto });
+  if(error){ showToast('Não foi possível enviar. Tente de novo.','error'); return; }
+  showToast('Mensagem enviada ao time.');
+  renderSuporte();
+}
+
+// Avisos do suporte: selo no menu + balão com o camelo
+async function checarAvisosSuporte(){
+  if(!currentUser) return;
+  const { data, error } = await db.from('suporte_chamados').select('id,assunto,status,updated_at').eq('user_id', currentUser.id).eq('nao_lido_usuario', true).order('updated_at',{ascending:false});
+  if(error) return;
+  const n = (data||[]).length;
+  const badge = document.getElementById('supBadge');
+  if(badge){ badge.textContent = n; badge.style.display = n ? '' : 'none'; }
+  if(!n || currentView==='suporte') return;
+  const c = data[0]; const chave = 'duna-aviso-' + c.id + '-' + c.updated_at;
+  try{ if(sessionStorage.getItem(chave)) return; sessionStorage.setItem(chave,'1'); }catch(e){}
+  const t = document.getElementById('supToast');
+  const frase = c.status==='resolvido' ? 'Seu chamado foi resolvido!' : c.status==='em_implementacao' ? 'Sua sugestão está sendo implementada!' : 'O time respondeu seu chamado.';
+  t.innerHTML = `<div data-mascot="light" data-size="44"></div><div class="st-txt"><b>${frase}</b><span>${admEsc(c.assunto)}</span></div>
+    <button class="btn btn-primary st-btn" onclick="document.getElementById('supToast').style.display='none';mobileNavigate('suporte')">Ver</button>
+    <button class="tb-x" aria-label="Fechar aviso" onclick="this.parentElement.style.display='none'">×</button>`;
+  fillMascots(t);
+  t.style.display = 'flex';
+}
+document.addEventListener('visibilitychange', () => { if(document.visibilityState==='visible') checarAvisosSuporte(); });
+setInterval(() => { if(document.visibilityState==='visible') checarAvisosSuporte(); }, 60000);
+
 async function enviarChamado(){
   const assunto = document.getElementById('supAssunto').value.trim();
   const mensagem = document.getElementById('supMensagem').value.trim();
@@ -7828,7 +7913,7 @@ function admRenderKpis(){
 
 function admRenderTabs(){
   const el = document.getElementById('admTabs'); if(!el) return;
-  const tabs = [['assinantes','Assinantes',ADM.usuarios.length],['planos','Planos',ADM.planos.length],['pagamentos','Pagamentos',null],['admins','Administradores',ADM.usuarios.filter(u=>u.papel_admin).length],['suporte','Suporte',ADM.chamados.filter(c=>c.status!=='resolvido').length],['indicacoes','Indicações',ADM.indicacoes.length],['lixeira','Lixeira',ADM.lixeira.length]];
+  const tabs = [['assinantes','Assinantes',ADM.usuarios.length],['planos','Planos',ADM.planos.length],['pagamentos','Pagamentos',null],['admins','Administradores',ADM.usuarios.filter(u=>u.papel_admin).length],['suporte','Suporte',ADM.chamados.filter(c=>c.status!=='resolvido' || c.nao_lido_admin).length],['indicacoes','Indicações',ADM.indicacoes.length],['lixeira','Lixeira',ADM.lixeira.length]];
   el.innerHTML = tabs.map(([k,l,n]) => `<button class="adm-tab ${ADM.tab===k?'active':''}" data-admtab="${k}">${l}${n!==null?`<span class="n">${n}</span>`:''}</button>`).join('');
   el.querySelectorAll('.adm-tab').forEach(b => b.onclick = () => { ADM.tab = b.dataset.admtab; admRenderTabs(); admRenderPanel(); });
 }
@@ -8004,6 +8089,7 @@ function admRenderSuporte(el){
   const f = ADM.chFiltro || 'abertos';
   let rows = ADM.chamados.filter(c => f==='todos' ? true : f==='abertos' ? c.status!=='resolvido' : c.status==='resolvido');
   const atrasados = ADM.chamados.filter(c => c.prazo && c.status!=='resolvido' && new Date(c.prazo) < new Date()).length;
+  const opts = sel => Object.entries(CH_STATUS_LBL).map(([k,l])=>`<option value="${k}" ${k===sel?'selected':''}>${l}</option>`).join('');
   el.innerHTML = `
     <div class="adm-toolbar">
       <div class="subtab-bar" id="admChFiltro">${ADM_CH_FILTROS.map(([k,l])=>`<button class="adm-tab ${f===k?'active':''}" data-f="${k}">${l}</button>`).join('')}</div>
@@ -8011,17 +8097,25 @@ function admRenderSuporte(el){
     </div>
     ${rows.length ? `<div class="adm-table-wrap"><table class="data-table"><thead><tr><th>Chamado</th><th>Usuário</th><th>Aberto em</th><th>Prazo</th><th>Situação</th><th></th></tr></thead><tbody>
     ${rows.map(c=>`<tr>
-      <td class="adm-user-cell"><div class="nm">${admEsc(c.assunto)}</div><div class="em"><span class="ch-tipo ${c.tipo}">${CH_TIPO_LBL[c.tipo]||c.tipo}</span></div></td>
+      <td class="adm-user-cell"><div class="nm">${admEsc(c.assunto)}${c.nao_lido_admin?' <span class="ch-novo">Nova mensagem</span>':''}</div><div class="em"><span class="ch-tipo ${c.tipo}">${CH_TIPO_LBL[c.tipo]||c.tipo}</span> ${c.qtd_mensagens ? c.qtd_mensagens + ' resposta(s)' : 'sem resposta'}</div></td>
       <td class="adm-user-cell"><div class="nm">${admEsc(c.nome||'')}</div><div class="em">${admEsc(c.email||'')}</div></td>
       <td class="adm-num">${fmtDataHora(c.created_at)}</td>
       <td>${admPrazoBadge(c)}</td>
-      <td><span class="ch-st ${c.status}">${CH_STATUS_LBL[c.status]}</span></td>
+      <td><select class="form-select ch-sel ${c.status}" data-chst="${c.id}" aria-label="Situação do chamado">${opts(c.status)}</select></td>
       <td style="text-align:right"><button class="adm-row-btn" data-ch="${c.id}">Responder</button></td>
     </tr>`).join('')}</tbody></table></div>` : '<div class="empty-note">Nenhum chamado aqui.</div>'}`;
   el.querySelectorAll('#admChFiltro .adm-tab').forEach(b => b.onclick = () => { ADM.chFiltro = b.dataset.f; admRenderPanel(); });
   el.querySelectorAll('[data-ch]').forEach(b => b.onclick = () => admAbrirChamado(b.dataset.ch));
+  el.querySelectorAll('[data-chst]').forEach(sel => sel.onchange = () => admMudarStatus(sel.dataset.chst, sel.value));
 }
-function admAbrirChamado(id){
+async function admMudarStatus(id, status, silencioso){
+  const { error } = await db.from('suporte_chamados').update({ status }).eq('id', id);
+  if(error){ showToast('Erro ao mudar a situação: '+(error.message||''),'error'); return false; }
+  const c = ADM.chamados.find(x=>x.id===id); if(c) c.status = status;
+  if(!silencioso){ showToast(`Situação: ${CH_STATUS_LBL[status]}. O usuário foi avisado.`); await loadAdminData(); admRenderAll(); }
+  return true;
+}
+async function admAbrirChamado(id){
   const c = ADM.chamados.find(x=>x.id===id); if(!c) return;
   ADM.editChamadoId = id;
   document.getElementById('admChTitle').textContent = c.assunto;
@@ -8029,19 +8123,40 @@ function admAbrirChamado(id){
     <div>Usuário<b>${admEsc(c.nome||'—')}</b></div><div>E-mail<b>${admEsc(c.email||'—')}</b></div>
     <div>Tipo<b>${CH_TIPO_LBL[c.tipo]||c.tipo}</b></div><div>Aberto em<b>${fmtDataHora(c.created_at)}</b></div>
     ${c.prazo ? `<div>Prazo (24h úteis)<b>${fmtDataHora(c.prazo)}</b></div>` : ''}${c.resolvido_em ? `<div>Resolvido em<b>${fmtDataHora(c.resolvido_em)}</b></div>` : ''}`;
-  document.getElementById('admChMsg').innerHTML = admEsc(c.mensagem).replace(/\n/g,'<br>');
-  document.getElementById('admChStatus').value = c.status;
-  document.getElementById('admChResposta').value = c.resposta || '';
+  admPintarStatusSeg(c.status);
+  document.getElementById('admChResposta').value = '';
+  document.getElementById('admChResolver').checked = false;
+  const th = document.getElementById('admChThread');
+  th.innerHTML = '<div class="adm-muted">Carregando conversa…</div>';
   admOpenModal('admChamadoOverlay');
+  const { data } = await db.from('suporte_mensagens').select('*').eq('chamado_id', id).order('created_at');
+  const conv = data || [];
+  const antigos = (!conv.length && c.resposta) ? [{autor:'admin', texto:c.resposta, created_at:c.updated_at}] : [];
+  th.innerHTML = `<div class="ch-bub usuario"><div class="ch-bub-h">${admEsc(c.nome||c.email||'Usuário')}<span>${fmtDataHora(c.created_at)}</span></div>${admEsc(c.mensagem).replace(/\n/g,'<br>')}</div>`
+    + [...antigos, ...conv].map(m => `<div class="ch-bub ${m.autor}"><div class="ch-bub-h">${m.autor==='admin' ? 'Time do Duna' : admEsc(c.nome||'Usuário')}<span>${fmtDataHora(m.created_at)}</span></div>${admEsc(m.texto).replace(/\n/g,'<br>')}</div>`).join('');
+  th.scrollTop = th.scrollHeight;
+  if(c.nao_lido_admin){ await db.from('suporte_chamados').update({ nao_lido_admin:false }).eq('id', id); c.nao_lido_admin = false; }
 }
-async function admSalvarChamado(){
-  const status = document.getElementById('admChStatus').value;
-  const resposta = document.getElementById('admChResposta').value.trim() || null;
-  const { error } = await db.from('suporte_chamados').update({ status, resposta }).eq('id', ADM.editChamadoId);
-  if(error){ showToast('Erro ao salvar: '+(error.message||''),'error'); return; }
-  admCloseModal('admChamadoOverlay'); showToast('Chamado atualizado.');
-  await loadAdminData(); admRenderAll();
+function admPintarStatusSeg(atual){
+  const box = document.getElementById('admChStatusSeg');
+  box.innerHTML = Object.entries(CH_STATUS_LBL).map(([k,l]) => `<button class="${k===atual?'on '+k:''}" data-st="${k}">${l}</button>`).join('');
+  box.querySelectorAll('[data-st]').forEach(b => b.onclick = async () => {
+    if(await admMudarStatus(ADM.editChamadoId, b.dataset.st, true)){ admPintarStatusSeg(b.dataset.st); showToast(`Situação: ${CH_STATUS_LBL[b.dataset.st]}. O usuário foi avisado.`); }
+  });
 }
+async function admEnviarResposta(){
+  const texto = document.getElementById('admChResposta').value.trim();
+  const resolver = document.getElementById('admChResolver').checked;
+  if(!texto && !resolver){ showToast('Escreva a resposta.','error'); return; }
+  if(texto){
+    const { error } = await db.from('suporte_mensagens').insert({ chamado_id: ADM.editChamadoId, autor:'admin', texto });
+    if(error){ showToast('Erro ao enviar: '+(error.message||''),'error'); return; }
+  }
+  if(resolver) await admMudarStatus(ADM.editChamadoId, 'resolvido', true);
+  showToast(resolver ? 'Resposta enviada e chamado resolvido.' : 'Resposta enviada. O usuário foi avisado.');
+  await admAbrirChamado(ADM.editChamadoId);
+}
+async function admFecharChamado(){ admCloseModal('admChamadoOverlay'); await loadAdminData(); admRenderAll(); }
 
 // ---- Admin: Indicações e configurações do programa ----
 function admCfg(k){ const r = ADM.config.find(c=>c.chave===k); return r ? r.valor : null; }
