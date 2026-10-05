@@ -1005,10 +1005,30 @@
   .ind-link{ display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
   .ind-link .form-input{ flex:1; min-width:220px; font-family:'IBM Plex Mono',monospace; font-size:12.5px; }
   .ind-link .btn{ flex:none; padding:10px 16px; font-size:13px; }
-  .ind-st{ font-size:11.5px; font-weight:600; padding:3px 9px; border-radius:20px; background:var(--surface-3); color:var(--text-2); }
+  .ind-st{ white-space:nowrap; display:inline-block; font-size:11.5px; font-weight:600; padding:3px 9px; border-radius:20px; background:var(--surface-3); color:var(--text-2); }
   .ind-st.aprovada{ background:var(--warning-soft); color:var(--warning); }
   .ind-st.paga{ background:var(--positive-soft); color:var(--positive); }
   .ind-st.cancelada{ background:var(--negative-soft); color:var(--negative); }
+  .ind-grid{ display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,1fr); gap:16px; align-items:start; margin-top:16px; }
+  .ind-join-h{ display:flex; gap:14px; align-items:center; margin-bottom:16px; }
+  .ind-rules{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-bottom:12px; }
+  .ind-rule{ background:var(--surface-2); border:1px solid var(--border-soft); border-radius:12px; padding:14px; }
+  .ind-rule b{ display:block; font-family:'Fraunces',serif; font-size:30px; color:var(--accent-2); line-height:1.1; }
+  .ind-rule span{ font-size:12.5px; color:var(--text-2); line-height:1.45; }
+  .ind-rule em{ display:block; font-style:normal; font-weight:600; color:var(--positive); margin-top:6px; }
+  .ind-list{ margin:0; padding-left:18px; font-size:12.5px; color:var(--text-2); line-height:1.7; }
+  .pix-confirm{ background:var(--surface-2); border:1.5px solid var(--accent); border-radius:12px; padding:14px 16px; display:grid; gap:10px; margin-bottom:12px; }
+  .pix-confirm span{ display:block; font-size:11.5px; color:var(--text-3); }
+  .pix-confirm b{ font-size:15px; color:var(--text-1); word-break:break-all; }
+  .pix-card{ background:var(--surface-2); border-radius:12px; padding:14px; }
+  .pix-card span{ display:block; font-size:11.5px; color:var(--text-3); }
+  .pix-card b{ display:block; font-size:15px; color:var(--text-1); margin:2px 0; word-break:break-all; }
+  .pix-card small{ font-size:12px; color:var(--text-2); }
+  .ind-row{ display:flex; justify-content:space-between; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--border-soft); font-size:13px; }
+  .ind-row span{ display:block; font-size:11.5px; color:var(--text-3); }
+  .adm-copy{ margin-left:6px; font-size:11px; font-weight:600; border:1px solid var(--border); background:var(--surface-2); color:var(--accent-2); border-radius:6px; padding:1px 7px; cursor:pointer; }
+  .adm-cfg.adm-cfg4{ grid-template-columns:repeat(5,minmax(0,1fr)); }
+  @media (max-width:900px){ .adm-cfg.adm-cfg4{ grid-template-columns:1fr 1fr; } .ind-grid, .ind-rules{ grid-template-columns:1fr; } #view-indique .kpi-grid{ grid-template-columns:1fr 1fr !important; } }
   .adm-cfg{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; background:var(--surface-2); border-radius:12px; padding:16px; }
   @media (max-width:820px){ .sup-grid, .adm-cfg{ grid-template-columns:1fr; } .pw-title{ font-size:23px; } }
 
@@ -2862,27 +2882,9 @@
     <!-- INDIQUE E GANHE -->
     <div class="view" id="view-indique">
       <div class="topbar">
-        <div><div class="page-title">Indique e ganhe</div><div class="page-sub">Mostrou o caminho para um amigo? Ganhe por isso.</div></div>
+        <div><div class="page-title">Indique e ganhe</div><div class="page-sub">Mostrou o caminho para um amigo? Ganhe uma parte de cada pagamento dele.</div></div>
       </div>
-      <div class="ind-hero panel">
-        <div data-mascot="free" data-size="110"></div>
-        <div style="flex:1;min-width:240px">
-          <div class="ind-hero-t" id="indRecompensa">Ganhe por cada amigo que assinar o Duna.</div>
-          <div class="ind-hero-s">Compartilhe seu link. Quando seu amigo fizer o primeiro pagamento, a recompensa é liberada para você.</div>
-          <div class="ind-link">
-            <input type="text" class="form-input" id="indLink" readonly aria-label="Seu link de indicação">
-            <button class="btn btn-primary" onclick="copiarLinkIndicacao()">Copiar link</button>
-            <button class="btn btn-ghost" onclick="compartilharIndicacao()">Compartilhar</button>
-          </div>
-          <div class="adm-hint" style="margin:8px 0 0">Seu código: <b id="indCodigo">—</b></div>
-        </div>
-      </div>
-      <div class="kpi-grid" id="indKpis" style="grid-template-columns:repeat(3,1fr)"></div>
-      <div class="panel">
-        <div class="panel-head"><div class="panel-title">Suas indicações</div></div>
-        <div id="indLista"><div class="empty-note">Carregando…</div></div>
-        <div class="adm-hint" style="margin:14px 0 0">A recompensa fica <b>pendente</b> enquanto seu amigo está no teste grátis e é <b>aprovada</b> no primeiro pagamento dele. Indicações de contas próprias ou duplicadas são canceladas.</div>
-      </div>
+      <div id="indConteudo"><div class="empty-note">Carregando…</div></div>
     </div>
 
     <!-- ADMIN DA PLATAFORMA -->
@@ -7744,27 +7746,187 @@ async function enviarChamado(){
 }
 
 // ===================== Indique e ganhe (usuário) =====================
-const IND_STATUS_LBL = { pendente:'Pendente', aprovada:'Aprovada', paga:'Paga', cancelada:'Cancelada' };
+const IND_STATUS_LBL = { pendente:'Em teste grátis', ativa:'Assinante', cancelada:'Cancelada' };
+const PIX_TIPO_LBL = { cpf:'CPF', email:'E-mail', telefone:'Telefone', aleatoria:'Chave aleatória' };
+let IND = { part:null, cfg:{ mensal:20, anual:30, meses:12, carencia:7, dia:10 }, editando:false, etapa:1, rascunho:null };
 function linkIndicacao(){ return ASS?.codigo_indicacao ? `${location.origin}/?ref=${ASS.codigo_indicacao}` : ''; }
+// Comissão é paga no dia X do mês seguinte ao pagamento do indicado
+// (ex.: pagou em 30/09 → recebe em 10/10). Se ainda estiver no prazo de arrependimento, vai para o mês seguinte.
+function dataPagtoComissao(pagamento, liberada, dia){
+  dia = Math.min(Math.max(parseInt(dia)||10,1),28);
+  const d = parseDate(pagamento); let alvo = new Date(d.getFullYear(), d.getMonth()+1, dia);
+  if(liberada && liberada > localDateStr(alvo)) alvo = new Date(d.getFullYear(), d.getMonth()+2, dia);
+  return localDateStr(alvo);
+}
+function proximoDiaPagto(dia){
+  dia = Math.min(Math.max(parseInt(dia)||10,1),28);
+  const h = new Date(); const alvo = new Date(h.getFullYear(), h.getMonth(), dia);
+  if(localDateStr(h) > localDateStr(alvo)) alvo.setMonth(alvo.getMonth()+1);
+  return localDateStr(alvo);
+}
+function soDigitos(v){ return String(v||'').replace(/\D/g,''); }
+function cpfValido(c){
+  c = soDigitos(c); if(c.length!==11 || /^(\d)\1+$/.test(c)) return false;
+  for(let t=9;t<11;t++){ let s=0; for(let i=0;i<t;i++) s += +c[i]*(t+1-i); if(((s*10)%11)%10 !== +c[t]) return false; }
+  return true;
+}
+function normalizarChave(tipo, v){
+  v = String(v||'').trim();
+  if(tipo==='cpf') return soDigitos(v);
+  if(tipo==='telefone'){ let d = soDigitos(v); if(d.length===13 && d.startsWith('55')) d = d.slice(2); return d; }
+  if(tipo==='email') return v.toLowerCase();
+  return v.toLowerCase();
+}
+function validarChave(tipo, v){
+  if(tipo==='cpf') return cpfValido(v) ? '' : 'CPF inválido.';
+  if(tipo==='telefone') return /^\d{10,11}$/.test(v) ? '' : 'Telefone com DDD, só números (ex.: 11999998888).';
+  if(tipo==='email') return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? '' : 'E-mail inválido.';
+  return /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/.test(v) ? '' : 'Chave aleatória inválida (32 caracteres, como aparece no seu banco).';
+}
+function formatarChave(tipo, v){
+  if(tipo==='cpf' && v.length===11) return `${v.slice(0,3)}.${v.slice(3,6)}.${v.slice(6,9)}-${v.slice(9)}`;
+  if(tipo==='telefone') return v.length===11 ? `(${v.slice(0,2)}) ${v.slice(2,7)}-${v.slice(7)}` : `(${v.slice(0,2)}) ${v.slice(2,6)}-${v.slice(6)}`;
+  return v;
+}
+function mascararChave(tipo, v){
+  const f = formatarChave(tipo, v);
+  if(tipo==='cpf') return `***.${v.slice(3,6)}.${v.slice(6,9)}-**`;
+  if(tipo==='email'){ const [a,b] = v.split('@'); return (a.length>2 ? a.slice(0,2)+'***' : a+'***') + '@' + (b||''); }
+  if(tipo==='telefone') return f.slice(0,5) + ' *****-' + v.slice(-4);
+  return v.slice(0,8) + '…' + v.slice(-4);
+}
+async function carregarCfgIndicacao(){
+  const { data } = await db.from('plataforma_config').select('chave,valor').in('chave',['comissao_mensal_pct','comissao_anual_pct','comissao_meses','comissao_carencia_dias','comissao_dia_pagamento']);
+  const g = k => { const r = (data||[]).find(x=>x.chave===k); return r && r.valor!=null ? +r.valor : null; };
+  IND.cfg = { mensal: g('comissao_mensal_pct') ?? 20, anual: g('comissao_anual_pct') ?? 30, meses: g('comissao_meses') ?? 12, carencia: g('comissao_carencia_dias') ?? 7, dia: g('comissao_dia_pagamento') ?? 10 };
+}
+function regrasIndicacaoHTML(){
+  const c = IND.cfg, pl = ASS?.planos || [];
+  const men = pl.find(p=>p.periodicidade==='mensal'), anu = pl.find(p=>p.periodicidade==='anual');
+  const exM = men ? +men.preco * c.mensal/100 : null, exA = anu ? +anu.preco * c.anual/100 : null;
+  return `<div class="ind-rules">
+    <div class="ind-rule"><b>${c.mensal}%</b><span>de cada mensalidade do seu indicado, por até ${c.meses} meses${exM!=null ? `<em>Ex.: ${fmtBRL(exM)} por mês, até ${fmtBRL(exM*c.meses)}</em>` : ''}</span></div>
+    <div class="ind-rule"><b>${c.anual}%</b><span>do plano anual do seu indicado, no primeiro ano${exA!=null ? `<em>Ex.: ${fmtBRL(exA)} de uma vez</em>` : ''}</span></div>
+  </div>
+  <ul class="ind-list">
+    <li>Seu amigo testa 7 dias grátis. A comissão nasce a cada pagamento dele.</li>
+    <li>Pagamento <b>todo dia ${c.dia}</b>, via Pix, de todas as compras dos seus indicados no mês anterior. Ex.: compra em 30/09, você recebe em ${String(c.dia).padStart(2,'0')}/10.</li>
+    <li>Somente para a chave Pix cadastrada no seu nome. Compras estornadas no prazo de arrependimento (${c.carencia} dias) não geram comissão.</li>
+    <li>Indicar a si mesmo, contas duplicadas ou falsas cancela as comissões.</li>
+  </ul>`;
+}
 async function renderIndique(){
-  fillMascots(document.getElementById('view-indique'));
+  const box = document.getElementById('indConteudo'); if(!box || !currentUser) return;
   if(!ASS) await checkAssinatura();
-  const link = linkIndicacao();
-  document.getElementById('indLink').value = link || 'Disponível em instantes…';
-  document.getElementById('indCodigo').textContent = ASS?.codigo_indicacao || '—';
-  const rec = ASS?.recompensa_indicacao!=null && ASS.recompensa_indicacao!=='null' ? +ASS.recompensa_indicacao : null;
-  document.getElementById('indRecompensa').textContent = rec ? `Ganhe ${fmtBRL(rec)} por cada amigo que assinar o Duna.` : 'Ganhe por cada amigo que assinar o Duna.';
-  const box = document.getElementById('indLista'); const kp = document.getElementById('indKpis');
-  const { data, error } = await db.rpc('minhas_indicacoes');
-  if(error){ box.innerHTML = '<div class="empty-note">Não foi possível carregar suas indicações.</div>'; kp.innerHTML=''; return; }
-  const soma = st => data.filter(i=>i.status===st).reduce((s,i)=>s+(+i.valor||0),0);
+  await carregarCfgIndicacao();
+  const { data: part, error } = await db.from('indicacao_participantes').select('*').eq('user_id', currentUser.id).maybeSingle();
+  if(error){ box.innerHTML = '<div class="panel empty-note">O programa de indicação ainda não está disponível. Tente mais tarde.</div>'; return; }
+  IND.part = part || null;
+  if(!IND.part || IND.editando) renderIndiqueParticipar(box); else await renderIndiquePainel(box);
+}
+function renderIndiqueParticipar(box){
+  const r = IND.rascunho || (IND.part ? { nome:IND.part.nome_completo, tipo:IND.part.tipo_chave, chave:formatarChave(IND.part.tipo_chave, IND.part.chave_pix), chave2:'' } : { nome:'', tipo:'cpf', chave:'', chave2:'' });
+  if(IND.etapa===2 && IND.rascunho){
+    box.innerHTML = `<div class="panel ind-join">
+      <div class="ind-join-h"><div data-mascot="light" data-size="56"></div><div><div class="ind-hero-t">Confira antes de confirmar</div><div class="ind-hero-s">Os pagamentos das suas comissões vão exatamente para estes dados.</div></div></div>
+      <div class="pix-confirm">
+        <div><span>Nome completo do titular</span><b>${admEsc(r.nome)}</b></div>
+        <div><span>Tipo de chave</span><b>${PIX_TIPO_LBL[r.tipo]}</b></div>
+        <div><span>Chave Pix</span><b>${admEsc(formatarChave(r.tipo, r.norm))}</b></div>
+      </div>
+      <label class="adm-check"><input type="checkbox" id="indOkTitular"> Confirmo que esta chave Pix está no meu nome (sou o titular)</label>
+      <label class="adm-check"><input type="checkbox" id="indOkRegras"> Li e aceito as regras do programa e os <a class="lnk" onclick="openTermos('termos')">Termos de Uso</a></label>
+      <div class="cmodal-actions"><button class="btn btn-ghost" onclick="IND.etapa=1;renderIndique()">Corrigir dados</button><button class="btn btn-primary" id="indSalvarBtn" onclick="salvarParticipacao()">${IND.part ? 'Salvar novo Pix' : 'Confirmar e participar'}</button></div>
+    </div>`;
+    fillMascots(box); return;
+  }
+  box.innerHTML = `<div class="ind-grid">
+    <div class="panel ind-join">
+      <div class="ind-join-h"><div data-mascot="free" data-size="84"></div><div><div class="ind-hero-t">${IND.part ? 'Alterar chave Pix' : 'Participe do programa'}</div><div class="ind-hero-s">${IND.part ? 'Atualize os dados para receber suas comissões.' : 'Cadastre o Pix onde você vai receber. Depois disso seu link de indicação é liberado.'}</div></div></div>
+      <div class="form-group"><label class="form-label">Nome completo (igual ao da conta Pix)</label><input type="text" class="form-input" id="indNome" value="${admEsc(r.nome)}" autocomplete="name" maxlength="120"></div>
+      <div class="form-group"><label class="form-label">Tipo de chave Pix</label>
+        <select class="form-select" id="indTipo">${Object.entries(PIX_TIPO_LBL).map(([k,l])=>`<option value="${k}" ${k===r.tipo?'selected':''}>${l}</option>`).join('')}</select></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Chave Pix</label><input type="text" class="form-input" id="indChave" value="${admEsc(r.chave)}" autocomplete="off"></div>
+        <div class="form-group"><label class="form-label">Digite a chave de novo</label><input type="text" class="form-input" id="indChave2" value="${admEsc(r.chave2||'')}" autocomplete="off" onpaste="event.preventDefault();showToast('Digite a chave novamente, sem colar.','error')"></div>
+      </div>
+      <div class="cmodal-actions">${IND.part ? '<button class="btn btn-ghost" onclick="IND.editando=false;IND.rascunho=null;renderIndique()">Cancelar</button>' : ''}<button class="btn btn-primary" onclick="revisarParticipacao()">Continuar</button></div>
+    </div>
+    <div class="panel"><div class="panel-head"><div class="panel-title">Como você ganha</div></div>${regrasIndicacaoHTML()}</div>
+  </div>`;
+  fillMascots(box);
+}
+function revisarParticipacao(){
+  const nome = document.getElementById('indNome').value.trim().replace(/\s+/g,' ');
+  const tipo = document.getElementById('indTipo').value;
+  const chave = document.getElementById('indChave').value, chave2 = document.getElementById('indChave2').value;
+  IND.rascunho = { nome, tipo, chave, chave2 };
+  if(nome.split(' ').length < 2){ showToast('Informe o nome completo (nome e sobrenome).','error'); return; }
+  const n1 = normalizarChave(tipo, chave), n2 = normalizarChave(tipo, chave2);
+  const erro = validarChave(tipo, n1); if(erro){ showToast(erro,'error'); return; }
+  if(n1 !== n2){ showToast('As duas chaves digitadas não são iguais.','error'); return; }
+  IND.rascunho.norm = n1; IND.etapa = 2; renderIndique();
+}
+async function salvarParticipacao(){
+  if(!document.getElementById('indOkTitular').checked || !document.getElementById('indOkRegras').checked){ showToast('Marque as duas confirmações.','error'); return; }
+  const r = IND.rascunho; const btn = document.getElementById('indSalvarBtn'); btn.disabled = true;
+  const row = { user_id: currentUser.id, nome_completo: r.nome, tipo_chave: r.tipo, chave_pix: r.norm, confirmado_em: new Date().toISOString(), updated_at: new Date().toISOString() };
+  const { error } = await db.from('indicacao_participantes').upsert(row);
+  btn.disabled = false;
+  if(error){ console.error(error); showToast('Não foi possível salvar. Tente de novo.','error'); return; }
+  showToast(IND.part ? 'Chave Pix atualizada.' : 'Pronto! Seu link de indicação está liberado.');
+  IND.editando = false; IND.etapa = 1; IND.rascunho = null;
+  renderIndique();
+}
+async function renderIndiquePainel(box){
+  const link = linkIndicacao(); const p = IND.part;
+  const [ri, rc] = await Promise.all([db.rpc('minhas_indicacoes'), db.rpc('minhas_comissoes')]);
+  const inds = ri.error ? [] : (ri.data||[]); const coms = rc.error ? [] : (rc.data||[]);
+  const hoje = localDateStr();
+  const soma = f => coms.filter(f).reduce((s,c)=>s+(+c.valor||0),0);
+  const dia = IND.cfg.dia, prox = proximoDiaPagto(dia);
+  const pagtoDe = c => dataPagtoComissao(c.data_pagamento, c.liberada_em, dia);
+  const noProximo = soma(c=>c.status==='pendente' && pagtoDe(c)<=prox);
+  const depois = soma(c=>c.status==='pendente' && pagtoDe(c)>prox), pago = soma(c=>c.status==='paga');
   const card = (l,v,sub) => `<div class="kpi-card"><div class="kpi-top"><span class="kpi-label">${l}</span></div><div class="kpi-value num">${v}</div><span class="kpi-delta flat">${sub}</span></div>`;
-  kp.innerHTML = card('Indicações', data.filter(i=>i.status!=='cancelada').length, `${data.filter(i=>i.status==='pendente').length} em teste grátis`)
-    + card('A receber', fmtBRL(soma('aprovada')), `${data.filter(i=>i.status==='aprovada').length} aprovada(s)`)
-    + card('Já recebido', fmtBRL(soma('paga')), `${data.filter(i=>i.status==='paga').length} paga(s)`);
-  box.innerHTML = data.length ? `<div class="adm-table-wrap"><table class="data-table" style="min-width:0"><thead><tr><th>Amigo</th><th>Indicado em</th><th>Situação</th><th style="text-align:right">Recompensa</th></tr></thead><tbody>
-    ${data.map(i=>`<tr><td>${admEsc(i.nome)}</td><td class="adm-num">${admFmtDT(i.criado_em)}</td><td><span class="ind-st ${i.status}">${IND_STATUS_LBL[i.status]||i.status}</span></td><td class="adm-num" style="text-align:right">${i.valor!=null ? fmtBRL(+i.valor) : '—'}</td></tr>`).join('')}
-    </tbody></table></div>` : '<div class="empty-note">Nenhuma indicação ainda. Compartilhe seu link e comece a ganhar.</div>';
+  const situacao = c => c.status==='paga' ? `<span class="ind-st paga">Paga em ${admFmtDT(c.paga_em)}</span>` : c.status==='cancelada' ? '<span class="ind-st cancelada">Cancelada</span>' : `<span class="ind-st ${pagtoDe(c)<=prox?'aprovada':''}">Pagamento em ${fmtDateBR(pagtoDe(c))}</span>`;
+  box.innerHTML = `
+    <div class="ind-hero panel">
+      <div data-mascot="free" data-size="110"></div>
+      <div style="flex:1;min-width:240px">
+        <div class="ind-hero-t">Ganhe ${IND.cfg.mensal}% das mensalidades ou ${IND.cfg.anual}% do plano anual de quem você indicar.</div>
+        <div class="ind-hero-s">Compartilhe seu link. Cada pagamento do seu amigo vira comissão para você, paga todo dia ${IND.cfg.dia} via Pix.</div>
+        <div class="ind-link">
+          <input type="text" class="form-input" id="indLink" readonly value="${admEsc(link)}" aria-label="Seu link de indicação">
+          <button class="btn btn-primary" onclick="copiarLinkIndicacao()">Copiar link</button>
+          <button class="btn btn-ghost" onclick="compartilharIndicacao()">Compartilhar</button>
+        </div>
+        <div class="adm-hint" style="margin:8px 0 0">Seu código: <b>${ASS?.codigo_indicacao||'—'}</b></div>
+      </div>
+    </div>
+    <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
+      ${card('Indicados', inds.filter(i=>i.status!=='cancelada').length, `${inds.filter(i=>i.status==='ativa').length} assinante(s)`)}
+      ${card(`Próximo pagamento (${fmtDateBR(prox).slice(0,5)})`, `<span style="color:var(--positive)">${fmtBRL(noProximo)}</span>`, `Via Pix, todo dia ${dia}`)}
+      ${card('Pagamentos seguintes', fmtBRL(depois), 'Compras dos indicados neste mês')}
+      ${card('Já recebido', fmtBRL(pago), `${coms.filter(c=>c.status==='paga').length} comissão(ões)`)}
+    </div>
+    <div class="ind-grid">
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Suas comissões</div></div>
+        ${coms.length ? `<div class="adm-table-wrap"><table class="data-table" style="min-width:520px"><thead><tr><th>Pagamento</th><th>Amigo</th><th>Plano</th><th style="text-align:right">Comissão</th><th>Situação</th></tr></thead><tbody>
+          ${coms.map(c=>`<tr><td class="adm-num">${fmtDateBR(c.data_pagamento)}</td><td>${admEsc(c.nome)}</td><td>${c.periodicidade==='anual'?'Anual':'Mensal'}<div class="adm-muted" style="font-size:11px">${(+c.percentual).toLocaleString('pt-BR')}% de ${fmtBRL(+c.valor_pagamento)}</div></td><td class="adm-num" style="text-align:right;font-weight:600">${fmtBRL(+c.valor)}</td><td>${situacao(c)}</td></tr>`).join('')}
+        </tbody></table></div>` : '<div class="empty-note">As comissões aparecem aqui quando seus indicados pagarem.</div>'}
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Receber em</div></div>
+        <div class="pix-card"><span>${PIX_TIPO_LBL[p.tipo_chave]}</span><b>${admEsc(mascararChave(p.tipo_chave, p.chave_pix))}</b><small>${admEsc(p.nome_completo)}</small></div>
+        <button class="btn btn-ghost" style="width:100%;margin-top:10px" onclick="IND.editando=true;IND.etapa=1;IND.rascunho=null;renderIndique()">Alterar chave Pix</button>
+        <div class="panel-head" style="margin-top:20px"><div class="panel-title">Seus indicados</div></div>
+        ${inds.length ? inds.map(i=>`<div class="ind-row"><div><b>${admEsc(i.nome)}</b><span>${IND_STATUS_LBL[i.status]||i.status}${i.plano ? ', plano ' + (i.plano==='anual'?'anual':'mensal') : ''}</span></div><b>${fmtBRL(+i.total_gerado||0)}</b></div>`).join('') : '<div class="empty-note" style="padding:14px 0">Ninguém ainda. Compartilhe seu link!</div>'}
+      </div>
+    </div>
+    <div class="panel" style="margin-top:16px"><div class="panel-head"><div class="panel-title">Regras do programa</div></div>${regrasIndicacaoHTML()}</div>`;
+  fillMascots(box);
 }
 async function copiarLinkIndicacao(){
   const link = linkIndicacao(); if(!link) return;
@@ -7778,14 +7940,13 @@ function compartilharIndicacao(){
   else window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank', 'noopener');
 }
 
-
 // ===================== Termos de Uso e Política de Privacidade =====================
 // Versão precisa bater com plataforma_config.termos_versao no banco.
-const TERMOS_VERSAO = '2026-10-04';
+const TERMOS_VERSAO = '2026-10-05';
 const LEGAL = {
 termos: `
 <h2>Termos de Uso do Duna</h2>
-<p class="legal-meta">Versão de 04/10/2026</p>
+<p class="legal-meta">Versão de 05/10/2026</p>
 <p>Estes Termos de Uso regulam o acesso e o uso do Duna (“Duna”, “plataforma” ou “aplicativo”), oferecido por <b>[RAZÃO SOCIAL]</b>, inscrita no CNPJ sob o nº <b>[CNPJ]</b>, com sede em <b>[ENDEREÇO COMPLETO]</b> (“nós”). Ao criar uma conta ou usar o Duna, você declara que leu, entendeu e concorda com estes Termos e com a nossa Política de Privacidade.</p>
 <h3>1. O que é o Duna</h3>
 <p>O Duna é uma ferramenta de organização financeira pessoal. Você registra manualmente suas contas, cartões, receitas, despesas, metas, cofrinhos e dívidas, e o Duna organiza essas informações em relatórios e painéis. O Duna não se conecta à sua conta bancária, não movimenta dinheiro e não é instituição financeira.</p>
@@ -7802,7 +7963,10 @@ termos: `
 <h3>6. Cancelamento e reembolso</h3>
 <p>Você pode cancelar a assinatura a qualquer momento. O cancelamento interrompe as próximas renovações e o acesso continua até o fim do período já pago. Nos termos do art. 49 do Código de Defesa do Consumidor, você pode desistir da contratação em até 7 (sete) dias após o primeiro pagamento, com reembolso integral. Fora desse prazo, não há reembolso proporcional de períodos já iniciados, salvo previsão legal.</p>
 <h3>7. Programa de indicação</h3>
-<p>Assinantes podem indicar novas pessoas por meio de um link pessoal. A recompensa por indicação, quando houver, tem valor e forma de pagamento informados no aplicativo, e só é liberada após o primeiro pagamento confirmado da pessoa indicada. Indicações da própria pessoa, contas duplicadas, falsas ou qualquer tentativa de fraude serão canceladas, e podemos suspender a participação no programa. Podemos alterar ou encerrar o programa a qualquer momento, respeitando as recompensas já aprovadas.</p>
+<p>Assinantes podem participar do programa de indicação cadastrando uma chave Pix de sua titularidade, com nome completo. Depois disso, recebem um link pessoal para indicar novas pessoas.</p>
+<p>Quando uma pessoa indicada assina o Duna, o participante recebe uma comissão sobre cada pagamento efetivamente recebido dessa pessoa: <b>20% de cada mensalidade do plano Mensal, por até 12 meses</b> contados do primeiro pagamento, e <b>30% do valor do plano Anual, no primeiro ano</b>. Os percentuais vigentes são sempre os informados no aplicativo e podem ser alterados para novas indicações, respeitando as comissões já geradas.</p>
+<p>Se o pagamento do indicado for estornado ou reembolsado, inclusive no prazo de arrependimento de 7 (sete) dias, a comissão correspondente é cancelada. Os pagamentos são feitos <b>todo dia 10</b>, referentes a todas as compras feitas pelos indicados no mês anterior (se o dia 10 não for dia útil, no dia útil seguinte), via Pix e exclusivamente para a chave cadastrada, e o participante é responsável pela exatidão dos dados informados e pelas obrigações fiscais sobre os valores recebidos.</p>
+<p>Indicações da própria pessoa, contas duplicadas, falsas, spam ou qualquer tentativa de fraude cancelam as comissões e podem levar à exclusão do programa. Podemos alterar ou encerrar o programa a qualquer momento, pagando as comissões já disponíveis.</p>
 <h3>8. Suporte</h3>
 <p>Você pode enviar sugestões e relatar problemas pela área de Suporte do aplicativo. Nosso compromisso é resolver problemas relatados em até <b>24 horas úteis</b> (dias úteis, de segunda a sexta, horário de Brasília). Situações que dependam de terceiros, de informações adicionais suas ou de força maior podem exigir mais tempo, e nesse caso você será informado.</p>
 <h3>9. Uso permitido</h3>
@@ -7821,13 +7985,14 @@ termos: `
 <p>Suporte pelo aplicativo ou pelo e-mail <b>[E-MAIL DE CONTATO]</b>.</p>`,
 privacidade: `
 <h2>Política de Privacidade do Duna</h2>
-<p class="legal-meta">Versão de 04/10/2026</p>
+<p class="legal-meta">Versão de 05/10/2026</p>
 <p>Esta Política explica como <b>[RAZÃO SOCIAL]</b>, CNPJ <b>[CNPJ]</b> (“nós”), controladora dos dados, trata as informações pessoais de quem usa o Duna, em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018, “LGPD”).</p>
 <h3>1. Dados que coletamos</h3>
 <p><b>Dados de cadastro:</b> nome, sobrenome, e-mail, telefone (opcional) e senha (guardada de forma criptografada).</p>
 <p><b>Dados financeiros que você lança:</b> contas, cartões (apenas nome, limite, fechamento e vencimento; nunca o número do cartão), receitas, despesas, transferências, faturas, metas, cofrinhos, dívidas e categorias.</p>
 <p><b>Dados de assinatura:</b> plano, situação, datas e valores pagos. Quando a cobrança automática estiver ativa, os dados do meio de pagamento serão tratados diretamente pelo processador de pagamentos, e não ficam guardados conosco.</p>
-<p><b>Dados de uso:</b> data do último acesso, chamados de suporte e indicações feitas ou recebidas.</p>
+<p><b>Dados de uso:</b> data do último acesso, chamados de suporte (incluindo arquivos anexados) e indicações feitas ou recebidas.</p>
+<p><b>Programa de indicação:</b> se você participar, seu nome completo e sua chave Pix (que pode ser CPF, e-mail, telefone ou chave aleatória), usados apenas para pagar suas comissões.</p>
 <h3>2. Para que usamos</h3>
 <p>Para prestar o serviço (organizar e exibir suas finanças), gerenciar sua conta e assinatura, liberar o teste grátis, operar o programa de indicação, responder ao suporte, melhorar o aplicativo, garantir a segurança e cumprir obrigações legais.</p>
 <h3>3. Bases legais</h3>
@@ -7883,7 +8048,7 @@ setInterval(() => { if(document.visibilityState==='visible') registrarAcesso(fal
 // Requer o SQL admin-plataforma.sql (tabelas plataforma_admins, planos, assinaturas,
 // pagamentos_assinatura e RPCs admin_*). Sem o SQL, o menu simplesmente não aparece.
 const ADM = { isAdmin:false, isDono:false, loaded:false, usuarios:[], planos:[], pagamentos:[],
-  lixeira:[], chamados:[], indicacoes:[], config:[], chFiltro:'abertos', editChamadoId:null, tab:'assinantes', filtro:'todos', busca:'', sort:{key:'acesso',dir:-1}, mes:null, chart:null, editUserId:null, editPlanoId:null, pagUserPreset:null };
+  lixeira:[], chamados:[], indicacoes:[], comissoes:[], config:[], chFiltro:'abertos', editChamadoId:null, tab:'assinantes', filtro:'todos', busca:'', sort:{key:'acesso',dir:-1}, mes:null, chart:null, editUserId:null, editPlanoId:null, pagUserPreset:null };
 const ADM_PERIODOS = { mensal:{label:'Mensal',meses:1}, trimestral:{label:'Trimestral',meses:3}, semestral:{label:'Semestral',meses:6}, anual:{label:'Anual',meses:12}, vitalicio:{label:'Vitalício',meses:null} };
 const ADM_STATUS_LBL = { ativa:'Ativa', teste:'Em teste', vencida:'Vencida', inativa:'Inativa', cancelada:'Cancelada', sem:'Sem assinatura' };
 let _admSignupClient = null;
@@ -7952,12 +8117,13 @@ async function loadAdminData(){
   ADM.planos = (p.data||[]).map(r => ({...r, preco:+r.preco||0, dias_teste:+r.dias_teste||0}));
   ADM.pagamentos = (g.data||[]).map(r => ({...r, valor:+r.valor||0}));
   // Suporte, indicações e configurações (não impedem o resto de carregar)
-  const [ch, ind, cfg] = await Promise.all([
-    db.rpc('admin_listar_chamados'), db.rpc('admin_listar_indicacoes'), db.from('plataforma_config').select('*')
+  const [ch, ind, cfg, com] = await Promise.all([
+    db.rpc('admin_listar_chamados'), db.rpc('admin_listar_indicacoes'), db.from('plataforma_config').select('*'), db.rpc('admin_listar_comissoes')
   ].map(q => Promise.resolve(q).catch(e => ({ error:e }))));
   ADM.chamados = ch.error ? [] : (ch.data||[]);
   ADM.indicacoes = ind.error ? [] : (ind.data||[]);
   ADM.config = cfg.error ? [] : (cfg.data||[]);
+  ADM.comissoes = com.error ? [] : (com.data||[]);
   if(ch.error) console.warn('admin_listar_chamados:', ch.error.message||ch.error);
   ADM.loaded = true;
   return null;
@@ -8280,42 +8446,105 @@ async function admFecharChamado(){ admCloseModal('admChamadoOverlay'); await loa
 // ---- Admin: Indicações e configurações do programa ----
 function admCfg(k){ const r = ADM.config.find(c=>c.chave===k); return r ? r.valor : null; }
 function admRenderIndicacoes(el){
-  const rec = admCfg('recompensa_indicacao');
   const lanc = admCfg('lancamento_ativo');
-  const aPagar = ADM.indicacoes.filter(i=>i.status==='aprovada').reduce((s,i)=>s+(+i.valor||0),0);
-  const pago = ADM.indicacoes.filter(i=>i.status==='paga').reduce((s,i)=>s+(+i.valor||0),0);
+  const v = (k,d) => { const x = admCfg(k); return x==null ? d : x; };
+  const hoje = localDateStr();
+  const diaP = v('comissao_dia_pagamento',10);
+  const pagtoDe = c => dataPagtoComissao(c.data_pagamento, c.liberada_em, diaP);
+  const grupos = {};
+  ADM.comissoes.forEach(c => {
+    const g = grupos[c.indicador_id] = grupos[c.indicador_id] || { id:c.indicador_id, nome:c.indicador_nome, email:c.indicador_email, pix_nome:c.pix_nome, pix_tipo:c.pix_tipo, pix_chave:c.pix_chave, disp:0, aguard:0, pago:0 };
+    if(c.status==='pendente' && pagtoDe(c)<=hoje) g.disp += +c.valor;
+    else if(c.status==='pendente') g.aguard += +c.valor;
+    else if(c.status==='paga') g.pago += +c.valor;
+  });
+  const lista = Object.values(grupos).sort((a,b)=>b.disp-a.disp);
+  const totDisp = lista.reduce((s,g)=>s+g.disp,0), totAg = lista.reduce((s,g)=>s+g.aguard,0), totPago = lista.reduce((s,g)=>s+g.pago,0);
+  const sit = c => c.status==='paga' ? `<span class="ind-st paga">Paga ${admFmtDT(c.paga_em)}</span>` : c.status==='cancelada' ? '<span class="ind-st cancelada">Cancelada</span>' : pagtoDe(c)<=hoje ? '<span class="ind-st aprovada">Pagar agora</span>' : `<span class="ind-st">Pagar em ${fmtDateBR(pagtoDe(c))}</span>`;
   el.innerHTML = `
-    <div class="adm-cfg">
-      <div class="adm-cfg-i"><label class="form-label">Recompensa por indicação (R$)</label>
-        <div style="display:flex;gap:8px"><input type="number" step="0.01" min="0" class="form-input" id="admCfgRec" value="${rec!=null ? rec : ''}" placeholder="Ex.: 20,00"><button class="btn btn-primary" style="flex:none;padding:9px 16px" onclick="admSalvarConfig('recompensa_indicacao', parseFloat(document.getElementById('admCfgRec').value)||null)">Salvar</button></div>
-        <div class="adm-hint" style="margin:6px 0 0">Vale para indicações aprovadas a partir de agora.</div></div>
-      <div class="adm-cfg-i"><label class="form-label">Preço de lançamento</label>
-        <label class="adm-check" style="padding-top:4px"><input type="checkbox" id="admCfgLanc" ${lanc===true?'checked':''} onchange="admSalvarConfig('lancamento_ativo', this.checked)"> Ativo: novos cadastros garantem os preços atuais dos planos</label></div>
+    <div class="adm-cfg adm-cfg4">
+      <div class="adm-cfg-i"><label class="form-label">% plano mensal</label><input type="number" min="0" max="100" step="0.5" class="form-input" id="admCfgPm" value="${v('comissao_mensal_pct',20)}"></div>
+      <div class="adm-cfg-i"><label class="form-label">% plano anual</label><input type="number" min="0" max="100" step="0.5" class="form-input" id="admCfgPa" value="${v('comissao_anual_pct',30)}"></div>
+      <div class="adm-cfg-i"><label class="form-label">Comissão por (meses)</label><input type="number" min="1" max="120" step="1" class="form-input" id="admCfgMe" value="${v('comissao_meses',12)}"></div>
+      <div class="adm-cfg-i"><label class="form-label">Libera após (dias)</label><input type="number" min="0" max="60" step="1" class="form-input" id="admCfgCa" value="${v('comissao_carencia_dias',7)}"></div>
+      <div class="adm-cfg-i"><label class="form-label">Dia do pagamento</label><input type="number" min="1" max="28" step="1" class="form-input" id="admCfgDia" value="${diaP}"></div>
     </div>
-    <div class="adm-sub-head" style="margin-top:22px"><h3>Indicações</h3><span class="adm-muted">A pagar: <b>${fmtBRL(aPagar)}</b>. Já pago: <b>${fmtBRL(pago)}</b>.</span></div>
-    ${ADM.indicacoes.length ? `<div class="adm-table-wrap"><table class="data-table"><thead><tr><th>Quem indicou</th><th>Indicado</th><th>Data</th><th>Situação</th><th style="text-align:right">Valor</th><th></th></tr></thead><tbody>
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:10px 0 0">
+      <button class="btn btn-primary" style="flex:none;padding:9px 16px" onclick="admSalvarRegrasIndicacao()">Salvar regras</button>
+      <label class="adm-check" style="padding-top:0"><input type="checkbox" ${lanc===true?'checked':''} onchange="admSalvarConfig('lancamento_ativo', this.checked)"> Preço de lançamento ativo para novos cadastros</label>
+    </div>
+    <div class="adm-hint" style="margin:6px 0 0">Mudanças nas regras valem para os próximos pagamentos. Comissões já geradas não mudam.</div>
+
+    <div class="adm-sub-head" style="margin-top:26px"><h3>A pagar por pessoa</h3><span class="adm-muted">Pagar agora: <b style="color:var(--positive)">${fmtBRL(totDisp)}</b>. Próximos dias ${diaP}: <b>${fmtBRL(totAg)}</b>. Já pago: <b>${fmtBRL(totPago)}</b>.</span></div>
+    <div class="adm-hint" style="margin:-4px 0 10px">Todo dia ${diaP} são pagas as comissões de todas as compras dos indicados no mês anterior. Próximo pagamento: <b>${fmtDateBR(proximoDiaPagto(diaP))}</b>.</div>
+    ${lista.length ? `<div class="adm-table-wrap"><table class="data-table"><thead><tr><th>Indicador</th><th>Pix para pagamento</th><th style="text-align:right">Pagar agora</th><th style="text-align:right">Próximos</th><th style="text-align:right">Já pago</th><th></th></tr></thead><tbody>
+      ${lista.map(g=>`<tr>
+        <td class="adm-user-cell"><div class="nm">${admEsc(g.nome||'—')}</div><div class="em">${admEsc(g.email||'')}</div></td>
+        <td class="adm-user-cell">${g.pix_chave ? `<div class="nm">${admEsc(g.pix_nome)}</div><div class="em">${PIX_TIPO_LBL[g.pix_tipo]||''}: ${admEsc(formatarChave(g.pix_tipo, g.pix_chave))} <button class="adm-copy" data-copy="${admEsc(g.pix_chave)}" title="Copiar chave">Copiar</button></div>` : '<span class="adm-muted">Sem Pix cadastrado</span>'}</td>
+        <td class="adm-num" style="text-align:right;font-weight:700;color:var(--positive)">${fmtBRL(g.disp)}</td>
+        <td class="adm-num" style="text-align:right">${fmtBRL(g.aguard)}</td>
+        <td class="adm-num" style="text-align:right">${fmtBRL(g.pago)}</td>
+        <td style="text-align:right">${g.disp>0 && g.pix_chave ? `<button class="adm-row-btn" data-pagar="${g.id}">Marcar ${fmtBRL(g.disp)} como pago</button>` : ''}</td>
+      </tr>`).join('')}</tbody></table></div>` : '<div class="empty-note">Nenhuma comissão gerada ainda.</div>'}
+
+    <div class="adm-sub-head" style="margin-top:26px"><h3>Comissões</h3><span class="adm-muted">Geradas automaticamente quando você registra um pagamento de um indicado.</span></div>
+    ${ADM.comissoes.length ? `<div class="adm-table-wrap"><table class="data-table"><thead><tr><th>Pagamento</th><th>Indicador</th><th>Indicado</th><th>Plano</th><th style="text-align:right">Comissão</th><th>Situação</th><th></th></tr></thead><tbody>
+      ${ADM.comissoes.map(c=>`<tr>
+        <td class="adm-num">${fmtDateBR(c.data_pagamento)}</td>
+        <td class="adm-user-cell"><div class="nm">${admEsc(c.indicador_nome||'—')}</div><div class="em">${admEsc(c.indicador_email||'')}</div></td>
+        <td class="adm-user-cell"><div class="nm">${admEsc(c.indicado_nome||'—')}</div><div class="em">${admEsc(c.indicado_email||'')}</div></td>
+        <td>${c.periodicidade==='anual'?'Anual':'Mensal'}<div class="adm-muted" style="font-size:11px">${(+c.percentual).toLocaleString('pt-BR')}% de ${fmtBRL(+c.valor_pagamento)}</div></td>
+        <td class="adm-num" style="text-align:right;font-weight:600">${fmtBRL(+c.valor)}</td>
+        <td>${sit(c)}</td>
+        <td style="text-align:right">${c.status==='pendente' ? `<button class="adm-row-btn adm-danger" data-cancom="${c.id}">Cancelar</button>` : ''}</td>
+      </tr>`).join('')}</tbody></table></div>` : '<div class="empty-note">Nenhuma comissão ainda.</div>'}
+
+    <div class="adm-sub-head" style="margin-top:26px"><h3>Indicações</h3></div>
+    ${ADM.indicacoes.length ? `<div class="adm-table-wrap"><table class="data-table"><thead><tr><th>Quem indicou</th><th>Indicado</th><th>Data</th><th>Situação</th><th style="text-align:right">Total gerado</th><th></th></tr></thead><tbody>
     ${ADM.indicacoes.map(i=>`<tr>
       <td class="adm-user-cell"><div class="nm">${admEsc(i.indicador_nome||'—')}</div><div class="em">${admEsc(i.indicador_email||'conta removida')}</div></td>
       <td class="adm-user-cell"><div class="nm">${admEsc(i.indicado_nome||'—')}</div><div class="em">${admEsc(i.indicado_email||'')}</div></td>
       <td class="adm-num">${admFmtDT(i.created_at)}</td>
-      <td><span class="ind-st ${i.status}">${IND_STATUS_LBL[i.status]}</span></td>
-      <td class="adm-num" style="text-align:right">${i.valor!=null ? fmtBRL(+i.valor) : '—'}</td>
-      <td style="text-align:right;white-space:nowrap">
-        ${i.status==='aprovada' ? `<button class="adm-row-btn" data-ia="paga" data-id="${i.id}">Marcar como paga</button>` : ''}
-        ${i.status==='pendente' || i.status==='aprovada' ? `<button class="adm-row-btn adm-danger" data-ia="cancelada" data-id="${i.id}">Cancelar</button>` : ''}
-      </td></tr>`).join('')}</tbody></table></div>`
-    : '<div class="empty-note">Nenhuma indicação ainda.</div>'}
-    <div class="adm-hint" style="margin:12px 0 0">Uma indicação fica <b>pendente</b> até o primeiro pagamento registrado do indicado; aí vira <b>aprovada</b> com o valor da recompensa. Depois de pagar a pessoa (Pix, por exemplo), marque como paga.</div>`;
+      <td><span class="ind-st ${i.status==='ativa'?'paga':i.status==='cancelada'?'cancelada':''}">${IND_STATUS_LBL[i.status]||i.status}</span></td>
+      <td class="adm-num" style="text-align:right">${fmtBRL(+i.total_gerado||0)}</td>
+      <td style="text-align:right">${i.status!=='cancelada' ? `<button class="adm-row-btn adm-danger" data-ia="cancelada" data-id="${i.id}">Cancelar</button>` : ''}</td></tr>`).join('')}</tbody></table></div>`
+    : '<div class="empty-note">Nenhuma indicação ainda.</div>'}`;
   el.querySelectorAll('[data-ia]').forEach(b => b.onclick = () => admIndAcao(b.dataset.id, b.dataset.ia));
+  el.querySelectorAll('[data-pagar]').forEach(b => b.onclick = () => admPagarIndicador(b.dataset.pagar));
+  el.querySelectorAll('[data-cancom]').forEach(b => b.onclick = () => admCancelarComissao(b.dataset.cancom));
+  el.querySelectorAll('[data-copy]').forEach(b => b.onclick = async () => { try{ await navigator.clipboard.writeText(b.dataset.copy); showToast('Chave Pix copiada.'); }catch(e){} });
+}
+async function admSalvarRegrasIndicacao(){
+  const vals = [['comissao_mensal_pct','admCfgPm'],['comissao_anual_pct','admCfgPa'],['comissao_meses','admCfgMe'],['comissao_carencia_dias','admCfgCa'],['comissao_dia_pagamento','admCfgDia']]
+    .map(([k,id]) => ({ chave:k, valor: parseFloat(document.getElementById(id).value), updated_at: new Date().toISOString() }));
+  if(vals.some(v => isNaN(v.valor) || v.valor < 0)){ showToast('Revise os valores.','error'); return; }
+  const { error } = await db.from('plataforma_config').upsert(vals);
+  if(error){ showToast('Erro ao salvar: '+(error.message||''),'error'); return; }
+  showToast('Regras do programa salvas.'); await loadAdminData(); admRenderAll();
+}
+async function admPagarIndicador(id){
+  const c = ADM.comissoes.find(x=>x.indicador_id===id); if(!c) return;
+  const hoje = localDateStr();
+  const diaP = admCfg('comissao_dia_pagamento') ?? 10;
+  const total = ADM.comissoes.filter(x=>x.indicador_id===id && x.status==='pendente' && dataPagtoComissao(x.data_pagamento, x.liberada_em, diaP)<=hoje).reduce((s,x)=>s+(+x.valor),0);
+  if(!confirm(`Confirme o Pix antes de pagar:\n\nTitular: ${c.pix_nome}\n${PIX_TIPO_LBL[c.pix_tipo]}: ${formatarChave(c.pix_tipo, c.pix_chave)}\nValor: ${fmtBRL(total)}\n\nJá fez o Pix? Marcar como pago?`)) return;
+  const { data, error } = await db.rpc('admin_pagar_comissoes', { p_indicador: id });
+  if(error){ showToast('Erro: '+(error.message||''),'error'); return; }
+  showToast(`${fmtBRL(+data||0)} marcado como pago para ${c.pix_nome}.`);
+  await loadAdminData(); admRenderAll();
+}
+async function admCancelarComissao(id){
+  if(!confirm('Cancelar esta comissão? Use quando o pagamento foi estornado ou houve fraude.')) return;
+  const { error } = await db.from('indicacao_comissoes').update({ status:'cancelada' }).eq('id', id);
+  if(error){ showToast('Erro: '+(error.message||''),'error'); return; }
+  showToast('Comissão cancelada.'); await loadAdminData(); admRenderAll();
 }
 async function admIndAcao(id, acao){
-  const i = ADM.indicacoes.find(x=>x.id===id); if(!i) return;
-  if(acao==='cancelada' && !confirm('Cancelar esta indicação? A recompensa não será paga.')) return;
-  const upd = acao==='paga' ? { status:'paga', paga_em: new Date().toISOString() } : { status:'cancelada' };
-  const { error } = await db.from('indicacoes').update(upd).eq('id', id);
+  if(acao!=='cancelada') return;
+  if(!confirm('Cancelar esta indicação? Novos pagamentos dessa pessoa não geram comissão.')) return;
+  const { error } = await db.from('indicacoes').update({ status:'cancelada' }).eq('id', id);
   if(error){ showToast('Erro: '+(error.message||''),'error'); return; }
-  showToast(acao==='paga' ? 'Indicação marcada como paga.' : 'Indicação cancelada.');
-  await loadAdminData(); admRenderAll();
+  showToast('Indicação cancelada.'); await loadAdminData(); admRenderAll();
 }
 async function admSalvarConfig(chave, valor){
   const { error } = await db.from('plataforma_config').upsert({ chave, valor, updated_at: new Date().toISOString() });
