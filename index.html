@@ -847,6 +847,10 @@
   .adm-toolbar .btn{ flex:none; padding:9px 16px; font-size:13px; }
   .adm-table-wrap{ overflow-x:auto; }
   .adm-table-wrap table.data-table{ min-width:760px; }
+  .adm-th-sort{ cursor:pointer; user-select:none; white-space:nowrap; }
+  .adm-th-sort:hover{ color:var(--text-1); }
+  .adm-sort-ic{ margin-left:4px; font-size:9px; opacity:.45; }
+  .adm-th-sort.on .adm-sort-ic{ opacity:1; }
   .adm-user-cell .nm{ font-weight:600; color:var(--text-1); }
   .adm-user-cell .em{ font-size:11.5px; color:var(--text-3); margin-top:2px; }
   .adm-role{ font-size:9.5px; font-weight:700; padding:1px 6px; border-radius:4px; margin-left:6px; background:var(--accent-soft); color:var(--accent-2); vertical-align:1px; }
@@ -3735,6 +3739,7 @@ async function handleLogout() {
 function showAppScreen() {
   document.getElementById('loginOverlay').style.display='none';
   if(typeof checkAdminAccess==='function') checkAdminAccess();
+  registrarAcesso(true);
   document.getElementById('appRoot').style.display='flex';
   if(currentUser){
     const email = currentUser.email||'';
@@ -7101,11 +7106,27 @@ function saveInvestMov(){
   renderInvestimentos(); renderSidebar(); renderMetas();
 }
 
+// ===================== Último acesso =====================
+// Registra o acesso ao abrir o app, ao voltar para a aba e a cada 5 min de uso.
+let _ultimoRegistroAcesso = 0;
+async function registrarAcesso(forcar){
+  if(!currentUser) return;
+  const agora = Date.now();
+  if(!forcar && agora - _ultimoRegistroAcesso < 5*60*1000) return;
+  _ultimoRegistroAcesso = agora;
+  try{
+    const { error } = await db.rpc('registrar_acesso');
+    if(error) console.warn('registrar_acesso:', error.message);
+  }catch(e){ console.warn('registrar_acesso:', e); }
+}
+document.addEventListener('visibilitychange', () => { if(document.visibilityState==='visible') registrarAcesso(false); });
+setInterval(() => { if(document.visibilityState==='visible') registrarAcesso(false); }, 5*60*1000);
+
 // ===================== Admin da plataforma =====================
 // Requer o SQL admin-plataforma.sql (tabelas plataforma_admins, planos, assinaturas,
 // pagamentos_assinatura e RPCs admin_*). Sem o SQL, o menu simplesmente não aparece.
 const ADM = { isAdmin:false, isDono:false, loaded:false, usuarios:[], planos:[], pagamentos:[],
-  tab:'assinantes', filtro:'todos', busca:'', mes:null, chart:null, editUserId:null, editPlanoId:null, pagUserPreset:null };
+  tab:'assinantes', filtro:'todos', busca:'', sort:{key:'acesso',dir:-1}, mes:null, chart:null, editUserId:null, editPlanoId:null, pagUserPreset:null };
 const ADM_PERIODOS = { mensal:{label:'Mensal',meses:1}, trimestral:{label:'Trimestral',meses:3}, semestral:{label:'Semestral',meses:6}, anual:{label:'Anual',meses:12}, vitalicio:{label:'Vitalício',meses:null} };
 const ADM_STATUS_LBL = { ativa:'Ativa', teste:'Em teste', vencida:'Vencida', inativa:'Inativa', cancelada:'Cancelada', sem:'Sem assinatura' };
 let _admSignupClient = null;
@@ -7120,6 +7141,17 @@ function admAddMonths(dateStr, n){
 }
 function admAddDays(dateStr, n){ const d = parseDate(dateStr); d.setDate(d.getDate()+n); return localDateStr(d); }
 function admFmtDT(ts){ if(!ts) return '—'; const d = new Date(ts); return d.toLocaleDateString('pt-BR'); }
+function admFmtAcesso(ts){
+  if(!ts) return '<span class="adm-muted">Nunca</span>';
+  const d = new Date(ts), min = Math.floor((Date.now()-d.getTime())/60000);
+  const rel = min < 2 ? 'agora' : min < 60 ? `há ${min} min` : min < 1440 ? `há ${Math.floor(min/60)} h` : `há ${Math.floor(min/1440)} dia${Math.floor(min/1440)===1?'':'s'}`;
+  return `${d.toLocaleDateString('pt-BR')} ${d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}<div class="adm-muted" style="font-size:11px">${rel}</div>`;
+}
+function admSortRows(rows){
+  const {key, dir} = ADM.sort;
+  const val = u => key==='nome' ? admNome(u).toLowerCase() : key==='lanc' ? u.qtd_lancamentos : key==='acesso' ? (u.ultimo_acesso||'') : key==='expira' ? (u.expira_em||'') : (u.criado_em||'');
+  return [...rows].sort((a,b)=>{ const va=val(a), vb=val(b); return (va<vb?-1:va>vb?1:0)*dir; });
+}
 function admNome(u){ const n = [u.nome,u.sobrenome].filter(Boolean).join(' ').trim(); return n || (u.email||'').split('@')[0]; }
 function admPlano(id){ return ADM.planos.find(p=>p.id===id) || null; }
 function admStatus(u){
@@ -7145,6 +7177,7 @@ async function checkAdminAccess(){
 }
 
 async function loadAdminData(){
+  await registrarAcesso(true);
   const [u, p, g] = await Promise.all([
     db.rpc('admin_listar_usuarios'),
     db.from('planos').select('*').order('preco', {ascending:true}),
@@ -7263,9 +7296,10 @@ function admRenderUsersTable(){
   const q = ADM.busca.trim().toLowerCase();
   let rows = ADM.usuarios.filter(u => ADM.filtro==='todos' ? true : ADM.filtro==='ativos' ? admIsAtivo(u) : !admIsAtivo(u));
   if(q) rows = rows.filter(u => [admNome(u), u.email, u.telefone].some(v => (v||'').toLowerCase().includes(q)));
+  rows = admSortRows(rows);
   if(!rows.length){ box.innerHTML = `<div class="empty-note">${ADM.usuarios.length ? 'Nenhum assinante com esse filtro.' : 'Nenhum usuário cadastrado ainda.'}</div>`; return; }
   box.innerHTML = `<table class="data-table"><thead><tr>
-      <th>Assinante</th><th>Cadastro</th><th>Último acesso</th><th>Plano</th><th>Situação</th><th>Expira em</th><th style="text-align:right">Lançamentos</th><th></th>
+      ${[['nome','Assinante',''],['cadastro','Cadastro',''],['acesso','Último acesso','']].map(([k,l])=>admTh(k,l)).join('')}<th>Plano</th><th>Situação</th>${admTh('expira','Expira em')}${admTh('lanc','Lançamentos','right')}<th></th>
     </tr></thead><tbody>
     ${rows.map(u => {
       const p = admPlano(u.plano_id);
@@ -7273,7 +7307,7 @@ function admRenderUsersTable(){
       return `<tr>
         <td class="adm-user-cell"><div class="nm">${admEsc(admNome(u))}${role}</div><div class="em">${admEsc(u.email)}${u.email_confirmado?'':' (e-mail não confirmado)'}</div></td>
         <td class="adm-num">${admFmtDT(u.criado_em)}</td>
-        <td class="adm-num">${admFmtDT(u.ultimo_acesso)}</td>
+        <td class="adm-num">${admFmtAcesso(u.ultimo_acesso)}</td>
         <td>${p ? admEsc(p.nome) : '<span class="adm-muted">Sem plano</span>'}</td>
         <td>${admPill(admStatus(u))}</td>
         <td class="adm-num">${u.expira_em ? fmtDateBR(u.expira_em) : '<span class="adm-muted">—</span>'}</td>
@@ -7283,6 +7317,15 @@ function admRenderUsersTable(){
     }).join('')}
     </tbody></table>`;
   box.querySelectorAll('.adm-row-btn[data-uid]').forEach(b => b.onclick = () => admAbrirUsuario(b.dataset.uid));
+  box.querySelectorAll('th[data-sort]').forEach(th => th.onclick = () => {
+    const k = th.dataset.sort;
+    ADM.sort = ADM.sort.key===k ? {key:k, dir:-ADM.sort.dir} : {key:k, dir: k==='nome' ? 1 : -1};
+    admRenderUsersTable();
+  });
+}
+function admTh(key, label, align){
+  const on = ADM.sort.key===key;
+  return `<th data-sort="${key}" class="adm-th-sort ${on?'on':''}" style="${align==='right'?'text-align:right;':''}" title="Ordenar por ${label.toLowerCase()}">${label}<span class="adm-sort-ic">${on ? (ADM.sort.dir===1?'▲':'▼') : '↕'}</span></th>`;
 }
 
 function admPlanoOptions(selId, incluirSem=true){
@@ -7299,7 +7342,7 @@ function admAbrirUsuario(uid){
     <div>E-mail<b>${admEsc(u.email)}</b></div>
     <div>E-mail confirmado<b>${u.email_confirmado?'Sim':'Ainda não'}</b></div>
     <div>Cadastro<b>${admFmtDT(u.criado_em)}</b></div>
-    <div>Último acesso<b>${admFmtDT(u.ultimo_acesso)}</b></div>` : '';
+    <div>Último acesso<b>${u.ultimo_acesso ? new Date(u.ultimo_acesso).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}) : 'Nunca'}</b></div>` : '';
   document.getElementById('admUEmail').value = '';
   document.getElementById('admUSenha').value = '';
   document.getElementById('admUNome').value = u?.nome || '';
@@ -7311,16 +7354,7 @@ function admAbrirUsuario(uid){
   document.getElementById('admUExpira').value = u?.expira_em || '';
   document.getElementById('admUObs').value = u?.observacoes || '';
   document.getElementById('admUserSaveBtn').textContent = u ? 'Salvar alterações' : 'Criar usuário';
-  // Histórico de pagamentos do usuário
-  const pagBox = document.getElementById('admUserPags');
-  if(u){
-    const pags = ADM.pagamentos.filter(p=>p.user_id===u.user_id);
-    const tot = pags.reduce((s,p)=>s+p.valor,0);
-    pagBox.innerHTML = `<div class="adm-section-title" style="display:flex;justify-content:space-between;align-items:center">
-        <span>Pagamentos ${pags.length?`<span class="adm-muted" style="font-weight:500">(${fmtBRL(tot)} no total)</span>`:''}</span>
-        <button class="adm-row-btn" onclick="admAbrirPagamento('${u.user_id}')">+ Registrar pagamento</button></div>
-      <div class="adm-pag-list">${pags.length ? pags.slice(0,8).map(p=>`<div class="adm-pag-row"><span class="adm-num">${fmtDateBR(p.data_pagamento)} <span class="adm-muted">${admEsc(p.metodo||'')}</span></span><span>${admEsc(admPlano(p.plano_id)?.nome||'')}</span><b class="adm-num">${fmtBRL(p.valor)}</b></div>`).join('') : '<div class="adm-muted" style="padding:4px 0 8px">Nenhum pagamento registrado.</div>'}</div>`;
-  } else pagBox.innerHTML = '';
+  document.getElementById('admUserPags').innerHTML = '';
   admOpenModal('admUserOverlay');
 }
 
