@@ -3447,6 +3447,7 @@
     <div class="form-group"><label class="form-label">Observações</label><input type="text" class="form-input" id="admUObs" placeholder="Ex.: cliente indicado, desconto combinado"></div>
     <div id="admUserPags"></div>
     <div class="cmodal-actions">
+      <button class="btn btn-ghost adm-danger" id="admUserDelBtn" onclick="admExcluirUsuario()" style="display:none;flex:none" title="Mover para a Lixeira">Excluir assinante</button>
       <button class="btn btn-ghost" onclick="admCloseModal('admUserOverlay')">Cancelar</button>
       <button class="btn btn-primary" id="admUserSaveBtn" onclick="admSalvarUsuario()">Salvar</button>
     </div>
@@ -7126,7 +7127,7 @@ setInterval(() => { if(document.visibilityState==='visible') registrarAcesso(fal
 // Requer o SQL admin-plataforma.sql (tabelas plataforma_admins, planos, assinaturas,
 // pagamentos_assinatura e RPCs admin_*). Sem o SQL, o menu simplesmente não aparece.
 const ADM = { isAdmin:false, isDono:false, loaded:false, usuarios:[], planos:[], pagamentos:[],
-  tab:'assinantes', filtro:'todos', busca:'', sort:{key:'acesso',dir:-1}, mes:null, chart:null, editUserId:null, editPlanoId:null, pagUserPreset:null };
+  lixeira:[], tab:'assinantes', filtro:'todos', busca:'', sort:{key:'acesso',dir:-1}, mes:null, chart:null, editUserId:null, editPlanoId:null, pagUserPreset:null };
 const ADM_PERIODOS = { mensal:{label:'Mensal',meses:1}, trimestral:{label:'Trimestral',meses:3}, semestral:{label:'Semestral',meses:6}, anual:{label:'Anual',meses:12}, vitalicio:{label:'Vitalício',meses:null} };
 const ADM_STATUS_LBL = { ativa:'Ativa', teste:'Em teste', vencida:'Vencida', inativa:'Inativa', cancelada:'Cancelada', sem:'Sem assinatura' };
 let _admSignupClient = null;
@@ -7178,6 +7179,8 @@ async function checkAdminAccess(){
 
 async function loadAdminData(){
   await registrarAcesso(true);
+  // Apaga de vez quem passou dos 30 dias na lixeira
+  try{ const r = await db.rpc('admin_purgar_lixeira'); if(r.error) console.warn('purgar lixeira:', r.error.message); }catch(e){}
   const [u, p, g] = await Promise.all([
     db.rpc('admin_listar_usuarios'),
     db.from('planos').select('*').order('preco', {ascending:true}),
@@ -7187,7 +7190,9 @@ async function loadAdminData(){
     console.error('Admin load error:', u.error || p.error || g.error);
     return (u.error || p.error || g.error).message || 'erro';
   }
-  ADM.usuarios = (u.data||[]).map(r => ({...r, qtd_lancamentos: +r.qtd_lancamentos||0}));
+  const todos = (u.data||[]).map(r => ({...r, qtd_lancamentos: +r.qtd_lancamentos||0}));
+  ADM.usuarios = todos.filter(r => !r.excluido_em);
+  ADM.lixeira = todos.filter(r => r.excluido_em).sort((a,b)=> (a.purgar_em||'').localeCompare(b.purgar_em||''));
   ADM.planos = (p.data||[]).map(r => ({...r, preco:+r.preco||0, dias_teste:+r.dias_teste||0}));
   ADM.pagamentos = (g.data||[]).map(r => ({...r, valor:+r.valor||0}));
   ADM.loaded = true;
@@ -7257,7 +7262,7 @@ function admRenderKpis(){
 
 function admRenderTabs(){
   const el = document.getElementById('admTabs'); if(!el) return;
-  const tabs = [['assinantes','Assinantes',ADM.usuarios.length],['planos','Planos',ADM.planos.length],['pagamentos','Pagamentos',null],['admins','Administradores',ADM.usuarios.filter(u=>u.papel_admin).length]];
+  const tabs = [['assinantes','Assinantes',ADM.usuarios.length],['planos','Planos',ADM.planos.length],['pagamentos','Pagamentos',null],['admins','Administradores',ADM.usuarios.filter(u=>u.papel_admin).length],['lixeira','Lixeira',ADM.lixeira.length]];
   el.innerHTML = tabs.map(([k,l,n]) => `<button class="adm-tab ${ADM.tab===k?'active':''}" data-admtab="${k}">${l}${n!==null?`<span class="n">${n}</span>`:''}</button>`).join('');
   el.querySelectorAll('.adm-tab').forEach(b => b.onclick = () => { ADM.tab = b.dataset.admtab; admRenderTabs(); admRenderPanel(); });
 }
@@ -7268,6 +7273,7 @@ function admRenderPanel(){
   if(ADM.tab==='assinantes') admRenderAssinantes(el);
   else if(ADM.tab==='planos') admRenderPlanos(el);
   else if(ADM.tab==='pagamentos') admRenderPagamentos(el);
+  else if(ADM.tab==='lixeira') admRenderLixeira(el);
   else admRenderAdmins(el);
 }
 
@@ -7354,6 +7360,9 @@ function admAbrirUsuario(uid){
   document.getElementById('admUExpira').value = u?.expira_em || '';
   document.getElementById('admUObs').value = u?.observacoes || '';
   document.getElementById('admUserSaveBtn').textContent = u ? 'Salvar alterações' : 'Criar usuário';
+  const delBtn = document.getElementById('admUserDelBtn');
+  const podeExcluir = u && !u.papel_admin && u.user_id !== currentUser?.id;
+  delBtn.style.display = podeExcluir ? '' : 'none';
   document.getElementById('admUserPags').innerHTML = '';
   admOpenModal('admUserOverlay');
 }
@@ -7410,6 +7419,50 @@ async function admSalvarUsuario(){
     showToast(ADM.editUserId ? 'Assinante atualizado.' : 'Usuário criado. Ele vai receber o e-mail de confirmação.');
     await loadAdminData(); admRenderAll();
   } finally { btn.disabled = false; }
+}
+
+// ---- Excluir / Lixeira ----
+async function admExcluirUsuario(){
+  const u = ADM.usuarios.find(x=>x.user_id===ADM.editUserId); if(!u) return;
+  if(!confirm(`Excluir ${admNome(u)} (${u.email})?\n\nO acesso dessa pessoa é bloqueado na hora e ela vai para a Lixeira. Você tem 30 dias para restaurar; depois disso a conta e todos os dados dela são apagados de vez.`)) return;
+  const { error } = await db.rpc('admin_excluir_usuario', { p_user_id: u.user_id });
+  if(error){ showToast(error.message || 'Erro ao excluir.','error'); return; }
+  admCloseModal('admUserOverlay');
+  showToast(`${admNome(u)} foi para a Lixeira.`);
+  await loadAdminData(); admRenderAll();
+}
+function admDiasRestantes(ts){ if(!ts) return null; return Math.max(0, Math.ceil((new Date(ts).getTime() - Date.now())/86400000)); }
+function admRenderLixeira(el){
+  el.innerHTML = `
+    <div class="adm-sub-head"><h3>Lixeira</h3><span class="adm-muted">Assinantes excluídos ficam aqui por 30 dias, sem acesso ao app. Depois são apagados de vez.</span></div>
+    ${ADM.lixeira.length ? `<div class="adm-table-wrap"><table class="data-table"><thead><tr>
+      <th>Assinante</th><th>Excluído em</th><th>Apagado de vez em</th><th style="text-align:right">Lançamentos</th><th></th></tr></thead><tbody>
+      ${ADM.lixeira.map(u=>{ const d = admDiasRestantes(u.purgar_em); return `<tr>
+        <td class="adm-user-cell"><div class="nm">${admEsc(admNome(u))}</div><div class="em">${admEsc(u.email)}</div></td>
+        <td class="adm-num">${admFmtDT(u.excluido_em)}</td>
+        <td class="adm-num">${admFmtDT(u.purgar_em)}<div class="adm-muted" style="font-size:11px">${d===0?'hoje':d===1?'em 1 dia':`em ${d} dias`}</div></td>
+        <td class="adm-num" style="text-align:right">${u.qtd_lancamentos}</td>
+        <td style="text-align:right;white-space:nowrap">
+          <button class="adm-row-btn" data-rest="${u.user_id}">Restaurar</button>
+          <button class="adm-row-btn adm-danger" data-purge="${u.user_id}">Excluir agora</button>
+        </td></tr>`; }).join('')}
+      </tbody></table></div>` : '<div class="empty-note">A lixeira está vazia.</div>'}`;
+  el.querySelectorAll('[data-rest]').forEach(b => b.onclick = async () => {
+    const u = ADM.lixeira.find(x=>x.user_id===b.dataset.rest); if(!u) return;
+    const { error } = await db.rpc('admin_restaurar_usuario', { p_user_id: u.user_id });
+    if(error){ showToast(error.message || 'Erro ao restaurar.','error'); return; }
+    showToast(`${admNome(u)} foi restaurado e já pode entrar de novo.`);
+    await loadAdminData(); admRenderAll();
+  });
+  el.querySelectorAll('[data-purge]').forEach(b => b.onclick = async () => {
+    const u = ADM.lixeira.find(x=>x.user_id===b.dataset.purge); if(!u) return;
+    if(!confirm(`Apagar ${admNome(u)} (${u.email}) de vez, agora?\n\nA conta e todos os dados dela serão apagados e isso não pode ser desfeito.`)) return;
+    b.disabled = true;
+    const { error } = await db.rpc('admin_purgar_lixeira', { p_user_id: u.user_id });
+    if(error){ b.disabled = false; showToast(error.message || 'Erro ao apagar.','error'); return; }
+    showToast(`${admNome(u)} foi apagado definitivamente.`);
+    await loadAdminData(); admRenderAll();
+  });
 }
 
 // ---- Aba Planos ----
@@ -7486,7 +7539,7 @@ function admRenderPagamentos(el){
       <button class="btn btn-primary" style="flex:none;padding:9px 16px;font-size:13px" onclick="admAbrirPagamento(null)">+ Registrar pagamento</button></div>
     ${pagsMes.length ? `<div class="adm-table-wrap"><table class="data-table"><thead><tr>
       <th>Data</th><th>Assinante</th><th>Plano</th><th>Forma</th><th>Observação</th><th style="text-align:right">Valor</th><th></th></tr></thead><tbody>
-      ${pagsMes.map(p=>{ const u = ADM.usuarios.find(x=>x.user_id===p.user_id); return `<tr>
+      ${pagsMes.map(p=>{ const u = [...ADM.usuarios, ...ADM.lixeira].find(x=>x.user_id===p.user_id); return `<tr>
         <td class="adm-num">${fmtDateBR(p.data_pagamento)}</td>
         <td class="adm-user-cell"><div class="nm">${admEsc(u?admNome(u):'Usuário removido')}</div><div class="em">${admEsc(u?.email||'')}</div></td>
         <td>${admEsc(admPlano(p.plano_id)?.nome||'—')}</td>
