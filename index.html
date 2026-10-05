@@ -1026,6 +1026,9 @@
   .pix-card small{ font-size:12px; color:var(--text-2); }
   .ind-row{ display:flex; justify-content:space-between; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--border-soft); font-size:13px; }
   .ind-row span{ display:block; font-size:11.5px; color:var(--text-3); }
+  .ind-planos-cfg{ display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; background:var(--surface-2); border-radius:12px; padding:14px 16px; margin-bottom:12px; font-size:13px; }
+  .ind-planos-cfg > div{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .ind-plano-chip{ background:var(--surface); border:1px solid var(--border-soft); border-radius:8px; padding:4px 10px; font-size:12.5px; color:var(--text-2); }
   .adm-copy{ margin-left:6px; font-size:11px; font-weight:600; border:1px solid var(--border); background:var(--surface-2); color:var(--accent-2); border-radius:6px; padding:1px 7px; cursor:pointer; }
   .adm-cfg.adm-cfg4{ grid-template-columns:repeat(5,minmax(0,1fr)); }
   @media (max-width:900px){ .adm-cfg.adm-cfg4{ grid-template-columns:1fr 1fr; } .ind-grid, .ind-rules{ grid-template-columns:1fr; } #view-indique .kpi-grid{ grid-template-columns:1fr 1fr !important; } }
@@ -3686,9 +3689,9 @@
     <div class="form-group"><label class="form-label">Nome do plano</label><input type="text" class="form-input" id="admPNome" placeholder="Ex.: Duna Mensal"></div>
     <div class="form-group"><label class="form-label">Descrição <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label><input type="text" class="form-input" id="admPDesc" placeholder="O que está incluído"></div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Preço (R$)</label><input type="number" step="0.01" min="0" class="form-input" id="admPPreco" placeholder="0,00"></div>
+      <div class="form-group"><label class="form-label">Preço (R$)</label><input type="number" step="0.01" min="0" class="form-input" id="admPPreco" placeholder="0,00" oninput="admPreviaComissao()"></div>
       <div class="form-group"><label class="form-label">Cobrança</label>
-        <select class="form-select" id="admPPeriodo">
+        <select class="form-select" id="admPPeriodo" onchange="admPreviaComissao()">
           <option value="mensal">Mensal</option><option value="trimestral">Trimestral</option>
           <option value="semestral">Semestral</option><option value="anual">Anual</option>
           <option value="vitalicio">Vitalício (pagamento único)</option>
@@ -3701,6 +3704,12 @@
         <label class="adm-check"><input type="checkbox" id="admPAtivo" checked> Plano ativo</label>
       </div>
     </div>
+    <div class="adm-section-title">Indicação</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Comissão para quem indicou (%)</label><input type="number" min="0" max="100" step="0.5" class="form-input" id="admPComPct" placeholder="0" oninput="admPreviaComissao()"></div>
+      <div class="form-group"><label class="form-label">Pagar comissão por (meses)</label><input type="number" min="1" max="120" step="1" class="form-input" id="admPComMeses" placeholder="12" oninput="admPreviaComissao()"></div>
+    </div>
+    <div class="adm-hint" id="admPComPrev" style="margin:-4px 0 4px"></div>
     <div class="cmodal-actions">
       <button class="btn btn-ghost adm-danger" id="admPlanoDelBtn" onclick="admExcluirPlano()" style="display:none;flex:none">Excluir</button>
       <button class="btn btn-ghost" onclick="admCloseModal('admPlanoOverlay')">Cancelar</button>
@@ -7800,14 +7809,25 @@ async function carregarCfgIndicacao(){
   const g = k => { const r = (data||[]).find(x=>x.chave===k); return r && r.valor!=null ? +r.valor : null; };
   IND.cfg = { mensal: g('comissao_mensal_pct') ?? 20, anual: g('comissao_anual_pct') ?? 30, meses: g('comissao_meses') ?? 12, carencia: g('comissao_carencia_dias') ?? 7, dia: g('comissao_dia_pagamento') ?? 10 };
 }
+function planosComComissao(){ return (ASS?.planos||[]).filter(p => +p.comissao_pct > 0); }
+function nPagamentosJanela(periodicidade, meses){
+  const m = { mensal:1, trimestral:3, semestral:6, anual:12 }[periodicidade]; if(!m) return 1;
+  return Math.max(1, Math.ceil((meses||12)/m));
+}
+function resumoGanhoIndicacao(){
+  const pl = planosComComissao();
+  if(!pl.length) return 'Ganhe por cada amigo que assinar o Duna.';
+  return 'Ganhe ' + pl.map(p => `${(+p.comissao_pct).toLocaleString('pt-BR')}% no ${p.nome}`).join(' ou ') + ' de quem você indicar.';
+}
 function regrasIndicacaoHTML(){
-  const c = IND.cfg, pl = ASS?.planos || [];
-  const men = pl.find(p=>p.periodicidade==='mensal'), anu = pl.find(p=>p.periodicidade==='anual');
-  const exM = men ? +men.preco * c.mensal/100 : null, exA = anu ? +anu.preco * c.anual/100 : null;
-  return `<div class="ind-rules">
-    <div class="ind-rule"><b>${c.mensal}%</b><span>de cada mensalidade do seu indicado, por até ${c.meses} meses${exM!=null ? `<em>Ex.: ${fmtBRL(exM)} por mês, até ${fmtBRL(exM*c.meses)}</em>` : ''}</span></div>
-    <div class="ind-rule"><b>${c.anual}%</b><span>do plano anual do seu indicado, no primeiro ano${exA!=null ? `<em>Ex.: ${fmtBRL(exA)} de uma vez</em>` : ''}</span></div>
-  </div>
+  const c = IND.cfg, pl = planosComComissao();
+  const cards = pl.map(p => {
+    const pct = +p.comissao_pct, porPag = +p.preco * pct / 100, n = nPagamentosJanela(p.periodicidade, p.comissao_meses);
+    const quando = n===1 ? (p.periodicidade==='anual' ? 'no primeiro ano' : 'no primeiro pagamento') : `de cada pagamento, por até ${p.comissao_meses||12} meses`;
+    const ex = n===1 ? `Ex.: ${fmtBRL(porPag)} de uma vez` : `Ex.: ${fmtBRL(porPag)} por pagamento, até ${fmtBRL(porPag*n)}`;
+    return `<div class="ind-rule"><b>${pct.toLocaleString('pt-BR')}%</b><span>do ${admEsc(p.nome)}, ${quando}<em>${ex}</em></span></div>`;
+  }).join('');
+  return `${cards ? `<div class="ind-rules">${cards}</div>` : ''}
   <ul class="ind-list">
     <li>Seu amigo testa 7 dias grátis. A comissão nasce a cada pagamento dele.</li>
     <li>Pagamento <b>todo dia ${c.dia}</b>, via Pix, de todas as compras dos seus indicados no mês anterior. Ex.: compra em 30/09, você recebe em ${String(c.dia).padStart(2,'0')}/10.</li>
@@ -7894,7 +7914,7 @@ async function renderIndiquePainel(box){
     <div class="ind-hero panel">
       <div data-mascot="free" data-size="110"></div>
       <div style="flex:1;min-width:240px">
-        <div class="ind-hero-t">Ganhe ${IND.cfg.mensal}% das mensalidades ou ${IND.cfg.anual}% do plano anual de quem você indicar.</div>
+        <div class="ind-hero-t">${admEsc(resumoGanhoIndicacao())}</div>
         <div class="ind-hero-s">Compartilhe seu link. Cada pagamento do seu amigo vira comissão para você, paga todo dia ${IND.cfg.dia} via Pix.</div>
         <div class="ind-link">
           <input type="text" class="form-input" id="indLink" readonly value="${admEsc(link)}" aria-label="Seu link de indicação">
@@ -8114,7 +8134,7 @@ async function loadAdminData(){
   const todos = (u.data||[]).map(r => ({...r, qtd_lancamentos: +r.qtd_lancamentos||0}));
   ADM.usuarios = todos.filter(r => !r.excluido_em);
   ADM.lixeira = todos.filter(r => r.excluido_em).sort((a,b)=> (a.purgar_em||'').localeCompare(b.purgar_em||''));
-  ADM.planos = (p.data||[]).map(r => ({...r, preco:+r.preco||0, dias_teste:+r.dias_teste||0}));
+  ADM.planos = (p.data||[]).map(r => ({...r, preco:+r.preco||0, dias_teste:+r.dias_teste||0, comissao_pct: r.comissao_pct!=null ? +r.comissao_pct : null}));
   ADM.pagamentos = (g.data||[]).map(r => ({...r, valor:+r.valor||0}));
   // Suporte, indicações e configurações (não impedem o resto de carregar)
   const [ch, ind, cfg, com] = await Promise.all([
@@ -8462,18 +8482,19 @@ function admRenderIndicacoes(el){
   const totDisp = lista.reduce((s,g)=>s+g.disp,0), totAg = lista.reduce((s,g)=>s+g.aguard,0), totPago = lista.reduce((s,g)=>s+g.pago,0);
   const sit = c => c.status==='paga' ? `<span class="ind-st paga">Paga ${admFmtDT(c.paga_em)}</span>` : c.status==='cancelada' ? '<span class="ind-st cancelada">Cancelada</span>' : pagtoDe(c)<=hoje ? '<span class="ind-st aprovada">Pagar agora</span>' : `<span class="ind-st">Pagar em ${fmtDateBR(pagtoDe(c))}</span>`;
   el.innerHTML = `
-    <div class="adm-cfg adm-cfg4">
-      <div class="adm-cfg-i"><label class="form-label">% plano mensal</label><input type="number" min="0" max="100" step="0.5" class="form-input" id="admCfgPm" value="${v('comissao_mensal_pct',20)}"></div>
-      <div class="adm-cfg-i"><label class="form-label">% plano anual</label><input type="number" min="0" max="100" step="0.5" class="form-input" id="admCfgPa" value="${v('comissao_anual_pct',30)}"></div>
-      <div class="adm-cfg-i"><label class="form-label">Comissão por (meses)</label><input type="number" min="1" max="120" step="1" class="form-input" id="admCfgMe" value="${v('comissao_meses',12)}"></div>
-      <div class="adm-cfg-i"><label class="form-label">Libera após (dias)</label><input type="number" min="0" max="60" step="1" class="form-input" id="admCfgCa" value="${v('comissao_carencia_dias',7)}"></div>
-      <div class="adm-cfg-i"><label class="form-label">Dia do pagamento</label><input type="number" min="1" max="28" step="1" class="form-input" id="admCfgDia" value="${diaP}"></div>
+    <div class="ind-planos-cfg">
+      <div><b>Comissão por plano</b>${ADM.planos.length ? ADM.planos.map(p=>`<span class="ind-plano-chip">${admEsc(p.nome)}: <b>${textoComissaoPlano(p)}</b></span>`).join('') : '<span class="adm-muted">Nenhum plano cadastrado.</span>'}</div>
+      <button class="btn btn-ghost" style="flex:none;padding:8px 14px;font-size:12.5px" onclick="ADM.tab='planos';admRenderTabs();admRenderPanel()">Editar nos planos</button>
+    </div>
+    <div class="adm-cfg">
+      <div class="adm-cfg-i"><label class="form-label">Dia do pagamento das comissões</label><input type="number" min="1" max="28" step="1" class="form-input" id="admCfgDia" value="${diaP}"></div>
+      <div class="adm-cfg-i"><label class="form-label">Prazo de arrependimento (dias)</label><input type="number" min="0" max="60" step="1" class="form-input" id="admCfgCa" value="${v('comissao_carencia_dias',7)}"></div>
     </div>
     <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:10px 0 0">
       <button class="btn btn-primary" style="flex:none;padding:9px 16px" onclick="admSalvarRegrasIndicacao()">Salvar regras</button>
       <label class="adm-check" style="padding-top:0"><input type="checkbox" ${lanc===true?'checked':''} onchange="admSalvarConfig('lancamento_ativo', this.checked)"> Preço de lançamento ativo para novos cadastros</label>
     </div>
-    <div class="adm-hint" style="margin:6px 0 0">Mudanças nas regras valem para os próximos pagamentos. Comissões já geradas não mudam.</div>
+    <div class="adm-hint" style="margin:6px 0 0">Mudanças valem para os próximos pagamentos. Comissões já geradas não mudam.</div>
 
     <div class="adm-sub-head" style="margin-top:26px"><h3>A pagar por pessoa</h3><span class="adm-muted">Pagar agora: <b style="color:var(--positive)">${fmtBRL(totDisp)}</b>. Próximos dias ${diaP}: <b>${fmtBRL(totAg)}</b>. Já pago: <b>${fmtBRL(totPago)}</b>.</span></div>
     <div class="adm-hint" style="margin:-4px 0 10px">Todo dia ${diaP} são pagas as comissões de todas as compras dos indicados no mês anterior. Próximo pagamento: <b>${fmtDateBR(proximoDiaPagto(diaP))}</b>.</div>
@@ -8515,7 +8536,7 @@ function admRenderIndicacoes(el){
   el.querySelectorAll('[data-copy]').forEach(b => b.onclick = async () => { try{ await navigator.clipboard.writeText(b.dataset.copy); showToast('Chave Pix copiada.'); }catch(e){} });
 }
 async function admSalvarRegrasIndicacao(){
-  const vals = [['comissao_mensal_pct','admCfgPm'],['comissao_anual_pct','admCfgPa'],['comissao_meses','admCfgMe'],['comissao_carencia_dias','admCfgCa'],['comissao_dia_pagamento','admCfgDia']]
+  const vals = [['comissao_carencia_dias','admCfgCa'],['comissao_dia_pagamento','admCfgDia']]
     .map(([k,id]) => ({ chave:k, valor: parseFloat(document.getElementById(id).value), updated_at: new Date().toISOString() }));
   if(vals.some(v => isNaN(v.valor) || v.valor < 0)){ showToast('Revise os valores.','error'); return; }
   const { error } = await db.from('plataforma_config').upsert(vals);
@@ -8604,19 +8625,42 @@ function admRenderPlanos(el){
   el.innerHTML = `
     <div class="adm-sub-head"><h3>Planos à venda</h3><button class="btn btn-primary" style="flex:none;padding:9px 16px;font-size:13px" onclick="admAbrirPlano(null)">+ Novo plano</button></div>
     ${ADM.planos.length ? `<div class="adm-table-wrap"><table class="data-table"><thead><tr>
-      <th>Plano</th><th style="text-align:right">Preço</th><th>Cobrança</th><th>Teste grátis</th><th style="text-align:right">Assinantes ativos</th><th>Situação</th><th></th>
+      <th>Plano</th><th style="text-align:right">Preço</th><th>Cobrança</th><th>Teste grátis</th><th>Indicação</th><th style="text-align:right">Assinantes ativos</th><th>Situação</th><th></th>
     </tr></thead><tbody>
     ${ADM.planos.map(p=>`<tr>
       <td class="adm-user-cell"><div class="nm">${admEsc(p.nome)}</div>${p.descricao?`<div class="em">${admEsc(p.descricao)}</div>`:''}</td>
       <td class="adm-num" style="text-align:right">${fmtBRL(p.preco)}</td>
       <td>${ADM_PERIODOS[p.periodicidade]?.label||p.periodicidade}</td>
       <td>${p.dias_teste ? p.dias_teste+' dias' : '<span class="adm-muted">Não</span>'}</td>
+      <td>${+p.comissao_pct ? textoComissaoPlano(p) : '<span class="adm-muted">Sem comissão</span>'}</td>
       <td class="adm-num" style="text-align:right">${ativosPorPlano[p.id]||0}</td>
       <td>${p.ativo ? '<span class="adm-pill ativa">À venda</span>' : '<span class="adm-pill oculto">Oculto</span>'}</td>
       <td style="text-align:right"><button class="adm-row-btn" data-pid="${p.id}">Editar</button></td>
     </tr>`).join('')}
     </tbody></table></div>` : '<div class="empty-note">Nenhum plano ainda. Crie o primeiro para começar a vincular assinantes.</div>'}`;
   el.querySelectorAll('.adm-row-btn[data-pid]').forEach(b => b.onclick = () => admAbrirPlano(b.dataset.pid));
+}
+// Quantos pagamentos um plano tem dentro da janela de comissão
+function pagamentosNaJanela(periodicidade, meses){
+  const m = ADM_PERIODOS[periodicidade]?.meses; if(!m) return 1;
+  return Math.max(1, Math.ceil((meses||12) / m));
+}
+function textoComissaoPlano(p){
+  const pct = +p.comissao_pct || 0; if(!pct) return 'Sem comissão';
+  const n = pagamentosNaJanela(p.periodicidade, p.comissao_meses);
+  return n===1 ? `${pct.toLocaleString('pt-BR')}% do 1º pagamento` : `${pct.toLocaleString('pt-BR')}% por ${p.comissao_meses||12} meses`;
+}
+function admPreviaComissao(){
+  const el = document.getElementById('admPComPrev'); if(!el) return;
+  const preco = parseFloat(document.getElementById('admPPreco').value) || 0;
+  const per = document.getElementById('admPPeriodo').value;
+  const pct = parseFloat(document.getElementById('admPComPct').value) || 0;
+  const meses = parseInt(document.getElementById('admPComMeses').value) || 12;
+  if(!pct){ el.textContent = 'Sem comissão: indicações deste plano não geram ganho para quem indicou.'; return; }
+  const porPag = preco * pct / 100, n = pagamentosNaJanela(per, meses);
+  el.innerHTML = n===1
+    ? `Quem indicou ganha <b>${fmtBRL(porPag)}</b> no primeiro pagamento deste plano.`
+    : `Quem indicou ganha <b>${fmtBRL(porPag)}</b> por pagamento, em até ${n} pagamentos: até <b>${fmtBRL(porPag*n)}</b> por indicado.`;
 }
 function admAbrirPlano(pid){
   const p = pid ? admPlano(pid) : null;
@@ -8628,7 +8672,10 @@ function admAbrirPlano(pid){
   document.getElementById('admPPeriodo').value = p?.periodicidade || 'mensal';
   document.getElementById('admPTeste').value = p ? p.dias_teste : 0;
   document.getElementById('admPAtivo').checked = p ? !!p.ativo : true;
+  document.getElementById('admPComPct').value = p && p.comissao_pct!=null ? +p.comissao_pct : '';
+  document.getElementById('admPComMeses').value = p && p.comissao_meses!=null ? p.comissao_meses : 12;
   document.getElementById('admPlanoDelBtn').style.display = p ? '' : 'none';
+  admPreviaComissao();
   admOpenModal('admPlanoOverlay');
 }
 async function admSalvarPlano(){
@@ -8638,9 +8685,12 @@ async function admSalvarPlano(){
     preco: parseFloat(document.getElementById('admPPreco').value) || 0,
     periodicidade: document.getElementById('admPPeriodo').value,
     dias_teste: parseInt(document.getElementById('admPTeste').value) || 0,
-    ativo: document.getElementById('admPAtivo').checked
+    ativo: document.getElementById('admPAtivo').checked,
+    comissao_pct: parseFloat(document.getElementById('admPComPct').value) || 0,
+    comissao_meses: parseInt(document.getElementById('admPComMeses').value) || 12
   };
   if(!row.nome){ showToast('Informe o nome do plano.','error'); return; }
+  if(row.comissao_pct < 0 || row.comissao_pct > 100){ showToast('A comissão deve ficar entre 0% e 100%.','error'); return; }
   const q = ADM.editPlanoId ? db.from('planos').update(row).eq('id', ADM.editPlanoId) : db.from('planos').insert(row);
   const { error } = await q;
   if(error){ console.error(error); showToast('Erro ao salvar plano: '+(error.message||''),'error'); return; }
