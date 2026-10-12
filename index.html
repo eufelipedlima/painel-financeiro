@@ -889,6 +889,56 @@
   .adm-pag-row{ display:flex; justify-content:space-between; gap:10px; padding:7px 0; border-bottom:1px solid var(--border-soft); font-size:12.5px; }
   @media (max-width:640px){ .adm-user-info{ grid-template-columns:1fr; } .adm-month-wrap .form-input{ min-width:0; } }
 
+  /* ---------- Celular: sem zoom automático e sem a tela "escapar" para os lados ---------- */
+  @media (max-width: 820px){
+    html, body{ overflow-x:hidden; max-width:100%; }
+    /* iPhone dá zoom ao tocar em campos com letra menor que 16px */
+    input, select, textarea, .form-input, .form-select, .login-input{ font-size:16px !important; }
+    /* evita zoom com toque duplo em botões e itens do menu */
+    button, a, .nav-item, .mob-nav-item, .chip, .tab, .st-btn{ touch-action:manipulation; }
+    /* nada mais largo que a tela */
+    canvas{ max-width:100% !important; }
+    #view-transacoes .table-toolbar{ flex-wrap:wrap !important; }
+    #view-transacoes .table-toolbar .search-box{ flex:1 1 100%; min-width:0; }
+    #view-transacoes .table-toolbar .mob-filter-wrap{ margin-left:auto; }
+    .subtab-bar{ max-width:100%; overflow-x:auto; flex-wrap:nowrap; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+    .subtab-bar::-webkit-scrollbar{ display:none; }
+    .subtab-bar > *{ flex-shrink:0; }
+  }
+
+  /* ---------- Carrossel de cartões ---------- */
+  .cc-cards-wrap{ position:relative; }
+  .cc-cards-wrap::before, .cc-cards-wrap::after{ content:''; position:absolute; top:0; bottom:4px; width:28px; pointer-events:none; opacity:0; transition:opacity .2s; z-index:2; }
+  .cc-cards-wrap::before{ left:0; background:linear-gradient(90deg, var(--bg), transparent); }
+  .cc-cards-wrap::after{ right:0; background:linear-gradient(270deg, var(--bg), transparent); }
+  .cc-cards-wrap.fade-l::before, .cc-cards-wrap.fade-r::after{ opacity:1; }
+  .cc-cards-wrap .cc-cards-row{ margin-bottom:10px; scroll-snap-type:x mandatory; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+  .cc-cards-wrap .cc-cards-row::-webkit-scrollbar{ display:none; }
+  .cc-cards-row > *{ scroll-snap-align:start; }
+  .cc-cards-head{ justify-content:space-between; align-items:center; margin-bottom:10px; font-size:12px; font-weight:700; color:var(--text-2); text-transform:uppercase; letter-spacing:.6px; }
+  .cc-swipe-hint{ display:inline-flex; align-items:center; gap:5px; font-weight:600; text-transform:none; letter-spacing:0; color:var(--accent-2); transition:opacity .25s; }
+  .cc-dots{ display:flex; justify-content:center; gap:6px; margin:0 0 18px; }
+  .cc-dots:empty{ display:none; }
+  .cc-dots button{ width:7px; height:7px; border-radius:4px; border:none; padding:0; background:var(--border); cursor:pointer; transition:width .2s, background .2s; }
+  .cc-dots button.on{ width:20px; background:var(--accent); }
+
+  /* ---------- Topo das páginas no celular: título, descrição e mês em linhas separadas ---------- */
+  @media (max-width: 820px){
+    .topbar{ flex-direction:column; align-items:stretch !important; gap:12px !important; margin-bottom:18px !important; }
+    .topbar > div:first-child{ flex:none !important; }
+    .page-title{ font-size:22px; line-height:1.2; }
+    .page-sub{ font-size:12.5px; margin-top:2px; }
+    .topbar .month-picker, .topbar .month-ctl{ width:100%; }
+    .topbar .month-ctl{ display:flex; align-items:center; gap:8px; }
+    .topbar .month-ctl > div{ flex:1; }
+    .topbar .mp-btn{ width:100%; justify-content:center; min-height:40px; }
+    .topbar .month-nav-arrow{ width:40px !important; height:40px !important; flex:none; }
+    .topbar .adm-top-actions{ width:100%; }
+    /* cartões: o próximo aparece pela metade, mostrando que dá para deslizar */
+    .cc-card-visual{ width:78vw !important; max-width:300px; }
+    .cc-card-todos{ width:58vw !important; max-width:220px; }
+  }
+
   /* ---------- Mascote, assinatura, suporte, indicação ---------- */
   .brand-mark.mascot, .login-logo.mascot{ background:none !important; padding:0; }
   .brand-mark.mascot svg{ width:32px; height:32px; display:block; }
@@ -2924,7 +2974,12 @@
       </div>
 
       <!-- Card visuals row -->
-      <div id="ccCardsRow" class="cc-cards-row"></div>
+      <div class="cc-cards-head" id="ccCardsHead" style="display:none">
+        <span>Seus cartões</span>
+        <span class="cc-swipe-hint" id="ccSwipeHint">Deslize para ver os outros <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+      </div>
+      <div class="cc-cards-wrap"><div id="ccCardsRow" class="cc-cards-row"></div></div>
+      <div class="cc-dots" id="ccCardsDots"></div>
 
       <!-- KPI row -->
       <div class="cc-kpi-row" id="ccKpiRow"></div>
@@ -4087,6 +4142,7 @@ async function ensureDefaults(uid) {
         {user_id:uid, nome:'Moradia',                tipo:'Despesa', limite_mensal:0},
         {user_id:uid, nome:'Outras Despesas',        tipo:'Despesa', limite_mensal:0},
         {user_id:uid, nome:'Pets',                   tipo:'Despesa', limite_mensal:0},
+        {user_id:uid, nome:'Presentes e Doações',    tipo:'Despesa', limite_mensal:0},
         {user_id:uid, nome:'Saúde',                  tipo:'Despesa', limite_mensal:0},
         {user_id:uid, nome:'Serviços / Assinaturas', tipo:'Despesa', limite_mensal:0},
         {user_id:uid, nome:'Transporte',             tipo:'Despesa', limite_mensal:0},
@@ -4121,6 +4177,7 @@ async function ensureDefaults(uid) {
         {user_id:uid, categoria_nome:'Compras Pessoais', nome:'Acessórios'},
         {user_id:uid, categoria_nome:'Compras Pessoais', nome:'Calçados'},
         {user_id:uid, categoria_nome:'Compras Pessoais', nome:'Cosméticos'},
+        {user_id:uid, categoria_nome:'Compras Pessoais', nome:'Eletrônicos'},
         {user_id:uid, categoria_nome:'Compras Pessoais', nome:'Higiene Pessoal'},
         {user_id:uid, categoria_nome:'Compras Pessoais', nome:'Outras Compras'},
         {user_id:uid, categoria_nome:'Compras Pessoais', nome:'Roupas'},
@@ -4156,6 +4213,11 @@ async function ensureDefaults(uid) {
         {user_id:uid, categoria_nome:'Pets', nome:'Petshop e Gerais'},
         {user_id:uid, categoria_nome:'Pets', nome:'Ração'},
         {user_id:uid, categoria_nome:'Pets', nome:'Veterinário'},
+        // Presentes e Doações
+        {user_id:uid, categoria_nome:'Presentes e Doações', nome:'Contribuições e Ofertas'},
+        {user_id:uid, categoria_nome:'Presentes e Doações', nome:'Datas Comemorativas'},
+        {user_id:uid, categoria_nome:'Presentes e Doações', nome:'Doações'},
+        {user_id:uid, categoria_nome:'Presentes e Doações', nome:'Presentes'},
         // Saúde
         {user_id:uid, categoria_nome:'Saúde', nome:'Academia'},
         {user_id:uid, categoria_nome:'Saúde', nome:'Dentista'},
@@ -4630,6 +4692,34 @@ function refreshMonthPickers(){
 // ===================== Data helpers =====================
 function inMonth(dateStr, key){ return monthKey(parseDate(dateStr)) === key; }
 function getMonthTransacoes(key){ return DATA.transacoes.filter(t => inMonth(t.data, key)); }
+// Carrossel de cartões: bolinhas, dica de deslizar e cartão selecionado visível
+function setupCardsCarousel(row){
+  const dots = document.getElementById('ccCardsDots'), head = document.getElementById('ccCardsHead'), wrap = row.parentElement;
+  const itens = [...row.querySelectorAll('.cc-card-visual, .cc-card-todos')];
+  const rola = row.scrollWidth > row.clientWidth + 4;
+  if(head) head.style.display = rola ? 'flex' : 'none';
+  if(!dots) return;
+  if(!rola || itens.length < 2){ dots.innerHTML = ''; wrap?.classList.remove('fade-r','fade-l'); return; }
+  dots.innerHTML = itens.map((el,i)=>`<button type="button" aria-label="Ir para ${el.dataset.card==='Todos'?'visão geral':el.dataset.card}" data-i="${i}"></button>`).join('');
+  const marcar = () => {
+    const centro = row.scrollLeft + row.clientWidth/2;
+    let atual = 0, menor = Infinity;
+    itens.forEach((el,i)=>{ const d = Math.abs(el.offsetLeft + el.offsetWidth/2 - row.offsetLeft - centro); if(d < menor){ menor = d; atual = i; } });
+    if(row.scrollLeft <= 4) atual = 0;
+    if(row.scrollLeft + row.clientWidth >= row.scrollWidth - 4) atual = itens.length - 1;
+    dots.querySelectorAll('button').forEach((b,i)=>b.classList.toggle('on', i===atual));
+    wrap?.classList.toggle('fade-l', row.scrollLeft > 4);
+    wrap?.classList.toggle('fade-r', row.scrollLeft + row.clientWidth < row.scrollWidth - 4);
+    const hint = document.getElementById('ccSwipeHint'); if(hint) hint.style.opacity = row.scrollLeft > 4 ? '0' : '1';
+  };
+  dots.querySelectorAll('button').forEach(b => b.onclick = () => {
+    const el = itens[+b.dataset.i]; row.scrollTo({ left: el.offsetLeft - row.offsetLeft - 4, behavior:'smooth' });
+  });
+  row.onscroll = () => { cancelAnimationFrame(row._raf); row._raf = requestAnimationFrame(marcar); };
+  const sel = row.querySelector('.selected');
+  if(sel && sel.dataset.card !== 'Todos') row.scrollLeft = sel.offsetLeft - row.offsetLeft - 4;
+  marcar();
+}
 function getCartaoFaturaMonth(compra){
   // The invoice month = when you PAY (vencimento month).
   // 1. Find which closing date covers the purchase.
@@ -5371,6 +5461,7 @@ function mobileNavigate(view){
   currentView = view;
   const viewEl = document.getElementById('view-'+view);
   if(viewEl) viewEl.classList.add('active');
+  document.querySelectorAll('.mob-nav-item[data-view]').forEach(n => n.classList.toggle('active', n.dataset.view === view));
   try{ renderView(view); } catch(e){ console.error('renderView error:', e); }
 }
 
@@ -5558,6 +5649,7 @@ function renderCartaoPage(key){
         el.onclick=()=>{ cardFilter = el.dataset.card; renderCartaoPage(currentMonth); };
       });
     }
+    setupCardsCarousel(row);
   }
 
   // ── KPIs ─────────────────────────────────────────────────
@@ -10853,7 +10945,8 @@ document.getElementById('payModalOverlay').onclick = (e) => {
 };
 // Mobile nav wiring (deferred — elements are after <script> tag)
 setTimeout(() => {
-  document.querySelectorAll('.mob-nav-item').forEach(item => {
+  // Só os itens que levam a uma tela (o "Mais" abre o menu e mantém a tela atual)
+  document.querySelectorAll('.mob-nav-item[data-view]').forEach(item => {
     item.onclick = () => {
       document.querySelectorAll('.mob-nav-item').forEach(n=>n.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
