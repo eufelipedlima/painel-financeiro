@@ -4262,6 +4262,8 @@ async function loadAllData() {
     const parcMap = {};
     (ppDb||[]).forEach(r => { if(!parcMap[r.divida_id]) parcMap[r.divida_id]=[]; parcMap[r.divida_id].push({ _dbId:r.id, numero:r.numero, valorParcela:+r.valor_parcela||0, dataVencimento:r.data_vencimento, status:r.status }); });
     DATA.dividas = (dvDb||[]).map(r => ({ _dbId:r.id, _id:nextId++, nome:r.nome, credor:r.credor, categoria:r.categoria, valorTotal:+r.valor_total||0, valorRestante:+r.valor_restante||0, valorEntrada:+r.valor_entrada||0, numParcelas:r.num_parcelas, valorParcela:+r.valor_parcela||0, frequencia:r.frequencia, taxa:+r.taxa||0, dataInicio:r.data_inicio, conta:r.conta, status:r.status, modalidade:r.modalidade, parcelas:parcMap[r.id]||[] }));
+    // Novos lançamentos da sessão continuam a numeração (evita _id repetido e editar o lançamento errado)
+    _nextId = Math.max(_nextId, nextId);
 
     // Load perfil
     const {data: perfilDb} = await safe(db.from('perfis').select('*').eq('user_id', uid).single());
@@ -9020,6 +9022,8 @@ function applyEditToEntry(entry, changes){
   entry.formaPagamento = changes.formaPagamento;
   entry.obs         = changes.obs;
   entry.subcategoria = changes.subcategoria;
+  if('contaDestino' in changes) entry.contaDestino = changes.contaDestino;
+  if(changes.status) entry.status = changes.status;   // antes o status editado era ignorado
   entry._new = true;
   return entry;
 }
@@ -9049,7 +9053,7 @@ function confirmEditFutures(){
   toEdit.forEach(t => {
     reverseImpact(t);
     const entryChanges = {...changes};
-    entryChanges.data = t.data;
+    if(t !== entry){ entryChanges.data = t.data; entryChanges.status = t.status; }
     applyEditToEntry(t, entryChanges);
     applyImpact(t);
     if(!pendingSync.includes(t)) pendingSync.push(t);
@@ -9072,6 +9076,10 @@ function applyImpact(entry){
     } else if(entry.tipo === 'Despesa'){
       if(contaObj) contaObj.saldoAtual = Math.round((contaObj.saldoAtual - entry.valor)*100)/100;
       DATA.saldoTotal = Math.round((DATA.saldoTotal - entry.valor)*100)/100;
+    } else if(entry.tipo === 'Transferência'){
+      const d = DATA.contas.find(a => a.conta === entry.contaDestino);
+      if(contaObj) contaObj.saldoAtual = Math.round((contaObj.saldoAtual - entry.valor)*100)/100;
+      if(d) d.saldoAtual = Math.round((d.saldoAtual + entry.valor)*100)/100;
     }
   }
 }
@@ -10055,8 +10063,20 @@ function openEditDrawer(id, source){
     document.getElementById('fCartao').value = entry.cartao || '';
     document.getElementById('fParcela').value = entry.parcela || '';
   } else {
+    // Cofrinhos não aparecem nas listas de conta; ao editar um aporte/resgate, inclui a conta dele
+    const garantirOpcao = (selId, nome) => {
+      const sel = document.getElementById(selId);
+      if(sel && nome && ![...sel.options].some(o => o.value === nome)){
+        const c = DATA.contas.find(x => x.conta === nome);
+        sel.insertAdjacentHTML('beforeend', `<option value="${nome}">${nome}${c ? '  (' + fmtBRL(c.saldoAtual) + ')' : ''}</option>`);
+      }
+    };
+    garantirOpcao('fConta', entry.conta);
     document.getElementById('fConta').value = entry.conta || '';
-    if(tipo === 'Transferência') document.getElementById('fContaDestino').value = entry.contaDestino || '';
+    if(tipo === 'Transferência'){
+      garantirOpcao('fContaDestino', entry.contaDestino);
+      document.getElementById('fContaDestino').value = entry.contaDestino || '';
+    }
     if(tipo !== 'Transferência') setStatusToggle('fStatus', entry.status || 'Pago');
     // Set subcategoria after categories are populated
     setTimeout(() => {
